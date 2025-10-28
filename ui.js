@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.22 - Corrección bugs Spotlight y Mapa + iTunes API)
+ * ui.js (v4.23 - Restauradas funciones de Modales y Helpers)
  * Módulo de interfaz de usuario.
  */
 
@@ -29,7 +29,7 @@ let _activeMaps = [];
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
-    console.log("UI Module init (v4.22 - Corrección bugs)");
+    console.log("UI Module init (v4.23 - Restauradas funciones)");
     callbacks = mainCallbacks;
     _allDaysData = allDays || []; // ***** CAMBIO: Almacena allDays *****
 
@@ -45,6 +45,10 @@ function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
     createEditModal();
     createAlertPromptModal();
     createConfirmModal();
+    // INICIO V4.23: Crear modales de Almacén
+    createStoreModal();
+    createStoreListModal();
+    // FIN V4.23
 }
 
 function _bindHeaderEvents() {
@@ -100,8 +104,8 @@ function _bindLoginEvents() {
         const userInfo = e.target.closest('#user-info');
 
         if (loginBtn) {
-            const action = loginBtn.dataset.action;
-            if (action === 'login' && callbacks.onLogin) {
+            // CAMBIO v4.23: Simplificado, el botón siempre es login
+            if (callbacks.onLogin) {
                 callbacks.onLogin();
             }
         } else if (userInfo && callbacks.onLogout) {
@@ -145,10 +149,12 @@ function updateLoginUI(user) {
         userInfo.style.display = 'flex';
         userName.textContent = user.displayName || 'Usuario';
         userImg.src = user.photoURL || `https://placehold.co/30x30/ccc/fff?text=${user.displayName ? user.displayName[0] : '?'}`;
-        _createLoginButton(true, loginBtnContainer);
+        // CAMBIO v4.23: El CSS en index.html se encarga de ocultar el botón de login
+        //_createLoginButton(true, loginBtnContainer); // <- Eliminado
     } else {
         userInfo.style.display = 'none';
-        _createLoginButton(false, loginBtnContainer);
+        // CAMBIO v4.23: El CSS en index.html se encarga de mostrar el botón de login
+        //_createLoginButton(false, loginBtnContainer); // <- Eliminado
     }
 }
 
@@ -641,24 +647,313 @@ function closeEditModal() {
 
 
 // --- Modales Almacén, Alerta, Confirmación ---
-// (Sin cambios en estas funciones)
-function createStoreModal() { /* ... */ }
-function openStoreModal() { /* ... */ }
-function closeStoreModal() { /* ... */ }
-function createStoreListModal() { /* ... */ }
-function _bindStoreListModalEvents() { /* ... */ }
-function openStoreListModal(title) { /* ... */ }
-function closeStoreListModal() { /* ... */ }
-function updateStoreList(items, append = false, hasMore = false) { /* ... */ }
-function createAlertPromptModal() { /* ... */ }
-function _bindAlertPromptEvents() { /* ... */ }
-function closeAlertPromptModal(isOk) { /* ... */ }
-function showAlert(message, type = 'default') { /* ... */ }
-function showPrompt(message, defaultValue = '', type = 'default') { /* ... */ }
-function createConfirmModal() { /* ... */ }
-function _bindConfirmModalEvents() { /* ... */ }
-function closeConfirmModal(isConfirmed) { /* ... */ }
-function showConfirm(message) { /* ... */ }
+
+// --- INICIO V4.23: Funciones de Almacén (Store) ---
+function createStoreModal() {
+    if (storeModal) return;
+
+    storeModal = document.createElement('div');
+    storeModal.id = 'store-modal';
+    storeModal.className = 'modal-store';
+    storeModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-preview-header">
+                 <h3>Almacén</h3>
+            </div>
+            <div class="modal-content-scrollable">
+                <div class="store-category-list">
+                    </div>
+            </div>
+            <div class="modal-main-buttons">
+                <button id="close-store-btn" class="aqua-button">Cerrar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(storeModal);
+
+    document.getElementById('close-store-btn')?.addEventListener('click', closeStoreModal);
+
+    const listEl = storeModal.querySelector('.store-category-list');
+    
+    // Crear botones de categoría
+    const categories = [
+        { type: 'Nombres', icon: 'label', label: 'Días Nombrados' },
+        { type: 'Texto', icon: 'article', label: 'Notas de Texto' },
+        { type: 'Lugar', icon: 'place', label: 'Lugares' },
+        { type: 'Musica', icon: 'music_note', label: 'Canciones' },
+        { type: 'Imagen', icon: 'image', label: 'Fotos' }
+    ];
+
+    categories.forEach(cat => {
+        const btn = createStoreCategoryButton(cat.type, cat.icon, cat.label);
+        btn.addEventListener('click', () => {
+            if (callbacks.onStoreCategoryClick) {
+                callbacks.onStoreCategoryClick(cat.type);
+            }
+        });
+        listEl.appendChild(btn);
+    });
+}
+
+function openStoreModal() {
+    if (!storeModal) createStoreModal();
+    storeModal.style.display = 'flex';
+    setTimeout(() => storeModal.classList.add('visible'), 10);
+}
+
+function closeStoreModal() {
+    if (!storeModal) return;
+    storeModal.classList.remove('visible');
+    setTimeout(() => storeModal.style.display = 'none', 200);
+}
+
+function createStoreListModal() {
+    if (storeListModal) return;
+
+    storeListModal = document.createElement('div');
+    storeListModal.id = 'store-list-modal';
+    storeListModal.className = 'modal-store-list';
+    storeListModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-preview-header">
+                 <h3 id="store-list-title">Resultados</h3>
+            </div>
+            <div class="modal-content-scrollable" id="store-list-scrollable">
+                <div id="store-list-content" class="modal-section">
+                    </div>
+                <button id="load-more-btn" class="aqua-button" style="display:none; width: calc(100% - 40px); margin: 0 20px 20px 20px; box-sizing: border-box;">Cargar más</button>
+            </div>
+            <div class="modal-main-buttons">
+                <button id="close-store-list-btn" class="aqua-button">Cerrar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(storeListModal);
+    _bindStoreListModalEvents();
+}
+
+function _bindStoreListModalEvents() {
+    document.getElementById('close-store-list-btn')?.addEventListener('click', closeStoreListModal);
+    document.getElementById('load-more-btn')?.addEventListener('click', () => {
+        if (callbacks.onStoreLoadMore) {
+            callbacks.onStoreLoadMore();
+            const btn = document.getElementById('load-more-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Cargando...';
+            }
+        }
+    });
+
+    // Clic en un item
+    document.getElementById('store-list-content')?.addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.memoria-item');
+        if (itemEl && itemEl.dataset.diaId) {
+            if (callbacks.onStoreItemClick) {
+                callbacks.onStoreItemClick(itemEl.dataset.diaId);
+            }
+        }
+    });
+}
+
+function openStoreListModal(title) {
+    if (!storeListModal) createStoreListModal();
+
+    document.getElementById('store-list-title').textContent = title;
+    document.getElementById('store-list-content').innerHTML = '<p class="list-placeholder">Cargando...</p>';
+    document.getElementById('load-more-btn').style.display = 'none';
+    
+    storeListModal.style.display = 'flex';
+    setTimeout(() => storeListModal.classList.add('visible'), 10);
+}
+
+function closeStoreListModal() {
+    if (!storeListModal) return;
+    storeListModal.classList.remove('visible');
+    setTimeout(() => storeListModal.style.display = 'none', 200);
+}
+
+function updateStoreList(items, append = false, hasMore = false) {
+    const listEl = document.getElementById('store-list-content');
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    
+    if (!listEl || !loadMoreBtn) return;
+
+    if (!append) {
+        listEl.innerHTML = ''; // Limpiar si no es "cargar más"
+    }
+
+    // Quitar placeholder si existe (p.ej. "Cargando...")
+    const placeholder = listEl.querySelector('.list-placeholder');
+    if (placeholder) placeholder.remove();
+
+    if (items.length === 0 && !append) {
+        listEl.innerHTML = '<p class="list-placeholder">No se encontraron items.</p>';
+    }
+
+    const fragment = document.createDocumentFragment();
+    items.forEach(item => {
+        const itemEl = createStoreListItem(item); // Usar el nuevo helper
+        fragment.appendChild(itemEl);
+    });
+    listEl.appendChild(fragment);
+
+    // Configurar botón "Cargar más"
+    loadMoreBtn.style.display = hasMore ? 'block' : 'none';
+    loadMoreBtn.disabled = false;
+    loadMoreBtn.textContent = 'Cargar más';
+}
+// --- FIN V4.23: Funciones de Almacén ---
+
+
+// --- INICIO V4.23: Funciones de Alerta/Prompt/Confirmación ---
+function createAlertPromptModal() {
+    if (alertPromptModal) return;
+
+    alertPromptModal = document.createElement('div');
+    alertPromptModal.id = 'alert-prompt-modal';
+    alertPromptModal.className = 'modal-alert-prompt';
+    alertPromptModal.innerHTML = `
+        <div class="modal-alert-content">
+            <p id="alert-prompt-message">Message</p>
+            <input type="text" id="alert-prompt-input" style="display: none;">
+            <div class="modal-main-buttons">
+                <button id="alert-prompt-cancel-btn" style="display: none;">Cancelar</button>
+                <button id="alert-prompt-ok-btn">OK</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(alertPromptModal);
+    _bindAlertPromptEvents();
+}
+
+function _bindAlertPromptEvents() {
+    document.getElementById('alert-prompt-ok-btn')?.addEventListener('click', () => closeAlertPromptModal(true));
+    document.getElementById('alert-prompt-cancel-btn')?.addEventListener('click', () => closeAlertPromptModal(false));
+}
+
+function closeAlertPromptModal(isOk) {
+    if (!alertPromptModal) return;
+    const input = document.getElementById('alert-prompt-input');
+    const content = alertPromptModal.querySelector('.modal-alert-content');
+    
+    alertPromptModal.classList.remove('visible');
+    
+    setTimeout(() => {
+        alertPromptModal.style.display = 'none';
+        // Limpiar clases de tipo
+        content.classList.remove('settings-alert', 'search-alert');
+        
+        if (_promptResolve) {
+            if (isOk) {
+                _promptResolve(input.value);
+            } else {
+                _promptResolve(null); // Resuelve null si cancela
+            }
+        }
+        _promptResolve = null;
+    }, 200);
+}
+
+function showAlert(message, type = 'default') {
+    if (!alertPromptModal) createAlertPromptModal();
+    
+    document.getElementById('alert-prompt-message').textContent = message;
+    document.getElementById('alert-prompt-input').style.display = 'none';
+    document.getElementById('alert-prompt-cancel-btn').style.display = 'none';
+    document.getElementById('alert-prompt-ok-btn').style.display = 'block';
+
+    const content = alertPromptModal.querySelector('.modal-alert-content');
+    if (type === 'settings') content.classList.add('settings-alert');
+    if (type === 'search') content.classList.add('search-alert');
+
+    alertPromptModal.style.display = 'flex';
+    setTimeout(() => alertPromptModal.classList.add('visible'), 10);
+    
+    // Para showAlert, devolvemos una promesa que se resuelve al pulsar OK
+    return new Promise((resolve) => {
+        _promptResolve = resolve; // Reutilizamos _promptResolve
+    });
+}
+
+function showPrompt(message, defaultValue = '', type = 'default') {
+    if (!alertPromptModal) createAlertPromptModal();
+    
+    document.getElementById('alert-prompt-message').textContent = message;
+    const input = document.getElementById('alert-prompt-input');
+    input.style.display = 'block';
+    input.value = defaultValue;
+    document.getElementById('alert-prompt-cancel-btn').style.display = 'block';
+    document.getElementById('alert-prompt-ok-btn').style.display = 'block';
+
+    const content = alertPromptModal.querySelector('.modal-alert-content');
+    if (type === 'settings') content.classList.add('settings-alert');
+    if (type === 'search') content.classList.add('search-alert');
+
+    alertPromptModal.style.display = 'flex';
+    setTimeout(() => {
+        alertPromptModal.classList.add('visible');
+        if (type !== 'settings') { // No hacer focus en settings (multilínea)
+             input.focus();
+             input.select();
+        }
+    }, 10);
+    
+    return new Promise((resolve) => {
+        _promptResolve = resolve;
+    });
+}
+
+function createConfirmModal() {
+    if (confirmModal) return;
+
+    confirmModal = document.createElement('div');
+    confirmModal.id = 'confirm-modal';
+    confirmModal.className = 'modal-confirm';
+    confirmModal.innerHTML = `
+        <div class="modal-alert-content">
+            <p id="confirm-message">¿Estás seguro?</p>
+            <div class="modal-main-buttons">
+                <button id="confirm-cancel-btn">Cancelar</button>
+                <button id="confirm-ok-btn" class="delete-confirm">Confirmar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(confirmModal);
+    _bindConfirmModalEvents();
+}
+
+function _bindConfirmModalEvents() {
+    document.getElementById('confirm-ok-btn')?.addEventListener('click', () => closeConfirmModal(true));
+    document.getElementById('confirm-cancel-btn')?.addEventListener('click', () => closeConfirmModal(false));
+}
+
+function closeConfirmModal(isConfirmed) {
+    if (!confirmModal) return;
+    confirmModal.classList.remove('visible');
+    
+    setTimeout(() => {
+        confirmModal.style.display = 'none';
+        if (_confirmResolve) {
+            _confirmResolve(isConfirmed);
+        }
+        _confirmResolve = null;
+    }, 200);
+}
+
+function showConfirm(message) {
+    if (!confirmModal) createConfirmModal();
+    
+    document.getElementById('confirm-message').textContent = message;
+    
+    confirmModal.style.display = 'flex';
+    setTimeout(() => confirmModal.classList.add('visible'), 10);
+    
+    return new Promise((resolve) => {
+        _confirmResolve = resolve;
+    });
+}
+// --- FIN V4.23: Funciones de Alerta/Prompt/Confirmación ---
 
 
 // --- Funciones de Ayuda (Helpers) de UI ---
@@ -667,10 +962,7 @@ function showConfirm(message) { /* ... */ }
 /**
  * Renderiza un mapa Leaflet en un contenedor.
  * @param {string} containerId - El ID del elemento div.
- * @param {number} lat - Latitud.
- * @param {number} lon - Longitud.
- * @param {number} zoom - Nivel de zoom (default 13).
- */
+ *... (El resto de esta sección está presente y correcta) ...*/
 function _renderMap(containerId, lat, lon, zoom = 13) {
     try {
         const container = document.getElementById(containerId);
@@ -898,9 +1190,44 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6:
     // FIN v17.6
 }
 
-function createStoreCategoryButton(type, icon, label) { /* ... */ }
-function createStoreListItem(item) { /* ... */ }
-function _createLoginButton(isLoggedOut, container) { /* ... */ }
+// --- INICIO V4.23: Funciones Helper Restauradas ---
+function createStoreCategoryButton(type, icon, label) {
+    const btn = document.createElement('button');
+    btn.className = 'store-category-button';
+    btn.dataset.type = type;
+    btn.innerHTML = `
+        <span class="material-icons-outlined">${icon}</span>
+        <span>${label}</span>
+        <span class="material-icons-outlined">chevron_right</span>
+    `;
+    return btn;
+}
+
+function createStoreListItem(item) {
+    // Usamos el estilo .memoria-item (definido en style.css)
+    const itemEl = document.createElement('div');
+    itemEl.className = 'memoria-item';
+    itemEl.dataset.diaId = item.diaId;
+    
+    // Añadimos 'cursor: pointer' para que parezca clicable
+    itemEl.style.cursor = 'pointer';
+
+    if (item.type === 'Nombres') {
+        // Renderizado especial para Días Nombrados
+        itemEl.innerHTML = `
+            <span class="memoria-icon material-icons-outlined">label</span>
+            <div class="memoria-item-content">
+                <small>${item.Nombre_Dia}</small>
+                <strong>${item.Nombre_Especial}</strong>
+            </div>`;
+    } else {
+        // Reutilizar el renderizado de memorias (sin acciones)
+        // Usamos 'store' como prefijo de mapa
+        itemEl.innerHTML = createMemoryItemHTML(item, false, 'store');
+    }
+    return itemEl;
+}
+// --- FIN V4.23 ---
 
 
 // --- Lógica del Formulario de Memorias ---
@@ -1066,11 +1393,120 @@ function fillFormForEdit(mem) {
     });
 }
 
-/**
- * CAMBIO v17.0: Ya no es responsable de mostrar/ocultar el form,
- * eso lo hace _showMemoryForm(false)
- */
-function resetMemoryForm() { /* ... (Sin cambios) */ }
+
+// --- INICIO V4.23: Funciones Helper de Formulario Restauradas ---
+
+function resetMemoryForm() {
+    _isEditingMemory = false;
+    _selectedMusic = null;
+    _selectedPlace = null;
+
+    const form = document.getElementById('memory-form');
+    if (!form) return;
+
+    form.reset(); // Limpia todos los inputs, textareas, selects
+    form.dataset.editingId = '';
+    form.dataset.existingImageUrl = '';
+
+    // Limpiar resultados de búsqueda
+    showMusicResults([]);
+    showPlaceResults([]);
+
+    // Limpiar mensajes de estado
+    showModalStatus('memoria-status', '', false);
+    showModalStatus('image-upload-status', '', false);
+    
+    // Resetear botón de guardar
+    const saveBtn = document.getElementById('save-memoria-btn');
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Añadir Memoria';
+    }
+
+    // Asegurarse de que el tipo de memoria 'Texto' esté visible
+    handleMemoryTypeChange();
+}
+
+function showPlaceResults(places, isSelected = false) {
+    const resultsEl = document.getElementById('place-results');
+    if (!resultsEl) return;
+    resultsEl.innerHTML = '';
+    _selectedPlace = null;
+
+    if (isSelected && places.length > 0) {
+        const place = places[0];
+        // v17.6: _selectedPlace espera {name, data}
+        _selectedPlace = { 
+            name: place.display_name.split(',')[0], // Coger solo el nombre
+            data: place // Guardar toda la data
+        };
+        resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${_selectedPlace.name}</p>`;
+        return;
+    }
+
+    if (!places || places.length === 0) return;
+
+    places.forEach(place => {
+        const displayName = place.display_name;
+        const name = displayName.split(',')[0];
+        const details = displayName.substring(name.length + 1).trim();
+
+        const itemEl = document.createElement('div');
+        itemEl.className = 'search-result-item';
+        itemEl.innerHTML = `
+            <span class="memoria-icon material-icons-outlined" style="margin-right: 10px; font-size: 24px; color: #666;">place</span>
+            <div class="memoria-item-content">
+                <small>${details}</small>
+                <strong>${name}</strong>
+            </div>
+            <span class="material-icons-outlined">add_circle_outline</span>
+        `;
+        itemEl.addEventListener('click', () => {
+             // v17.6: _selectedPlace espera {name, data}
+            _selectedPlace = { name: name, data: place };
+            document.getElementById('memoria-place-search').value = name;
+            resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${name}</p>`;
+        });
+        resultsEl.appendChild(itemEl);
+    });
+}
+
+function showModalStatus(elementId, message, isError) {
+    const statusEl = document.getElementById(elementId);
+    if (!statusEl) return;
+
+    statusEl.textContent = message;
+    if (isError) {
+        statusEl.classList.add('error');
+    } else {
+        statusEl.classList.remove('error');
+    }
+
+    // Borrar mensaje después de 3 segundos si no es un error
+    if (!isError && message !== '') {
+        setTimeout(() => {
+            if (statusEl.textContent === message) {
+                statusEl.textContent = '';
+            }
+        }, 3000);
+    }
+}
+
+function showCrumbieAnimation(message) {
+    const floatText = document.createElement('div');
+    floatText.className = 'crumbie-float-text';
+    floatText.textContent = message;
+    document.body.appendChild(floatText);
+
+    // Eliminar el elemento después de la animación
+    floatText.addEventListener('animationend', () => {
+        if (floatText.parentNode) {
+            floatText.parentNode.removeChild(floatText);
+        }
+    });
+}
+// --- FIN V4.23 ---
+
 
 function showMusicResults(tracks, isSelected = false) {
     const resultsEl = document.getElementById('itunes-results');
@@ -1115,10 +1551,6 @@ function showMusicResults(tracks, isSelected = false) {
         resultsEl.appendChild(itemEl);
     });
 }
-
-function showPlaceResults(places, isSelected = false) { /* ... (Sin cambios) */ }
-function showModalStatus(elementId, message, isError) { /* ... (Sin cambios) */ }
-function showCrumbieAnimation(message) { /* ... (Sin cambios) */ }
 
 
 // --- Exportaciones Públicas ---
