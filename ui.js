@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.24 - Corregida UI de Almacén)
+ * ui.js (v4.25 - Implementa Muro de Login y updateAllDaysData)
  * Módulo de interfaz de usuario.
  */
 
@@ -29,7 +29,7 @@ let _activeMaps = [];
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
-    console.log("UI Module init (v4.24 - UI Almacén)");
+    console.log("UI Module init (v4.25 - Muro de Login)");
     callbacks = mainCallbacks;
     _allDaysData = allDays || []; // ***** CAMBIO: Almacena allDays *****
 
@@ -45,10 +45,13 @@ function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
     createEditModal();
     createAlertPromptModal();
     createConfirmModal();
-    // INICIO V4.23: Crear modales de Almacén
     createStoreModal();
     createStoreListModal();
-    // FIN V4.23
+    
+    // INICIO CAMBIO: Crear el muro de login
+    _createLoginWall();
+    showApp(false); // Ocultar la app por defecto
+    // FIN CAMBIO
 }
 
 function _bindHeaderEvents() {
@@ -104,12 +107,18 @@ function _bindLoginEvents() {
         const userInfo = e.target.closest('#user-info');
 
         if (loginBtn) {
-            // CAMBIO v4.23: Simplificado, el botón siempre es login
             if (callbacks.onLogin) {
                 callbacks.onLogin();
             }
         } else if (userInfo && callbacks.onLogout) {
             callbacks.onLogout();
+        }
+    });
+    
+    // Conectar el botón del Muro de Login
+    document.body.addEventListener('click', (e) => {
+        if (e.target.id === 'login-wall-btn') {
+            if (callbacks.onLogin) callbacks.onLogin();
         }
     });
 }
@@ -126,11 +135,93 @@ function _bindGlobalListeners() {
 }
 
 // --- Funciones de Renderizado Principal ---
+
+/**
+ * NUEVA FUNCIÓN (Paso 1)
+ * Crea el HTML para el muro de login y lo añade al body.
+ */
+function _createLoginWall() {
+    let loginWall = document.getElementById('login-wall');
+    if (loginWall) return;
+
+    loginWall = document.createElement('div');
+    loginWall.id = 'login-wall';
+    loginWall.style.display = 'none'; // Oculto por defecto
+    loginWall.style.padding = '40px 20px';
+    loginWall.style.textAlign = 'center';
+    loginWall.style.color = '#fff';
+
+    loginWall.innerHTML = `
+        <h2 style="font-size: 24px; margin-bottom: 10px;">Bienvenido a Ephemerides</h2>
+        <p style="font-size: 16px; color: #ccc; margin-bottom: 30px;">Tu diario personal del tiempo.</p>
+        <button id="login-wall-btn" class="aqua-button" style="padding: 12px 25px !important; font-size: 18px !important;">
+            Iniciar Sesión
+        </button>
+    `;
+    
+    // Insertar después del header
+    const header = document.querySelector('header');
+    if (header) {
+        header.insertAdjacentElement('afterend', loginWall);
+    } else {
+        document.body.prepend(loginWall);
+    }
+}
+
+/**
+ * NUEVA FUNCIÓN (Paso 1)
+ * Muestra u oculta la aplicación principal (calendario, footer, etc.)
+ */
+function showApp(show) {
+    const mainElements = [
+        document.querySelector('.month-nav'),
+        document.getElementById('spotlight-section'),
+        document.getElementById('app-content'),
+        document.querySelector('.footer-dock'),
+        document.getElementById('crumbie-btn')
+    ];
+    
+    const loginWall = document.getElementById('login-wall');
+
+    const displayStyle = show ? '' : 'none'; // Mostrar o ocultar
+    
+    mainElements.forEach(el => {
+        if (el) el.style.display = displayStyle;
+    });
+
+    // La barra de header (con login/logout) siempre es visible
+    
+    // Mostrar el muro de login si la app se oculta
+    if (loginWall) {
+        loginWall.style.display = show ? 'none' : 'block';
+    }
+    
+    // Si mostramos la app, limpiamos el mensaje de carga
+    if (show) {
+        setLoading(null, false);
+    }
+}
+
+/**
+ * NUEVA FUNCIÓN (Paso 1)
+ * Permite a main.js actualizar la referencia de _allDaysData
+ */
+function updateAllDaysData(allDays) {
+    _allDaysData = allDays || [];
+    console.log("UI: Referencia de allDaysData actualizada.");
+}
+
+
 function setLoading(message, show) {
     const appContent = document.getElementById('app-content');
     if (!appContent) return;
     if (show) {
+        // Si mostramos carga, ocultamos el muro de login
+        const loginWall = document.getElementById('login-wall');
+        if (loginWall) loginWall.style.display = 'none';
+        
         appContent.innerHTML = `<p class="loading-message">${message}</p>`;
+        appContent.style.display = ''; // Asegurarse de que app-content es visible
     } else {
         const loading = appContent.querySelector('.loading-message');
         if (loading) loading.remove();
@@ -149,12 +240,8 @@ function updateLoginUI(user) {
         userInfo.style.display = 'flex';
         userName.textContent = user.displayName || 'Usuario';
         userImg.src = user.photoURL || `https://placehold.co/30x30/ccc/fff?text=${user.displayName ? user.displayName[0] : '?'}`;
-        // CAMBIO v4.23: El CSS en index.html se encarga de ocultar el botón de login
-        //_createLoginButton(true, loginBtnContainer); // <- Eliminado
     } else {
         userInfo.style.display = 'none';
-        // CAMBIO v4.23: El CSS en index.html se encarga de mostrar el botón de login
-        //_createLoginButton(false, loginBtnContainer); // <- Eliminado
     }
 }
 
@@ -223,17 +310,13 @@ function updateSpotlight(dateString, dayName, memories) {
         const itemEl = document.createElement('div');
         itemEl.className = 'spotlight-memory-item';
 
-        // Añadir clase para truncado CSS
         if (mem.Tipo === 'Texto') {
             itemEl.classList.add('spotlight-item-text');
         }
 
-        // INICIO v17.6: Usar 'spotlight' como prefijo de ID de mapa
         itemEl.innerHTML = createMemoryItemHTML(mem, false, 'spotlight');
-        // FIN v17.6
 
         itemEl.addEventListener('click', () => {
-             // ***** CAMBIO: Usar _allDaysData del módulo *****
              const diaObj = _allDaysData.find(d => d.id === mem.diaId); 
              if (diaObj && callbacks.onDayClick) {
                  callbacks.onDayClick(diaObj);
@@ -245,9 +328,7 @@ function updateSpotlight(dateString, dayName, memories) {
         containerEl.appendChild(itemEl);
     });
     
-    // INICIO v17.6: Inicializar mapas DESPUÉS de añadirlos al DOM
     _initMapsInContainer(containerEl, 'spotlight');
-    // FIN v17.6
 }
 
 
@@ -308,14 +389,12 @@ function openPreviewModal(dia, memories) {
     const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
     if (titleEl) titleEl.textContent = `${dia.Nombre_Dia}${dayName}`;
 
-    _renderMemoryList(listEl, memories, false, 'preview'); // v17.6: Añadido prefijo 'preview'
+    _renderMemoryList(listEl, memories, false, 'preview'); 
 
     previewModal.style.display = 'flex';
     setTimeout(() => {
         previewModal.classList.add('visible');
-        // INICIO v17.6: Inicializar mapas DESPUÉS de que el modal sea visible
         _initMapsInContainer(listEl, 'preview');
-        // FIN v17.6
     }, 10);
 }
 
@@ -323,15 +402,11 @@ function closePreviewModal() {
     if (!previewModal) return;
     previewModal.classList.remove('visible');
     
-    // ***** CAMBIO: Destruir mapas Y Reinicializar Spotlight *****
     _destroyActiveMaps();
-    // Re-renderizar mapas en el spotlight (si existe)
     const spotlightContainer = document.getElementById('spotlight-memories-container');
     if (spotlightContainer) {
-        // Usamos setTimeout para asegurar que se ejecuta después de la transición
         setTimeout(() => _initMapsInContainer(spotlightContainer, 'spotlight'), 250);
     }
-    // ************************************************************
     
     setTimeout(() => {
         previewModal.style.display = 'none';
@@ -342,15 +417,12 @@ function closePreviewModal() {
 
 // --- Modal: Edición (Edit/Add) ---
 
-/**
- * CAMBIO v17.0: Rediseño del modal
- */
 function createEditModal() {
     if (editModal) return;
 
     editModal = document.createElement('div');
     editModal.id = 'edit-add-modal';
-    editModal.className = 'modal-edit'; // CSS usa .modal-edit para alinear arriba
+    editModal.className = 'modal-edit'; 
     editModal.innerHTML = `
         <div class="modal-content">
             <div class="modal-preview-header">
@@ -443,7 +515,7 @@ function showEditLoading(isLoading) {
     }
 }
 
-async function handleNameSelectedDay() { // Async para usar showPrompt
+async function handleNameSelectedDay() {
      if (!callbacks.onSaveDayName || !_allDaysData) return;
 
      const daySelect = document.getElementById('edit-mem-day');
@@ -462,9 +534,6 @@ async function handleNameSelectedDay() { // Async para usar showPrompt
      }
 }
 
-/**
- * CAMBIO v17.0: Añadidos listeners para el nuevo flujo de mostrar/ocultar formulario
- */
 function _bindEditModalEvents() {
     document.getElementById('close-edit-add-btn')?.addEventListener('click', closeEditModal);
     document.getElementById('save-name-btn')?.addEventListener('click', () => {
@@ -476,16 +545,14 @@ function _bindEditModalEvents() {
 
     document.getElementById('btn-name-selected-day')?.addEventListener('click', handleNameSelectedDay);
 
-    // --- Nuevos Listeners para el flujo del formulario ---
     document.getElementById('btn-show-add-form')?.addEventListener('click', () => {
-        resetMemoryForm(); // Limpia el formulario
-        _showMemoryForm(true); // Muestra el formulario
+        resetMemoryForm(); 
+        _showMemoryForm(true); 
     });
 
     document.getElementById('btn-cancel-mem-edit')?.addEventListener('click', () => {
-        _showMemoryForm(false); // Oculta el formulario
+        _showMemoryForm(false); 
     });
-    // --- Fin nuevos listeners ---
 
     document.getElementById('memory-form')?.addEventListener('submit', _handleFormSubmit);
     document.getElementById('memoria-type')?.addEventListener('change', handleMemoryTypeChange);
@@ -517,7 +584,7 @@ function _bindEditModalEvents() {
             if (_currentMemories && _currentMemories.length > 0) {
                 const memToEdit = _currentMemories.find(m => m.id === memoriaId);
                 if (memToEdit) {
-                    fillFormForEdit(memToEdit); // Esta función ahora también mostrará el formulario
+                    fillFormForEdit(memToEdit); 
                 } else {
                     console.error("No se encontró la memoria en _currentMemories:", memoriaId);
                     showModalStatus('memoria-status', 'Error: Memoria no encontrada.', true);
@@ -526,7 +593,6 @@ function _bindEditModalEvents() {
         }
 
         if (deleteBtn) {
-            // (El código de borrado no necesita cambios)
             const memoriaId = deleteBtn.dataset.memoriaId;
             if (!memoriaId) {
                 console.error("ID de memoria inválido en el botón de borrar.");
@@ -551,10 +617,6 @@ function _bindEditModalEvents() {
     });
 }
 
-/**
- * CAMBIO v17.0: Nueva función helper para mostrar/ocultar el formulario
- * @param {boolean} show - True para mostrar el form, false para ocultarlo
- */
 function _showMemoryForm(show) {
     const form = document.getElementById('memory-form');
     const listContainer = document.getElementById('edit-memorias-list-container');
@@ -569,13 +631,9 @@ function _showMemoryForm(show) {
 }
 
 
-/**
- * CAMBIO v17.0: Actualizado para el nuevo flujo
- */
-function openEditModal(dia, memories) { // ***** CAMBIO: Ya no necesita allDays *****
-    _currentDay = dia; // Puede ser null si es Añadir
+function openEditModal(dia, memories) { 
+    _currentDay = dia; 
     _currentMemories = memories || [];
-    // _allDaysData ya está disponible en el módulo
 
     const daySelection = document.getElementById('day-selection-section');
     const dayNameSection = document.getElementById('day-name-section');
@@ -602,7 +660,6 @@ function openEditModal(dia, memories) { // ***** CAMBIO: Ya no necesita allDays 
         if (dynamicTitleEl) dynamicTitleEl.textContent = 'Añadir Memoria';
         if (formTitle) formTitle.textContent = 'Añadir Memoria';
 
-        // ***** CAMBIO: Usa _allDaysData del módulo *****
         if (_allDaysData.length > 0) { 
             daySelect.innerHTML = '';
              _allDaysData.sort((a, b) => a.id.localeCompare(b.id)).forEach(d => {
@@ -619,11 +676,10 @@ function openEditModal(dia, memories) { // ***** CAMBIO: Ya no necesita allDays 
         daySelect.value = todayId;
     }
 
-    // CAMBIO v17.0: Asegurarse de que el formulario esté oculto al abrir
     _showMemoryForm(false);
-    resetMemoryForm(); // Limpia el formulario (pero lo deja oculto)
+    resetMemoryForm(); 
 
-    _renderMemoryList(document.getElementById('edit-memorias-list'), _currentMemories, true); // Renderizar lista de memorias
+    _renderMemoryList(document.getElementById('edit-memorias-list'), _currentMemories, true); 
 
     showModalStatus('save-status', '', false);
     showModalStatus('memoria-status', '', false);
@@ -648,7 +704,6 @@ function closeEditModal() {
 
 // --- Modales Almacén, Alerta, Confirmación ---
 
-// --- INICIO V4.23: Funciones de Almacén (Store) ---
 function createStoreModal() {
     if (storeModal) return;
 
@@ -675,7 +730,6 @@ function createStoreModal() {
 
     const listEl = storeModal.querySelector('.store-category-list');
     
-    // Crear botones de categoría
     const categories = [
         { type: 'Nombres', icon: 'label', label: 'Días Nombrados' },
         { type: 'Texto', icon: 'article', label: 'Notas de Texto' },
@@ -745,7 +799,6 @@ function _bindStoreListModalEvents() {
         }
     });
 
-    // Clic en un item
     document.getElementById('store-list-content')?.addEventListener('click', (e) => {
         const itemEl = e.target.closest('.memoria-item');
         if (itemEl && itemEl.dataset.diaId) {
@@ -780,10 +833,9 @@ function updateStoreList(items, append = false, hasMore = false) {
     if (!listEl || !loadMoreBtn) return;
 
     if (!append) {
-        listEl.innerHTML = ''; // Limpiar si no es "cargar más"
+        listEl.innerHTML = ''; 
     }
 
-    // Quitar placeholder si existe (p.ej. "Cargando...")
     const placeholder = listEl.querySelector('.list-placeholder');
     if (placeholder) placeholder.remove();
 
@@ -793,20 +845,16 @@ function updateStoreList(items, append = false, hasMore = false) {
 
     const fragment = document.createDocumentFragment();
     items.forEach(item => {
-        const itemEl = createStoreListItem(item); // Usar el nuevo helper
+        const itemEl = createStoreListItem(item); 
         fragment.appendChild(itemEl);
     });
     listEl.appendChild(fragment);
 
-    // Configurar botón "Cargar más"
     loadMoreBtn.style.display = hasMore ? 'block' : 'none';
     loadMoreBtn.disabled = false;
     loadMoreBtn.textContent = 'Cargar más';
 }
-// --- FIN V4.23: Funciones de Almacén ---
 
-
-// --- INICIO V4.23: Funciones de Alerta/Prompt/Confirmación ---
 function createAlertPromptModal() {
     if (alertPromptModal) return;
 
@@ -841,14 +889,13 @@ function closeAlertPromptModal(isOk) {
     
     setTimeout(() => {
         alertPromptModal.style.display = 'none';
-        // Limpiar clases de tipo
         content.classList.remove('settings-alert', 'search-alert');
         
         if (_promptResolve) {
             if (isOk) {
                 _promptResolve(input.value);
             } else {
-                _promptResolve(null); // Resuelve null si cancela
+                _promptResolve(null); 
             }
         }
         _promptResolve = null;
@@ -870,9 +917,8 @@ function showAlert(message, type = 'default') {
     alertPromptModal.style.display = 'flex';
     setTimeout(() => alertPromptModal.classList.add('visible'), 10);
     
-    // Para showAlert, devolvemos una promesa que se resuelve al pulsar OK
     return new Promise((resolve) => {
-        _promptResolve = resolve; // Reutilizamos _promptResolve
+        _promptResolve = resolve; 
     });
 }
 
@@ -893,7 +939,7 @@ function showPrompt(message, defaultValue = '', type = 'default') {
     alertPromptModal.style.display = 'flex';
     setTimeout(() => {
         alertPromptModal.classList.add('visible');
-        if (type !== 'settings') { // No hacer focus en settings (multilínea)
+        if (type !== 'settings') {
              input.focus();
              input.select();
         }
@@ -953,16 +999,10 @@ function showConfirm(message) {
         _confirmResolve = resolve;
     });
 }
-// --- FIN V4.23: Funciones de Alerta/Prompt/Confirmación ---
 
 
 // --- Funciones de Ayuda (Helpers) de UI ---
 
-// INICIO v17.6: Nueva función para renderizar mapas
-/**
- * Renderiza un mapa Leaflet en un contenedor.
- * @param {string} containerId - El ID del elemento div.
-... (El resto de esta sección está presente y correcta) ...*/
 function _renderMap(containerId, lat, lon, zoom = 13) {
     try {
         const container = document.getElementById(containerId);
@@ -971,12 +1011,10 @@ function _renderMap(containerId, lat, lon, zoom = 13) {
             return;
         }
 
-        // Evitar reinicialización si ya existe un mapa
         if (container._leaflet_id) {
             return;
         }
         
-        // Verificar que L (Leaflet) esté cargado
         if (typeof L === 'undefined') {
             console.error("Leaflet (L) no está definido. Asegúrate de que el script está cargado.");
             container.innerHTML = '<p style="color: red; padding: 10px;">Error al cargar mapa.</p>';
@@ -986,12 +1024,12 @@ function _renderMap(containerId, lat, lon, zoom = 13) {
         const map = L.map(containerId, {
             center: [lat, lon],
             zoom: zoom,
-            zoomControl: false, // Sin controles de zoom
-            dragging: false, // No se puede arrastrar
-            scrollWheelZoom: false, // Sin zoom con rueda
-            doubleClickZoom: false, // Sin doble click
-            touchZoom: false, // Sin zoom táctil
-            attributionControl: false // Sin atribución
+            zoomControl: false, 
+            dragging: false, 
+            scrollWheelZoom: false, 
+            doubleClickZoom: false, 
+            touchZoom: false, 
+            attributionControl: false 
         });
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1000,18 +1038,13 @@ function _renderMap(containerId, lat, lon, zoom = 13) {
 
         L.marker([lat, lon]).addTo(map);
 
-        _activeMaps.push(map); // Añadir al array para gestión
+        _activeMaps.push(map); 
 
     } catch (e) {
         console.error(`Error al renderizar mapa en #${containerId}:`, e);
     }
 }
 
-/**
- * Busca y renderiza todos los mapas pendientes en un contenedor.
- * @param {HTMLElement} containerEl - El elemento padre (p.ej. preview-list)
- * @param {string} prefix - El prefijo usado para los IDs ('spotlight' o 'preview')
- */
 function _initMapsInContainer(containerEl, prefix) {
     if (!containerEl) return;
     
@@ -1022,7 +1055,6 @@ function _initMapsInContainer(containerEl, prefix) {
             const lat = parseFloat(div.dataset.lat);
             const lon = parseFloat(div.dataset.lon);
             const zoom = div.dataset.zoom ? parseInt(div.dataset.zoom) : 13;
-            // El ID ya debe estar puesto (p.ej. "preview-map-XYZ")
             if (div.id) { 
                 _renderMap(div.id, lat, lon, zoom);
             }
@@ -1030,21 +1062,17 @@ function _initMapsInContainer(containerEl, prefix) {
     });
 }
 
-/**
- * Destruye todas las instancias de mapas activas (para cerrar modales).
- */
 function _destroyActiveMaps() {
     _activeMaps.forEach(map => {
         if (map && map.remove) {
             map.remove();
         }
     });
-    _activeMaps = []; // Limpiar el array
+    _activeMaps = []; 
 }
-// FIN v17.6
 
 
-function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') { // v17.6: Añadido mapIdPrefix
+function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') { 
     if (!listEl) return;
     listEl.innerHTML = '';
 
@@ -1063,9 +1091,7 @@ function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') {
     memories.forEach(mem => {
         const itemEl = document.createElement('div');
         itemEl.className = 'memoria-item';
-        // INICIO v17.6: Pasar el prefijo del mapa
         itemEl.innerHTML = createMemoryItemHTML(mem, showActions, mapIdPrefix);
-        // FIN v17.6
         fragment.appendChild(itemEl);
     });
     listEl.appendChild(fragment);
@@ -1073,25 +1099,22 @@ function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') {
 
 function updateMemoryList(memories) {
     _currentMemories = memories || [];
-    // Actualizar lista tanto en Edit como en Preview si está abierto
     const editList = document.getElementById('edit-memorias-list');
-    if (editList) _renderMemoryList(editList, _currentMemories, true, 'edit'); // v17.6: prefijo 'edit'
+    if (editList) _renderMemoryList(editList, _currentMemories, true, 'edit'); 
     
     const previewList = document.getElementById('preview-memorias-list');
     if (previewList && previewModal.classList.contains('visible') && _currentDay) {
-         _renderMemoryList(previewList, _currentMemories, false, 'preview'); // v17.6: prefijo 'preview'
+         _renderMemoryList(previewList, _currentMemories, false, 'preview'); 
          
-         // INICIO v17.6: Reinicializar mapas en preview si se actualiza la lista
          _destroyActiveMaps();
          setTimeout(() => _initMapsInContainer(previewList, 'preview'), 10);
-         // FIN v17.6
     }
 }
 
 
-function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6: Añadido mapIdPrefix
+function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { 
     if (!mem) return '';
-    const memId = (mem && mem.id) ? mem.id : ''; // Asegurarse de que memId se define aquí
+    const memId = (mem && mem.id) ? mem.id : ''; 
 
     let yearStr = 'Año desc.';
     if (mem.Fecha_Original) {
@@ -1105,21 +1128,17 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6:
     let artworkHTML = '';
     let icon = 'article';
     
-    // INICIO v17.6: Variable para el mapa
     let mapHTML = '';
-    // FIN v17.6
 
     switch (mem.Tipo) {
         case 'Lugar':
             icon = 'place';
             contentHTML += `${mem.LugarNombre || 'Lugar sin nombre'}`;
-            // INICIO v17.6: Añadir div de mapa si hay datos
             if (mem.LugarData && mem.LugarData.lat && mem.LugarData.lon) {
                 const lat = mem.LugarData.lat;
                 const lon = mem.LugarData.lon;
-                const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}`; // ID único para el contenedor
+                const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}`; 
                 
-                // Determinar la clase CSS basada en el prefijo
                 const mapClass = (mapIdPrefix === 'spotlight') ? 'spotlight-map-container' : 'memoria-map-container';
                 
                 mapHTML = `<div id="${mapContainerId}" 
@@ -1128,11 +1147,9 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6:
                                 data-lon="${lon}" 
                                 data-zoom="13"></div>`;
             }
-            // FIN v17.6
             break;
         case 'Musica':
             icon = 'music_note';
-            // INICIO v2.1: Revertido a iTunes (y mantiene compatibilidad con Deezer si la hay)
             const trackName = mem.CancionData?.trackName || mem.CancionData?.title;
             const artistName = mem.CancionData?.artistName || mem.CancionData?.artist?.name;
             const artwork = mem.CancionData?.artworkUrl60 || mem.CancionData?.album?.cover_small;
@@ -1145,7 +1162,6 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6:
             } else {
                 contentHTML += `${mem.CancionInfo || 'Canción sin nombre'}`;
             }
-            // FIN v2.1
             break;
         case 'Imagen':
             icon = 'image';
@@ -1158,7 +1174,7 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6:
         default:
             icon = 'article';
             const desc = mem.Descripcion || 'Nota vacía';
-            contentHTML += desc; // CAMBIO: Quitar truncado JS, se hará con CSS
+            contentHTML += desc; 
             break;
     }
 
@@ -1176,7 +1192,6 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6:
             </button>
         </div>` : '';
 
-    // INICIO v17.6: Modificado para agrupar contenido principal
     const mainContentHTML = `
         <div class="memoria-item-main-content ${mapIdPrefix === 'spotlight' ? 'spotlight-item-main-content' : ''}">
             ${artworkHTML}
@@ -1185,45 +1200,35 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6:
         </div>
     `;
     
-    // Retornar contenido principal + mapa (si existe)
     return mainContentHTML + mapHTML;
-    // FIN v17.6
 }
 
-// --- INICIO V4.23: Funciones Helper Restauradas ---
 function createStoreCategoryButton(type, icon, label) {
     const btn = document.createElement('button');
     btn.className = 'store-category-button';
     btn.dataset.type = type;
     
-    // --- INICIO CAMBIO v4.24: Ajuste de HTML para CSS ---
     btn.innerHTML = `
         <span class="material-icons-outlined">${icon}</span>
         <span>${label}</span>
         <span class="material-icons-outlined">chevron_right</span>
     `;
-    // --- FIN CAMBIO v4.24 ---
     return btn;
 }
 
 function createStoreListItem(item) {
-    // Usamos el estilo .memoria-item (definido en style.css)
     const itemEl = document.createElement('div');
     itemEl.className = 'memoria-item';
     itemEl.dataset.diaId = item.diaId;
     
-    // Añadimos 'cursor: pointer' para que parezca clicable
     itemEl.style.cursor = 'pointer';
 
-    // --- INICIO CAMBIO v4.24: Nueva estructura HTML para Almacén ---
-    
     let artworkHTML = '';
     let topHTML = '';
     let bottomHTML = '';
-    let icon = 'label'; // Icono por defecto
+    let icon = 'label'; 
 
     if (item.type === 'Nombres') {
-        // Renderizado especial para Días Nombrados
         icon = 'label';
         topHTML = `<div class="store-item-top">
                         ${item.Nombre_Especial} 
@@ -1232,7 +1237,6 @@ function createStoreListItem(item) {
         bottomHTML = `<div class="store-item-bottom">Día nombrado</div>`;
 
     } else {
-        // Renderizado para Memorias (Texto, Lugar, Musica, Imagen)
         let yearStr = 'Año desc.';
         if (item.Fecha_Original) {
             try {
@@ -1285,7 +1289,6 @@ function createStoreListItem(item) {
         artworkHTML = `<span class="memoria-icon material-icons-outlined">${icon}</span>`;
     }
 
-    // Ensamblar el HTML final
     itemEl.innerHTML = `
         <div class="store-item-artwork">${artworkHTML}</div>
         <div class="store-item-details">
@@ -1293,11 +1296,9 @@ function createStoreListItem(item) {
             ${bottomHTML}
         </div>
     `;
-    // --- FIN CAMBIO v4.24 ---
 
     return itemEl;
 }
-// --- FIN V4.23 ---
 
 
 // --- Lógica del Formulario de Memorias ---
@@ -1312,11 +1313,10 @@ function _handleFormSubmit(e) {
         saveBtn.textContent = 'Guardando...';
 
         let diaId;
-         if (_currentDay) { // Modo Editar (día viene de _currentDay)
+         if (_currentDay) { 
              diaId = _currentDay.id;
-        } else { // Modo Añadir (día viene del select)
+        } else { 
             diaId = document.getElementById('edit-mem-day').value;
-            // ***** CAMBIO: Usa _allDaysData del módulo *****
             _currentDay = _allDaysData.find(d => d.id === diaId) || null; 
             if(!_currentDay) {
                 console.error("Error crítico: No se encontró el día seleccionado en _allDaysData:", diaId);
@@ -1343,14 +1343,12 @@ function _handleFormSubmit(e) {
             case 'Lugar':
                 if (_selectedPlace) {
                     formData.LugarNombre = _selectedPlace.name;
-                    // INICIO v17.6: Asegurar que guardamos lat/lon
                     formData.LugarData = {
                         display_name: _selectedPlace.data.display_name,
                         lat: _selectedPlace.data.lat,
                         lon: _selectedPlace.data.lon,
                         osm_id: _selectedPlace.data.osm_id
                     };
-                    // FIN v17.6
                 } else {
                     formData.LugarNombre = document.getElementById('memoria-place-search').value;
                     formData.LugarData = null;
@@ -1358,9 +1356,7 @@ function _handleFormSubmit(e) {
                 break;
             case 'Musica':
                  if (_selectedMusic) {
-                    // INICIO v2.1: Revertido a iTunes
                     formData.CancionInfo = `${_selectedMusic.trackName} - ${_selectedMusic.artistName}`;
-                    // Guardamos el objeto de iTunes
                     formData.CancionData = {
                         trackId: _selectedMusic.trackId,
                         trackName: _selectedMusic.trackName,
@@ -1368,7 +1364,6 @@ function _handleFormSubmit(e) {
                         artworkUrl60: _selectedMusic.artworkUrl60,
                         trackViewUrl: _selectedMusic.trackViewUrl
                      };
-                     // FIN v2.1
                 } else {
                     formData.CancionInfo = document.getElementById('memoria-music-search').value;
                     formData.CancionData = null;
@@ -1396,13 +1391,10 @@ function handleMemoryTypeChange() {
     if (type !== 'Lugar') showPlaceResults([]);
 }
 
-/**
- * CAMBIO v17.0: Ahora también muestra el formulario
- */
 function fillFormForEdit(mem) {
     if (!mem) return;
 
-    resetMemoryForm(); // Limpia el formulario
+    resetMemoryForm(); 
     _isEditingMemory = true;
 
     const form = document.getElementById('memory-form');
@@ -1433,15 +1425,14 @@ function fillFormForEdit(mem) {
         case 'Lugar':
             document.getElementById('memoria-place-search').value = mem.LugarNombre || '';
             if (mem.LugarData) {
-                // v17.6: _selectedPlace espera {name, data}
                 _selectedPlace = { name: mem.LugarNombre, data: mem.LugarData };
-                showPlaceResults([_selectedPlace.data], true); // Pasar solo la data
+                showPlaceResults([_selectedPlace.data], true); 
             }
             break;
         case 'Musica':
              document.getElementById('memoria-music-search').value = mem.CancionInfo || '';
              if (mem.CancionData) {
-                _selectedMusic = mem.CancionData; // Objeto iTunes (o Deezer antiguo)
+                _selectedMusic = mem.CancionData; 
                 showMusicResults([_selectedMusic], true);
              }
             break;
@@ -1454,7 +1445,6 @@ function fillFormForEdit(mem) {
             break;
     }
 
-    // Mostrar el formulario
     _showMemoryForm(true);
 
     document.querySelector('.modal-content-scrollable')?.scrollTo({
@@ -1462,9 +1452,6 @@ function fillFormForEdit(mem) {
         behavior: 'smooth'
     });
 }
-
-
-// --- INICIO V4.23: Funciones Helper de Formulario Restauradas ---
 
 function resetMemoryForm() {
     _isEditingMemory = false;
@@ -1474,26 +1461,22 @@ function resetMemoryForm() {
     const form = document.getElementById('memory-form');
     if (!form) return;
 
-    form.reset(); // Limpia todos los inputs, textareas, selects
+    form.reset(); 
     form.dataset.editingId = '';
     form.dataset.existingImageUrl = '';
 
-    // Limpiar resultados de búsqueda
     showMusicResults([]);
     showPlaceResults([]);
 
-    // Limpiar mensajes de estado
     showModalStatus('memoria-status', '', false);
     showModalStatus('image-upload-status', '', false);
     
-    // Resetear botón de guardar
     const saveBtn = document.getElementById('save-memoria-btn');
     if (saveBtn) {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Añadir Memoria';
     }
 
-    // Asegurarse de que el tipo de memoria 'Texto' esté visible
     handleMemoryTypeChange();
 }
 
@@ -1505,10 +1488,9 @@ function showPlaceResults(places, isSelected = false) {
 
     if (isSelected && places.length > 0) {
         const place = places[0];
-        // v17.6: _selectedPlace espera {name, data}
         _selectedPlace = { 
-            name: place.display_name.split(',')[0], // Coger solo el nombre
-            data: place // Guardar toda la data
+            name: place.display_name.split(',')[0], 
+            data: place 
         };
         resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${_selectedPlace.name}</p>`;
         return;
@@ -1532,7 +1514,6 @@ function showPlaceResults(places, isSelected = false) {
             <span class="material-icons-outlined">add_circle_outline</span>
         `;
         itemEl.addEventListener('click', () => {
-             // v17.6: _selectedPlace espera {name, data}
             _selectedPlace = { name: name, data: place };
             document.getElementById('memoria-place-search').value = name;
             resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${name}</p>`;
@@ -1552,7 +1533,6 @@ function showModalStatus(elementId, message, isError) {
         statusEl.classList.remove('error');
     }
 
-    // Borrar mensaje después de 3 segundos si no es un error
     if (!isError && message !== '') {
         setTimeout(() => {
             if (statusEl.textContent === message) {
@@ -1568,14 +1548,12 @@ function showCrumbieAnimation(message) {
     floatText.textContent = message;
     document.body.appendChild(floatText);
 
-    // Eliminar el elemento después de la animación
     floatText.addEventListener('animationend', () => {
         if (floatText.parentNode) {
             floatText.parentNode.removeChild(floatText);
         }
     });
 }
-// --- FIN V4.23 ---
 
 
 function showMusicResults(tracks, isSelected = false) {
@@ -1586,22 +1564,18 @@ function showMusicResults(tracks, isSelected = false) {
 
     if (isSelected && tracks.length > 0) {
         const track = tracks[0];
-        _selectedMusic = track; // Guardar el objeto completo (iTunes o Deezer)
-        // INICIO v2.1: Manejar ambos formatos (iTunes y Deezer antiguo)
+        _selectedMusic = track; 
         const displayName = track.trackName || track.title;
         resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${displayName}</p>`;
-        // FIN v2.1
         return;
     }
 
-    if (!tracks || tracks.length === 0) return; // v17.6: Chequeo de nulidad
+    if (!tracks || tracks.length === 0) return; 
 
     tracks.forEach(track => {
-        // INICIO v2.1: Revertido a iTunes
         const trackName = track.trackName;
         const artistName = track.artistName;
         const artwork = track.artworkUrl60;
-        // FIN v2.1
 
         const itemEl = document.createElement('div');
         itemEl.className = 'search-result-item';
@@ -1614,7 +1588,7 @@ function showMusicResults(tracks, isSelected = false) {
             <span class="material-icons-outlined">add_circle_outline</span>
         `;
         itemEl.addEventListener('click', () => {
-            _selectedMusic = track; // Guardar el objeto completo de iTunes
+            _selectedMusic = track; 
             document.getElementById('memoria-music-search').value = `${trackName} - ${artistName}`;
             resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${trackName}</p>`;
         });
@@ -1626,6 +1600,10 @@ function showMusicResults(tracks, isSelected = false) {
 // --- Exportaciones Públicas ---
 export const ui = {
     init,
+    // INICIO CAMBIO
+    showApp,
+    updateAllDaysData,
+    // FIN CAMBIO
     setLoading,
     updateLoginUI,
     drawCalendar,
