@@ -1,5 +1,5 @@
 /*
- * main.js (v4.15 - Modal Redesign)
+ * main.js (v4.17 - Revertido a iTunes v2.1)
  * Controlador principal de Ephemerides.
  */
 
@@ -19,7 +19,9 @@ import {
     getNamedDays,
     uploadImage
 } from './store.js';
-import { searchiTunes, searchNominatim } from './api.js';
+// INICIO v2.1: Revertido a iTunes
+import { searchMusic, searchNominatim } from './api.js'; 
+// FIN v2.1
 import { ui } from './ui.js';
 
 // --- Estado Global de la App ---
@@ -39,7 +41,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v4.15 (Modal Redesign)...");
+    console.log("Iniciando Ephemerides v4.17 (iTunes Direct v2.1)...");
 
     try {
         ui.setLoading("Iniciando...", true);
@@ -120,7 +122,7 @@ function getUICallbacks() {
         onSaveDayName: handleSaveDayName,
         onSaveMemory: handleSaveMemorySubmit,
         onDeleteMemory: handleDeleteMemory,
-        onSearchMusic: handleMusicSearch,
+        onSearchMusic: handleMusicSearch, // El nombre del callback no cambia
         onSearchPlace: handlePlaceSearch,
         onStoreCategoryClick: handleStoreCategoryClick,
         onStoreLoadMore: handleStoreLoadMore,
@@ -267,7 +269,7 @@ async function handleFooterAction(action) {
             break;
 
         case 'settings':
-            ui.showAlert("Settings\n\nApp Version: 4.15\nMore settings coming soon!", 'settings');
+            ui.showAlert("Settings\n\nApp Version: 4.17 (iTunes v2.1)\nMore settings coming soon!", 'settings');
             break;
 
 
@@ -459,15 +461,13 @@ async function handleDeleteMemory(diaId, mem) {
 async function handleMusicSearch(term) {
     if (!term || term.trim() === '') return;
     try {
-        const results = await searchiTunes(term.trim());
-        if (results && results.results) {
-            ui.showMusicResults(results.results);
-        } else {
-             ui.showMusicResults([]);
-        }
+        // INICIO v2.1: Revertido a iTunes
+        const results = await searchMusic(term.trim());
+        ui.showMusicResults(results); // ui.js ahora espera el formato de iTunes
+        // FIN v2.1
     } catch (err) {
-        console.error("Error en búsqueda de iTunes:", err);
-        ui.showModalStatus('memoria-status', `Error API iTunes: ${err.message}`, true);
+        console.error("Error en búsqueda de música:", err);
+        ui.showModalStatus('memoria-status', `Error API Música: ${err.message}`, true);
     }
 }
 
