@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.19.1 - Debugging missing edit buttons)
+ * ui.js (v4.19.2 - Integración de Leaflet y fix UI)
  * Módulo de interfaz de usuario.
  */
 
@@ -22,10 +22,14 @@ let editModal = null;
 let storeModal = null;
 let storeListModal = null;
 
+// INICIO v17.6: Array para gestionar mapas Leaflet
+let _activeMaps = [];
+// FIN v17.6
+
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v4.19.1 - Debugging missing edit buttons)");
+    console.log("UI Module init (v4.19.2 - Integración Leaflet)");
     callbacks = mainCallbacks;
 
     _bindHeaderEvents();
@@ -217,7 +221,9 @@ function updateSpotlight(dateString, dayName, memories) {
             itemEl.classList.add('spotlight-item-text');
         }
 
-        itemEl.innerHTML = createMemoryItemHTML(mem, false);
+        // INICIO v17.6: Usar 'spotlight' como prefijo de ID de mapa
+        itemEl.innerHTML = createMemoryItemHTML(mem, false, 'spotlight');
+        // FIN v17.6
 
         itemEl.addEventListener('click', () => {
              const diaObj = _allDaysData.find(d => d.id === mem.diaId);
@@ -230,6 +236,10 @@ function updateSpotlight(dateString, dayName, memories) {
 
         containerEl.appendChild(itemEl);
     });
+    
+    // INICIO v17.6: Inicializar mapas DESPUÉS de añadirlos al DOM
+    _initMapsInContainer(containerEl, 'spotlight');
+    // FIN v17.6
 }
 
 
@@ -290,15 +300,25 @@ function openPreviewModal(dia, memories) {
     const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
     if (titleEl) titleEl.textContent = `${dia.Nombre_Dia}${dayName}`;
 
-    _renderMemoryList(listEl, memories, false);
+    _renderMemoryList(listEl, memories, false, 'preview'); // v17.6: Añadido prefijo 'preview'
 
     previewModal.style.display = 'flex';
-    setTimeout(() => previewModal.classList.add('visible'), 10);
+    setTimeout(() => {
+        previewModal.classList.add('visible');
+        // INICIO v17.6: Inicializar mapas DESPUÉS de que el modal sea visible
+        _initMapsInContainer(listEl, 'preview');
+        // FIN v17.6
+    }, 10);
 }
 
 function closePreviewModal() {
     if (!previewModal) return;
     previewModal.classList.remove('visible');
+    
+    // INICIO v17.6: Destruir mapas activos al cerrar
+    _destroyActiveMaps();
+    // FIN v17.6
+    
     setTimeout(() => {
         previewModal.style.display = 'none';
         _currentDay = null;
@@ -918,7 +938,97 @@ function showConfirm(message) {
 
 
 // --- Funciones de Ayuda (Helpers) de UI ---
-function _renderMemoryList(listEl, memories, showActions) {
+
+// INICIO v17.6: Nueva función para renderizar mapas
+/**
+ * Renderiza un mapa Leaflet en un contenedor.
+ * @param {string} containerId - El ID del elemento div.
+ * @param {number} lat - Latitud.
+ * @param {number} lon - Longitud.
+ * @param {number} zoom - Nivel de zoom (default 13).
+ */
+function _renderMap(containerId, lat, lon, zoom = 13) {
+    try {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.warn(`Contenedor de mapa no encontrado: #${containerId}`);
+            return;
+        }
+
+        // Evitar reinicialización si ya existe un mapa
+        if (container._leaflet_id) {
+            return;
+        }
+        
+        // Verificar que L (Leaflet) esté cargado
+        if (typeof L === 'undefined') {
+            console.error("Leaflet (L) no está definido. Asegúrate de que el script está cargado.");
+            container.innerHTML = '<p style="color: red; padding: 10px;">Error al cargar mapa.</p>';
+            return;
+        }
+
+        const map = L.map(containerId, {
+            center: [lat, lon],
+            zoom: zoom,
+            zoomControl: false, // Sin controles de zoom
+            dragging: false, // No se puede arrastrar
+            scrollWheelZoom: false, // Sin zoom con rueda
+            doubleClickZoom: false, // Sin doble click
+            touchZoom: false, // Sin zoom táctil
+            attributionControl: false // Sin atribución
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        L.marker([lat, lon]).addTo(map);
+
+        _activeMaps.push(map); // Añadir al array para gestión
+
+    } catch (e) {
+        console.error(`Error al renderizar mapa en #${containerId}:`, e);
+    }
+}
+
+/**
+ * Busca y renderiza todos los mapas pendientes en un contenedor.
+ * @param {HTMLElement} containerEl - El elemento padre (p.ej. preview-list)
+ * @param {string} prefix - El prefijo usado para los IDs ('spotlight' o 'preview')
+ */
+function _initMapsInContainer(containerEl, prefix) {
+    if (!containerEl) return;
+    
+    const mapDivs = containerEl.querySelectorAll('.memoria-map-container, .spotlight-map-container');
+    
+    mapDivs.forEach(div => {
+        if (div.dataset.lat && div.dataset.lon) {
+            const lat = parseFloat(div.dataset.lat);
+            const lon = parseFloat(div.dataset.lon);
+            const zoom = div.dataset.zoom ? parseInt(div.dataset.zoom) : 13;
+            // El ID ya debe estar puesto (p.ej. "preview-map-XYZ")
+            if (div.id) { 
+                _renderMap(div.id, lat, lon, zoom);
+            }
+        }
+    });
+}
+
+/**
+ * Destruye todas las instancias de mapas activas (para cerrar modales).
+ */
+function _destroyActiveMaps() {
+    _activeMaps.forEach(map => {
+        if (map && map.remove) {
+            map.remove();
+        }
+    });
+    _activeMaps = []; // Limpiar el array
+}
+// FIN v17.6
+
+
+function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') { // v17.6: Añadido mapIdPrefix
     if (!listEl) return;
     listEl.innerHTML = '';
 
@@ -937,7 +1047,9 @@ function _renderMemoryList(listEl, memories, showActions) {
     memories.forEach(mem => {
         const itemEl = document.createElement('div');
         itemEl.className = 'memoria-item';
-        itemEl.innerHTML = createMemoryItemHTML(mem, showActions);
+        // INICIO v17.6: Pasar el prefijo del mapa
+        itemEl.innerHTML = createMemoryItemHTML(mem, showActions, mapIdPrefix);
+        // FIN v17.6
         fragment.appendChild(itemEl);
     });
     listEl.appendChild(fragment);
@@ -947,15 +1059,21 @@ function updateMemoryList(memories) {
     _currentMemories = memories || [];
     // Actualizar lista tanto en Edit como en Preview si está abierto
     const editList = document.getElementById('edit-memorias-list');
-    if (editList) _renderMemoryList(editList, _currentMemories, true);
+    if (editList) _renderMemoryList(editList, _currentMemories, true, 'edit'); // v17.6: prefijo 'edit'
+    
     const previewList = document.getElementById('preview-memorias-list');
     if (previewList && previewModal.classList.contains('visible') && _currentDay) {
-         _renderMemoryList(previewList, _currentMemories, false);
+         _renderMemoryList(previewList, _currentMemories, false, 'preview'); // v17.6: prefijo 'preview'
+         
+         // INICIO v17.6: Reinicializar mapas en preview si se actualiza la lista
+         _destroyActiveMaps();
+         setTimeout(() => _initMapsInContainer(previewList, 'preview'), 10);
+         // FIN v17.6
     }
 }
 
 
-function createMemoryItemHTML(mem, showActions) {
+function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6: Añadido mapIdPrefix
     if (!mem) return '';
     const memId = (mem && mem.id) ? mem.id : ''; // Asegurarse de que memId se define aquí
 
@@ -970,11 +1088,31 @@ function createMemoryItemHTML(mem, showActions) {
     let contentHTML = `<small>${yearStr}</small>`;
     let artworkHTML = '';
     let icon = 'article';
+    
+    // INICIO v17.6: Variable para el mapa
+    let mapHTML = '';
+    // FIN v17.6
 
     switch (mem.Tipo) {
         case 'Lugar':
             icon = 'place';
             contentHTML += `${mem.LugarNombre || 'Lugar sin nombre'}`;
+            // INICIO v17.6: Añadir div de mapa si hay datos
+            if (mem.LugarData && mem.LugarData.lat && mem.LugarData.lon) {
+                const lat = mem.LugarData.lat;
+                const lon = mem.LugarData.lon;
+                const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}`; // ID único para el contenedor
+                
+                // Determinar la clase CSS basada en el prefijo
+                const mapClass = (mapIdPrefix === 'spotlight') ? 'spotlight-map-container' : 'memoria-map-container';
+                
+                mapHTML = `<div id="${mapContainerId}" 
+                                class="${mapClass}" 
+                                data-lat="${lat}" 
+                                data-lon="${lon}" 
+                                data-zoom="13"></div>`;
+            }
+            // FIN v17.6
             break;
         case 'Musica':
             icon = 'music_note';
@@ -1008,7 +1146,7 @@ function createMemoryItemHTML(mem, showActions) {
 
     // DEBUG: Comprobar datos al renderizar ítem en lista de edición
     if (showActions) {
-        console.log("Renderizando ítem (Editar Día):", mem);
+        // console.log("Renderizando ítem (Editar Día):", mem); // DEBUG Original
     }
 
     const actionsHTML = (showActions && memId) ? `
@@ -1021,7 +1159,18 @@ function createMemoryItemHTML(mem, showActions) {
             </button>
         </div>` : '';
 
-    return `${artworkHTML}<div class="memoria-item-content">${contentHTML}</div>${actionsHTML}`;
+    // INICIO v17.6: Modificado para agrupar contenido principal
+    const mainContentHTML = `
+        <div class="memoria-item-main-content ${mapIdPrefix === 'spotlight' ? 'spotlight-item-main-content' : ''}">
+            ${artworkHTML}
+            <div class="memoria-item-content">${contentHTML}</div>
+            ${actionsHTML}
+        </div>
+    `;
+    
+    // Retornar contenido principal + mapa (si existe)
+    return mainContentHTML + mapHTML;
+    // FIN v17.6
 }
 
 function createStoreCategoryButton(type, icon, label) {
@@ -1053,7 +1202,11 @@ function createStoreListItem(item) {
         itemEl.dataset.diaId = item.diaId;
         itemEl.dataset.id = item.id;
 
-        const memoryHTML = createMemoryItemHTML(item, false);
+        // v17.6: Renderizar sin mapa en el almacén (mapIdPrefix='store')
+        // createMemoryItemHTML ahora devuelve el main-content + mapHTML
+        // Necesitamos envolverlo si no hay mapa
+        const memoryHTML = createMemoryItemHTML(item, false, 'store');
+        
         contentHTML = `
             ${memoryHTML}
             <div class="store-item-day-ref">${item.Nombre_Dia}</div>
@@ -1128,7 +1281,14 @@ function _handleFormSubmit(e) {
             case 'Lugar':
                 if (_selectedPlace) {
                     formData.LugarNombre = _selectedPlace.name;
-                    formData.LugarData = _selectedPlace.data;
+                    // INICIO v17.6: Asegurar que guardamos lat/lon
+                    formData.LugarData = {
+                        display_name: _selectedPlace.data.display_name,
+                        lat: _selectedPlace.data.lat,
+                        lon: _selectedPlace.data.lon,
+                        osm_id: _selectedPlace.data.osm_id
+                    };
+                    // FIN v17.6
                 } else {
                     formData.LugarNombre = document.getElementById('memoria-place-search').value;
                     formData.LugarData = null;
@@ -1208,8 +1368,9 @@ function fillFormForEdit(mem) {
         case 'Lugar':
             document.getElementById('memoria-place-search').value = mem.LugarNombre || '';
             if (mem.LugarData) {
+                // v17.6: _selectedPlace espera {name, data}
                 _selectedPlace = { name: mem.LugarNombre, data: mem.LugarData };
-                showPlaceResults([_selectedPlace], true);
+                showPlaceResults([_selectedPlace.data], true); // Pasar solo la data
             }
             break;
         case 'Musica':
@@ -1282,7 +1443,7 @@ function showMusicResults(tracks, isSelected = false) {
         return;
     }
 
-    if (tracks.length === 0) return;
+    if (!tracks || tracks.length === 0) return; // v17.6: Chequeo de nulidad
 
     tracks.forEach(track => {
         const itemEl = document.createElement('div');
@@ -1312,14 +1473,15 @@ function showPlaceResults(places, isSelected = false) {
     _selectedPlace = null;
 
     if (isSelected && places.length > 0) {
-        const place = places[0];
-        _selectedPlace = { name: place.display_name, data: place }; // Guardar objeto completo
+        const place = places[0]; // place es el objeto data
+        // v17.6: Asegurar que guardamos el formato {name, data}
+        _selectedPlace = { name: place.display_name, data: place }; 
         resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${place.display_name}</p>`;
         return;
     }
 
 
-    if (places.length === 0) return;
+    if (!places || places.length === 0) return; // v17.6: Chequeo de nulidad
 
     places.forEach(place => {
         const itemEl = document.createElement('div');
@@ -1334,7 +1496,7 @@ function showPlaceResults(places, isSelected = false) {
         itemEl.addEventListener('click', () => {
             _selectedPlace = {
                 name: place.display_name,
-                data: place // Guardar objeto completo
+                data: place // Guardar objeto completo (incluye lat/lon)
             };
             document.getElementById('memoria-place-search').value = place.display_name;
             resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${place.display_name.substring(0, 40)}...</p>`;
