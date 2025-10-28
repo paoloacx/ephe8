@@ -1,61 +1,38 @@
 /* api.js */
 /* Módulo para gestionar llamadas a APIs externas (iTunes, Nominatim) */
-/* (v1.11 - Fetch como TEXTO para evitar SyntaxError) */
+/* (v2.1 - Eliminado &media=music que causaba el redirect a musics://) */
 
 /**
  * Busca canciones en la API de iTunes.
  * @param {string} term - El término de búsqueda.
  * @returns {Promise<object>} La respuesta JSON de la API.
  */
-export async function searchiTunes(term) {
-    // Usamos allorigins
-    const proxy = 'https://api.allorigins.win/get?url=';
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=5`;
-    const fetchUrl = proxy + encodeURIComponent(url);
+export async function searchMusic(term) { // Renombrado de searchiTunes a searchMusic
+    
+    // CAMBIO: Llamada directa SIN el parámetro '&media=music'.
+    // Esto es lo que hace tu app claude2 y evita la redirección a 'musics://'.
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=5`;
     
     try {
-        const response = await fetch(fetchUrl);
+        // Hacemos el fetch directamente a la API de iTunes
+        const response = await fetch(url);
+        
         if (!response.ok) {
-            // Error de red o del proxy (5xx)
-            throw new Error(`Error del proxy HTTP: ${response.status}`);
+            throw new Error(`iTunes API error! status: ${response.status}`);
         }
-
-        // 1. Obtener la respuesta como TEXTO
-        const responseText = await response.text();
-
-        if (!responseText) {
-            throw new Error("El proxy devolvió una respuesta vacía.");
-        }
-
-        // 2. Intentar parsear el TEXTO como JSON (la envoltura de allorigins)
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (e) {
-            // ¡Este es el error que veíamos!
-            console.error("La respuesta del proxy no fue JSON (probablemente un HTML de error):", responseText);
-            throw new Error("El proxy devolvió una respuesta inválida (HTML/Error).");
-        }
-
-        // 3. Si el JSON de allorigins es válido, procesar su contenido
-        if (data.contents) {
-            try {
-                // data.contents es OTRA CADENA JSON (la de iTunes)
-                const itunesData = JSON.parse(data.contents);
-                return itunesData; // ¡Éxito!
-            } catch (e) {
-                console.error("El 'contents' de allorigins no era un JSON válido:", data.contents);
-                throw new Error("El proxy no pudo obtener un JSON válido de iTunes.");
-            }
-        } else if (data.status && data.status.http_code >= 400) {
-             throw new Error(`Error de iTunes (via proxy): ${data.status.http_code}`);
-        } else {
-            throw new Error("El proxy devolvió un JSON inesperado (sin 'contents').");
-        }
+        
+        const data = await response.json();
+        
+        // La respuesta de iTunes está en 'data.results'
+        return data.results || [];
 
     } catch (error) {
-        console.error('iTunes API Error (allorigins v1.11):', error);
-        throw new Error(`Fallo en la API/Proxy: ${error.message}`);
+        console.error('iTunes API Error (Llamada Directa v2.1):', error);
+        if (error instanceof SyntaxError) {
+             throw new Error("Error al parsear la respuesta de iTunes.");
+        }
+        // Si el fetch falla (p.ej. sin conexión o el redirect 'musics://')
+        throw new Error(`Fallo en la llamada a iTunes: ${error.message}`);
     }
 }
 
@@ -65,6 +42,7 @@ export async function searchiTunes(term) {
  * @returns {Promise<object>} La respuesta JSON de la API.
  */
 export async function searchNominatim(term) {
+    // Nominatim funciona bien con llamada directa
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&limit=5`;
     
     try {
