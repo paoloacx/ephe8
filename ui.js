@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.25 - Implementa Muro de Login y updateAllDaysData)
+ * ui.js (v4.26 - Aumentado Límite Nombre Día a 60)
  * Módulo de interfaz de usuario.
  */
 
@@ -29,7 +29,7 @@ let _activeMaps = [];
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
-    console.log("UI Module init (v4.25 - Muro de Login)");
+    console.log("UI Module init (v4.26 - Límite Nombre Día)");
     callbacks = mainCallbacks;
     _allDaysData = allDays || []; // ***** CAMBIO: Almacena allDays *****
 
@@ -48,10 +48,8 @@ function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
     createStoreModal();
     createStoreListModal();
     
-    // INICIO CAMBIO: Crear el muro de login
     _createLoginWall();
     showApp(false); // Ocultar la app por defecto
-    // FIN CAMBIO
 }
 
 function _bindHeaderEvents() {
@@ -93,7 +91,6 @@ function _bindFooterEvents() {
 
 function _bindCrumbieEvents() {
     document.getElementById('crumbie-btn')?.addEventListener('click', () => {
-        // Llama al controlador principal para que decida qué hacer
         if (callbacks.onCrumbieClick) {
             callbacks.onCrumbieClick();
         }
@@ -115,7 +112,6 @@ function _bindLoginEvents() {
         }
     });
     
-    // Conectar el botón del Muro de Login
     document.body.addEventListener('click', (e) => {
         if (e.target.id === 'login-wall-btn') {
             if (callbacks.onLogin) callbacks.onLogin();
@@ -136,17 +132,13 @@ function _bindGlobalListeners() {
 
 // --- Funciones de Renderizado Principal ---
 
-/**
- * NUEVA FUNCIÓN (Paso 1)
- * Crea el HTML para el muro de login y lo añade al body.
- */
 function _createLoginWall() {
     let loginWall = document.getElementById('login-wall');
     if (loginWall) return;
 
     loginWall = document.createElement('div');
     loginWall.id = 'login-wall';
-    loginWall.style.display = 'none'; // Oculto por defecto
+    loginWall.style.display = 'none'; 
     loginWall.style.padding = '40px 20px';
     loginWall.style.textAlign = 'center';
     loginWall.style.color = '#fff';
@@ -159,7 +151,6 @@ function _createLoginWall() {
         </button>
     `;
     
-    // Insertar después del header
     const header = document.querySelector('header');
     if (header) {
         header.insertAdjacentElement('afterend', loginWall);
@@ -168,10 +159,6 @@ function _createLoginWall() {
     }
 }
 
-/**
- * NUEVA FUNCIÓN (Paso 1)
- * Muestra u oculta la aplicación principal (calendario, footer, etc.)
- */
 function showApp(show) {
     const mainElements = [
         document.querySelector('.month-nav'),
@@ -182,46 +169,35 @@ function showApp(show) {
     ];
     
     const loginWall = document.getElementById('login-wall');
-
-    const displayStyle = show ? '' : 'none'; // Mostrar o ocultar
+    const displayStyle = show ? '' : 'none'; 
     
     mainElements.forEach(el => {
         if (el) el.style.display = displayStyle;
     });
-
-    // La barra de header (con login/logout) siempre es visible
     
-    // Mostrar el muro de login si la app se oculta
     if (loginWall) {
         loginWall.style.display = show ? 'none' : 'block';
     }
     
-    // Si mostramos la app, limpiamos el mensaje de carga
     if (show) {
         setLoading(null, false);
     }
 }
 
-/**
- * NUEVA FUNCIÓN (Paso 1)
- * Permite a main.js actualizar la referencia de _allDaysData
- */
 function updateAllDaysData(allDays) {
     _allDaysData = allDays || [];
     console.log("UI: Referencia de allDaysData actualizada.");
 }
 
-
 function setLoading(message, show) {
     const appContent = document.getElementById('app-content');
     if (!appContent) return;
     if (show) {
-        // Si mostramos carga, ocultamos el muro de login
         const loginWall = document.getElementById('login-wall');
         if (loginWall) loginWall.style.display = 'none';
         
         appContent.innerHTML = `<p class="loading-message">${message}</p>`;
-        appContent.style.display = ''; // Asegurarse de que app-content es visible
+        appContent.style.display = ''; 
     } else {
         const loading = appContent.querySelector('.loading-message');
         if (loading) loading.remove();
@@ -276,14 +252,13 @@ function drawCalendar(monthName, days, todayId) {
 
 function updateSpotlight(dateString, dayName, memories) {
     const titleEl = document.getElementById('spotlight-date-header');
-    const listEl = document.getElementById('today-memory-spotlight'); // This is the main box
+    const listEl = document.getElementById('today-memory-spotlight'); 
 
-    if (titleEl) titleEl.textContent = dateString; // Solo la fecha
+    if (titleEl) titleEl.textContent = dateString; 
     if (!listEl) return;
 
-    listEl.innerHTML = ''; // Limpiar la caja principal
+    listEl.innerHTML = ''; 
 
-    // 1. Añadir el nombre del día (si existe)
     if (dayName) {
         const dayNameEl = document.createElement('h3');
         dayNameEl.className = 'spotlight-day-name';
@@ -291,11 +266,9 @@ function updateSpotlight(dateString, dayName, memories) {
         listEl.appendChild(dayNameEl);
     }
 
-    // 2. Crear el contenedor para las memorias
     const containerEl = document.createElement('div');
     containerEl.id = 'spotlight-memories-container';
     listEl.appendChild(containerEl);
-
 
     if (!memories || memories.length === 0) {
         const placeholder = document.createElement('p');
@@ -305,7 +278,6 @@ function updateSpotlight(dateString, dayName, memories) {
         return;
     }
 
-    // 3. Añadir memorias al contenedor
     memories.forEach(mem => {
         const itemEl = document.createElement('div');
         itemEl.className = 'spotlight-memory-item';
@@ -443,7 +415,7 @@ function createEditModal() {
                     <div class="modal-section" id="day-name-section" style="display: none;">
                         <h3 id="edit-modal-title"></h3>
                         <label for="nombre-especial-input">Nombrar este día:</label>
-                        <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="25">
+                        <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="60"> 
                         <button id="save-name-btn" class="aqua-button">Guardar Nombre</button>
                         <p id="save-status" class="status-message"></p>
                     </div>
@@ -1600,10 +1572,8 @@ function showMusicResults(tracks, isSelected = false) {
 // --- Exportaciones Públicas ---
 export const ui = {
     init,
-    // INICIO CAMBIO
     showApp,
     updateAllDaysData,
-    // FIN CAMBIO
     setLoading,
     updateLoginUI,
     drawCalendar,
