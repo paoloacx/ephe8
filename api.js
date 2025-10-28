@@ -1,6 +1,6 @@
 /* api.js */
 /* Módulo para gestionar llamadas a APIs externas (iTunes, Nominatim) */
-/* (v1.6 - Cambiado proxy iTunes a thingproxy) */
+/* (v1.7 - Cambiado proxy iTunes a corsproxy.io) */
 
 /**
  * Busca canciones en la API de iTunes.
@@ -8,14 +8,14 @@
  * @returns {Promise<object>} La respuesta JSON de la API.
  */
 export async function searchiTunes(term) {
-    // CAMBIO: Se usa 'thingproxy'. Este proxy NO necesita que la URL de destino esté codificada.
-    const proxy = 'https://thingproxy.freeboard.io/fetch/';
+    // CAMBIO: Se usa 'corsproxy.io'.
+    const proxy = 'https://corsproxy.io/?';
     
     // La URL de iTunes que queremos consultar
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=5`;
     
-    // La URL final para thingproxy (URL de iTunes NO va codificada)
-    const fetchUrl = proxy + url;
+    // La URL final para corsproxy.io (URL de iTunes DEBE ir codificada)
+    const fetchUrl = proxy + encodeURIComponent(url);
     
     try {
         const response = await fetch(fetchUrl);
@@ -23,7 +23,7 @@ export async function searchiTunes(term) {
             throw new Error(`Proxy HTTP error! status: ${response.status}`);
         }
         
-        // thingproxy devuelve el JSON directamente, no hay que desenvolver "contents"
+        // Este proxy devuelve el JSON directamente
         return await response.json(); 
 
     } catch (error) {
@@ -53,6 +53,6 @@ export async function searchNominatim(term) {
         return await response.json();
     } catch (error) {
         console.error('Nominatim API Error:', error);
-        throw error; // Lanza el error para que el controlador lo coja
+        throw new Error(`Nominatim API Error: ${error.message}`); // Lanza el error para que el controlador lo coja
     }
 }
