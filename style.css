@@ -1,4 +1,4 @@
-/* style.css - v17.5 - Re-añadido bloque de acciones de edición */
+/* style.css - v17.6 - Añadidos mapas Leaflet y fix UI modal */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -278,7 +278,7 @@ main {
     margin-bottom: 0; /* Sin margen */
     border-radius: 0; /* Sin radius en la celda */
     display: flex;
-    align-items: center;
+    flex-direction: column; /* CAMBIO: Columna para poner mapa debajo */
     gap: 8px;
     cursor: pointer;
 }
@@ -293,6 +293,14 @@ main {
     font-style: italic;
     padding: 15px;
     text-align: center;
+}
+
+/* Contenido superior del item (icono, año, texto) */
+.spotlight-item-main-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
 }
 
 .spotlight-memory-item small {
@@ -329,6 +337,18 @@ main {
     white-space: normal;
     line-height: 1.4;
 }
+
+/* --- INICIO v17.6: Estilos Mapa Spotlight --- */
+.spotlight-map-container {
+    height: 120px; /* Altura fija para el minimapa */
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid rgba(0,0,0,0.2);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    background-color: #eee; /* Fondo mientras carga */
+    margin-top: 5px; /* Espacio superior */
+}
+/* --- FIN v17.6 --- */
 
 
 /* --- Grid del Calendario (Estilo Original Restaurado v15.6) --- */
@@ -582,9 +602,17 @@ main {
     align-items: center;
     gap: 10px; /* Espacio entre select y botón */
     margin-bottom: 10px; /* Espacio debajo */
+    /* INICIO v17.6: Fix bug visual de overflow */
+    min-width: 0; /* Permite que el flex-item se encoja */
+    /* FIN v17.6 */
 }
 #edit-mem-day {
     flex-grow: 1; /* El select ocupa el espacio sobrante */
+    /* INICIO v17.6: Fix bug visual de overflow */
+    min-width: 0; /* Asegura que el select pueda encogerse */
+    overflow: hidden; /* Opcional, ayuda a truncar texto si es necesario */
+    text-overflow: ellipsis; /* Trunca el texto largo en la opción */
+    /* FIN v17.6 */
 }
 #btn-name-selected-day {
     flex-shrink: 0; /* El botón no se encoge */
@@ -689,6 +717,11 @@ main {
     min-height: 24px;
     display: flex; /* Flex para alinear mejor año y contenido */
     align-items: flex-start; /* Alinear arriba */
+    flex-direction: column; /* CAMBIO: Columna para mapa */
+}
+.modal-preview-notebook-paper .memoria-item-main-content {
+    display: flex;
+    align-items: flex-start;
 }
 .modal-preview-notebook-paper .memoria-item small { /* Año */
     color: #666;
@@ -725,6 +758,21 @@ main {
      font-style: italic;
      padding: 10px 0;
 }
+/* --- INICIO v17.6: Estilos Mapa Preview --- */
+.memoria-map-container {
+    height: 150px; /* Un poco más grande para el preview */
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    background-color: #eee; /* Fondo mientras carga */
+    margin-top: 10px; /* Espacio superior */
+    margin-bottom: 5px;
+    z-index: 1; /* Asegurar que esté sobre las líneas */
+    position: relative;
+}
+/* --- FIN v17.6 --- */
+
 .modal-preview-footer {
     display: flex;
     justify-content: space-around;
