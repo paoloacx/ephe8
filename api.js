@@ -1,6 +1,6 @@
 /* api.js */
 /* Módulo para gestionar llamadas a APIs externas (iTunes, Nominatim) */
-/* (v1.7 - Cambiado proxy iTunes a corsproxy.io) */
+/* (v1.8 - Cambiado proxy iTunes a api.codetabs.com) */
 
 /**
  * Busca canciones en la API de iTunes.
@@ -8,14 +8,14 @@
  * @returns {Promise<object>} La respuesta JSON de la API.
  */
 export async function searchiTunes(term) {
-    // CAMBIO: Se usa 'corsproxy.io'.
-    const proxy = 'https://corsproxy.io/?';
+    // CAMBIO: Se usa 'api.codetabs.com'.
+    const proxy = 'https://api.codetabs.com/v1/proxy?quest=';
     
     // La URL de iTunes que queremos consultar
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=5`;
     
-    // La URL final para corsproxy.io (URL de iTunes DEBE ir codificada)
-    const fetchUrl = proxy + encodeURIComponent(url);
+    // La URL final para codetabs (la URL de destino NO necesita codificación extra)
+    const fetchUrl = proxy + url;
     
     try {
         const response = await fetch(fetchUrl);
