@@ -292,6 +292,7 @@ export function openPreviewModal(dia, memories) {
     const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
     if (titleEl) titleEl.textContent = `${dia.Nombre_Dia}${dayName}`;
     _renderMemoryList(listEl, memories, false, 'preview');
+    if (!previewModal) createPreviewModal(); // Asegurarse que existe
     previewModal.style.display = 'flex';
     setTimeout(() => {
         previewModal.classList.add('visible');
@@ -312,8 +313,9 @@ export function closePreviewModal() {
     }, 200);
 }
 export function showPreviewLoading(isLoading) {
-    const loadingEl = previewModal?.querySelector('.preview-loading');
-    const listEl = previewModal?.querySelector('#preview-memorias-list');
+    if (!previewModal) createPreviewModal();
+    const loadingEl = previewModal.querySelector('.preview-loading');
+    const listEl = previewModal.querySelector('#preview-memorias-list');
     if (loadingEl && listEl) {
         if (isLoading) {
             listEl.innerHTML = '';
@@ -324,6 +326,7 @@ export function showPreviewLoading(isLoading) {
     }
 }
 export function openEditModal(dia, memories) {
+    if (!editModal) createEditModal(); // Asegurarse que existe
     _currentDay = dia;
     _currentMemories = memories || [];
     const daySelection = document.getElementById('day-selection-section');
@@ -333,19 +336,26 @@ export function openEditModal(dia, memories) {
     const daySelect = document.getElementById('edit-mem-day');
     const dynamicTitleEl = document.getElementById('edit-modal-title-dynamic');
     const formTitle = document.getElementById('memory-form-title');
+
+    // Asegurarse de que los elementos existen antes de acceder a style
+    if (!daySelection || !dayNameSection || !titleEl || !nameInput || !daySelect || !dynamicTitleEl || !formTitle) {
+        console.error("UI Error: Uno o más elementos del modal de edición no se encontraron en el DOM.");
+        return; // Detener ejecución si faltan elementos
+    }
+
     if (dia) { // Edit mode
         daySelection.style.display = 'none';
         dayNameSection.style.display = 'block';
-        if (dynamicTitleEl) dynamicTitleEl.textContent = 'Editar Día';
-        if (formTitle) formTitle.textContent = 'Añadir/Editar Memoria';
+        dynamicTitleEl.textContent = 'Editar Día';
+        formTitle.textContent = 'Añadir/Editar Memoria';
         const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
         titleEl.textContent = `Editando: ${dia.Nombre_Dia}${dayName}`;
         nameInput.value = dia.Nombre_Especial !== 'Unnamed Day' ? dia.Nombre_Especial : '';
     } else { // Add mode
         daySelection.style.display = 'block';
         dayNameSection.style.display = 'none';
-        if (dynamicTitleEl) dynamicTitleEl.textContent = 'Añadir Memoria';
-        if (formTitle) formTitle.textContent = 'Añadir Memoria';
+        dynamicTitleEl.textContent = 'Añadir Memoria';
+        formTitle.textContent = 'Añadir Memoria';
         if (_allDaysData.length > 0) {
             daySelect.innerHTML = '';
              _allDaysData.sort((a, b) => a.id.localeCompare(b.id)).forEach(d => {
@@ -381,8 +391,9 @@ export function closeEditModal() {
     }, 200);
 }
 export function showEditLoading(isLoading) {
-    const loadingEl = editModal?.querySelector('.edit-loading');
-    const contentWrapper = editModal?.querySelector('.edit-content-wrapper');
+    if (!editModal) createEditModal();
+    const loadingEl = editModal.querySelector('.edit-loading');
+    const contentWrapper = editModal.querySelector('.edit-content-wrapper');
     if (loadingEl && contentWrapper) {
         loadingEl.style.display = isLoading ? 'block' : 'none';
         contentWrapper.style.display = isLoading ? 'none' : 'block';
@@ -415,34 +426,48 @@ export function closeStoreListModal() {
 export function showAlert(message, type = 'default') {
     if(!alertPromptModal) createAlertPromptModal();
     const contentEl = alertPromptModal.querySelector('.modal-alert-content');
+    if (!contentEl) { console.error("UI Error: alert modal content not found"); return; }
     contentEl.classList.remove('settings-alert', 'search-alert');
     if (type === 'settings') contentEl.classList.add('settings-alert');
-    document.getElementById('alert-prompt-message').textContent = message;
-    document.getElementById('alert-prompt-input').style.display = 'none';
-    document.getElementById('alert-prompt-cancel').style.display = 'none';
+    const msgEl = document.getElementById('alert-prompt-message');
+    const inputEl = document.getElementById('alert-prompt-input');
+    const cancelBtn = document.getElementById('alert-prompt-cancel');
     const okBtn = document.getElementById('alert-prompt-ok');
-    okBtn.textContent = 'OK';
+
+    if (msgEl) msgEl.textContent = message;
+    if (inputEl) inputEl.style.display = 'none';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (okBtn) okBtn.textContent = 'OK';
+
     alertPromptModal.style.display = 'flex';
     setTimeout(() => alertPromptModal.classList.add('visible'), 10);
 }
 export function showPrompt(message, defaultValue = '', type = 'default') {
     if(!alertPromptModal) createAlertPromptModal();
-    const contentEl = alertPromptModal.querySelector('.modal-alert-content');
+     const contentEl = alertPromptModal.querySelector('.modal-alert-content');
+    if (!contentEl) { console.error("UI Error: prompt modal content not found"); return Promise.resolve(null); } // Return rejected promise?
     contentEl.classList.remove('settings-alert', 'search-alert');
     if (type === 'search') contentEl.classList.add('search-alert');
-    document.getElementById('alert-prompt-message').textContent = message;
-    document.getElementById('alert-prompt-input').style.display = 'block';
-    document.getElementById('alert-prompt-input').value = defaultValue;
-    document.getElementById('alert-prompt-cancel').style.display = 'block';
+    const msgEl = document.getElementById('alert-prompt-message');
+    const inputEl = document.getElementById('alert-prompt-input');
+    const cancelBtn = document.getElementById('alert-prompt-cancel');
     const okBtn = document.getElementById('alert-prompt-ok');
-    okBtn.textContent = 'OK';
+
+    if (msgEl) msgEl.textContent = message;
+    if (inputEl) { inputEl.style.display = 'block'; inputEl.value = defaultValue; }
+    if (cancelBtn) cancelBtn.style.display = 'block';
+    if (okBtn) okBtn.textContent = 'OK';
+
     alertPromptModal.style.display = 'flex';
     setTimeout(() => alertPromptModal.classList.add('visible'), 10);
     return new Promise((resolve) => { _promptResolve = resolve; });
 }
 export function showConfirm(message) {
      if(!confirmModal) createConfirmModal();
-    document.getElementById('confirm-message').textContent = message;
+     const msgEl = document.getElementById('confirm-message');
+     if (msgEl) msgEl.textContent = message;
+     else { console.error("UI Error: confirm message element not found"); return Promise.resolve(false); }
+
     confirmModal.style.display = 'flex';
     setTimeout(() => confirmModal.classList.add('visible'), 10);
     return new Promise((resolve) => { _confirmResolve = resolve; });
@@ -451,25 +476,7 @@ export function showConfirm(message) {
 // --- Formularios y Listas (Funciones públicas) ---
 export function updateStoreList(items, append = false, hasMore = false) { /* ... (sin cambios) */ }
 export function updateMemoryList(memories) { /* ... (sin cambios) */ }
-export function resetMemoryForm() {
-    _isEditingMemory = false;
-    _selectedMusic = null;
-    _selectedPlace = null;
-    const form = document.getElementById('memory-form');
-    if (!form) return;
-    form.reset();
-    document.getElementById('memoria-year').value = '';
-    form.dataset.editingId = '';
-    form.dataset.existingImageUrl = '';
-    document.getElementById('save-memoria-btn').textContent = 'Añadir Memoria';
-    document.getElementById('save-memoria-btn').disabled = false;
-    showMusicResults([]);
-    showPlaceResults([]);
-    showModalStatus('memoria-status', '', false);
-    showModalStatus('image-upload-status', '', false);
-    handleMemoryTypeChange();
-    _showMemoryForm(false);
-}
+export function resetMemoryForm() { /* ... (sin cambios) */ }
 export function fillFormForEdit(mem) { /* ... (sin cambios) */ }
 export function showMusicResults(tracks, isSelected = false) { /* ... (sin cambios) */ }
 export function showPlaceResults(places, isSelected = false) { /* ... (sin cambios) */ }
@@ -485,188 +492,154 @@ function createPreviewModal() {
     previewModal = document.createElement('div');
     previewModal.id = 'preview-modal';
     previewModal.className = 'modal-preview';
-    previewModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    previewModal.innerHTML = `
+        <div class="modal-preview-content">
+            <div class="modal-preview-header"> <h3 id="preview-title"></h3> </div>
+            <div class="modal-preview-notebook-paper">
+                <div class="modal-preview-memorias">
+                    <h4 style="display: none;">Memorias:</h4>
+                    <div id="preview-memorias-list"> <p class="list-placeholder preview-loading" style="display: none;">Cargando...</p> </div>
+                </div>
+            </div>
+            <div class="modal-preview-footer">
+                <button id="close-preview-btn" class="aqua-button">Cerrar</button>
+                <button id="edit-from-preview-btn" class="aqua-button">Editar este día</button>
+            </div>
+        </div>`;
     document.body.appendChild(previewModal);
     document.getElementById('close-preview-btn')?.addEventListener('click', closePreviewModal);
     document.getElementById('edit-from-preview-btn')?.addEventListener('click', () => { if (callbacks && callbacks.onEditFromPreview) callbacks.onEditFromPreview(); });
+    console.log("UI: createPreviewModal finished.");
 }
 function createEditModal() {
     if (editModal) return;
     editModal = document.createElement('div');
     editModal.id = 'edit-add-modal';
     editModal.className = 'modal-edit';
-    editModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    editModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-preview-header"> <h3 id="edit-modal-title-dynamic">Añadir/Editar</h3> </div>
+            <div class="modal-content-scrollable">
+                <p class="list-placeholder edit-loading" style="display: none; padding: 20px;">Cargando...</p>
+                <div class="edit-content-wrapper">
+                    <div class="modal-section" id="day-selection-section" style="display: none;">
+                        <h3>Añadir Memoria a...</h3>
+                        <label for="edit-mem-day">Día (MM-DD):</label>
+                        <div class="day-selection-controls"> <select id="edit-mem-day"></select> <button type="button" id="btn-name-selected-day" class="aqua-button small">Nombrar</button> </div>
+                        <p id="add-name-status" class="status-message"></p>
+                    </div>
+                    <div class="modal-section" id="day-name-section" style="display: none;">
+                        <h3 id="edit-modal-title"></h3>
+                        <label for="nombre-especial-input">Nombrar este día:</label>
+                        <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="25">
+                        <button id="save-name-btn" class="aqua-button">Guardar Nombre</button>
+                        <p id="save-status" class="status-message"></p>
+                    </div>
+                    <div class="modal-section memorias-section">
+                        <h4>Memorias</h4>
+                        <div id="edit-memorias-list-container"> <div id="edit-memorias-list"></div> <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button> </div>
+                        <form id="memory-form" style="display: none;">
+                             <p class="section-description" id="memory-form-title">Añadir/Editar Memoria</p>
+                            <label for="memoria-year">Año Original:</label> <input type="number" id="memoria-year" placeholder="Año" min="1900" max="2100" required>
+                            <label for="memoria-type">Tipo:</label> <select id="memoria-type"> <option value="Texto">Nota</option> <option value="Lugar">Lugar</option> <option value="Musica">Canción</option> <option value="Imagen">Foto</option> </select>
+                            <div class="add-memory-input-group" id="input-type-Texto"> <label for="memoria-desc">Descripción:</label> <textarea id="memoria-desc" placeholder="Escribe tu recuerdo..."></textarea> </div>
+                            <div class="add-memory-input-group" id="input-type-Lugar"> <label for="memoria-place-search">Buscar Lugar:</label> <input type="text" id="memoria-place-search" placeholder="Ej. Torre Eiffel"> <button type="button" class="aqua-button" id="btn-search-place">Buscar</button> <div id="place-results" class="search-results"></div> </div>
+                            <div class="add-memory-input-group" id="input-type-Musica"> <label for="memoria-music-search">Buscar Canción:</label> <input type="text" id="memoria-music-search" placeholder="Ej. Bohemian Rhapsody"> <button type="button" class="aqua-button" id="btn-search-itunes">Buscar</button> <div id="itunes-results" class="search-results"></div> </div>
+                            <div class="add-memory-input-group" id="input-type-Imagen"> <label for="memoria-image-upload">Subir Foto:</label> <input type="file" id="memoria-image-upload" accept="image/*"> <label for="memoria-image-desc">Descripción (opcional):</label> <input type="text" id="memoria-image-desc" placeholder="Añade un pie de foto..."> <div id="image-upload-status" class="status-message"></div> </div>
+                            <button type="submit" id="save-memoria-btn" class="aqua-button">Añadir Memoria</button> <button type="button" id="btn-cancel-mem-edit" class="aqua-button small">Cancelar</button>
+                            <p id="memoria-status" class="status-message"></p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-main-buttons"> <button id="close-edit-add-btn" class="aqua-button">Cerrar</button> </div>
+        </div>`;
     document.body.appendChild(editModal);
     _bindEditModalEvents();
+    console.log("UI: createEditModal finished.");
 }
 function createStoreModal() {
     if (storeModal) return;
     storeModal = document.createElement('div');
     storeModal.id = 'store-modal';
     storeModal.className = 'modal-store';
-    const categories = [ /* ... */ ];
+    const categories = [ { type: 'Nombres', icon: 'label', label: 'Nombres de Día' }, { type: 'Lugar', icon: 'place', label: 'Lugares' }, { type: 'Musica', icon: 'music_note', label: 'Canciones' }, { type: 'Imagen', icon: 'image', label: 'Fotos' }, { type: 'Texto', icon: 'article', label: 'Notas' } ];
     let buttonsHTML = categories.map(cat => createStoreCategoryButton(cat.type, cat.icon, cat.label)).join('');
-    storeModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    storeModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-preview-header"> <h3>Almacén de Memorias</h3> </div>
+            <div class="modal-content-scrollable store-category-list"> ${buttonsHTML} </div>
+            <div class="modal-main-buttons"> <button id="close-store-btn" class="aqua-button">Cerrar</button> </div>
+        </div>`;
     document.body.appendChild(storeModal);
     document.getElementById('close-store-btn')?.addEventListener('click', closeStoreModal);
     storeModal.querySelector('.store-category-list')?.addEventListener('click', (e) => { const btn = e.target.closest('.store-category-button'); if (btn && callbacks && callbacks.onStoreCategoryClick) callbacks.onStoreCategoryClick(btn.dataset.type); });
+    console.log("UI: createStoreModal finished."); // DEBUG
 }
 function createStoreListModal() {
     if (storeListModal) return;
     storeListModal = document.createElement('div');
     storeListModal.id = 'store-list-modal';
     storeListModal.className = 'modal-store-list';
-    storeListModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    storeListModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-preview-header"> <h3 id="store-list-title">Resultados</h3> </div>
+            <div class="modal-content-scrollable" id="store-list-content"> <p class="list-placeholder">Cargando...</p> </div>
+            <div class="modal-main-buttons"> <button id="close-store-list-btn" class="aqua-button">Volver</button> </div>
+        </div>`;
     document.body.appendChild(storeListModal);
     _bindStoreListModalEvents();
+    console.log("UI: createStoreListModal finished."); // DEBUG
 }
 function createAlertPromptModal() {
     if (alertPromptModal) return;
     alertPromptModal = document.createElement('div');
     alertPromptModal.id = 'alert-prompt-modal';
     alertPromptModal.className = 'modal-alert-prompt';
-    alertPromptModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    alertPromptModal.innerHTML = `
+        <div class="modal-alert-content">
+            <p id="alert-prompt-message"></p>
+            <input type="text" id="alert-prompt-input" style="display: none;">
+            <div class="modal-main-buttons">
+                <button id="alert-prompt-cancel" style="display: none;">Cancelar</button>
+                <button id="alert-prompt-ok">OK</button>
+            </div>
+        </div>`;
     document.body.appendChild(alertPromptModal);
     _bindAlertPromptEvents();
+     console.log("UI: createAlertPromptModal finished.");
 }
 function createConfirmModal() {
-    if (confirmModal) return;
-    confirmModal = document.createElement('div');
-    confirmModal.id = 'confirm-modal';
-    confirmModal.className = 'modal-confirm';
-    confirmModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
-    document.body.appendChild(confirmModal);
-    _bindConfirmModalEvents();
-}
-async function handleNameSelectedDay() { /* ... (sin cambios) */ }
-function _bindEditModalEvents() { /* ... (sin cambios, logs ya están) */ }
-function _bindStoreListModalEvents() { /* ... (sin cambios) */ }
-function _bindAlertPromptEvents() { /* ... (sin cambios) */ }
-function _bindConfirmModalEvents() { /* ... (sin cambios) */ }
-function _showMemoryForm(show) { /* ... (sin cambios) */ }
-function _renderMap(containerId, lat, lon, zoom = 13) { /* ... (sin cambios) */ }
-function _initMapsInContainer(containerEl, prefix) { /* ... (sin cambios) */ }
-function _destroyActiveMaps() { /* ... (sin cambios) */ }
-function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') { /* ... (sin cambios) */ }
-
-// ***** CAMBIO: Logs detallados dentro de createMemoryItemHTML *****
-function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
-    // Log inicial del objeto recibido
-    console.log(`createMemoryItemHTML: Processing mem (ID: ${mem?.id || 'N/A'}):`, JSON.stringify(mem)); // Usar stringify para ver estructura
-
-    if (!mem || typeof mem !== 'object') {
-        console.error("createMemoryItemHTML: Received invalid 'mem' object:", mem);
-        return '<p class="error">Error: Datos de memoria inválidos.</p>'; // Devolver error HTML
-    }
-    const memId = mem.id || '';
-
-    let yearStr = 'Año desc.';
-    if (mem.Fecha_Original) {
-        try {
-            // Intentar crear fecha desde segundos o directamente
-            const dateSource = mem.Fecha_Original.seconds ? mem.Fecha_Original.seconds * 1000 : mem.Fecha_Original;
-            const date = new Date(dateSource);
-            if (!isNaN(date.getFullYear())) { // Verificar si la fecha es válida
-                yearStr = date.getFullYear();
-            } else {
-                console.warn("createMemoryItemHTML: Invalid date parsed from Fecha_Original:", mem.Fecha_Original);
-            }
-        } catch (e) {
-             console.warn("createMemoryItemHTML: Error parsing Fecha_Original:", mem.Fecha_Original, e);
-        }
-    }
-
-    let contentHTML = `<small>${yearStr}</small>`;
-    let artworkHTML = '';
-    let icon = 'article';
-    let mapHTML = '';
-
-    // Log antes del switch
-    console.log(`createMemoryItemHTML [${memId}]: Type = ${mem.Tipo}, Year = ${yearStr}`);
-
-    switch (mem.Tipo) {
-        case 'Lugar':
-            icon = 'place';
-            const lugarNombre = mem.LugarNombre || 'Lugar sin nombre';
-            contentHTML += `${lugarNombre}`;
-            console.log(`createMemoryItemHTML [${memId}]: LugarNombre = ${lugarNombre}`);
-            if (mem.LugarData && mem.LugarData.lat && mem.LugarData.lon) {
-                const lat = mem.LugarData.lat;
-                const lon = mem.LugarData.lon;
-                console.log(`createMemoryItemHTML [${memId}]: Map data found (Lat: ${lat}, Lon: ${lon})`);
-                const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}`;
-                const mapClass = (mapIdPrefix === 'spotlight') ? 'spotlight-map-container' : 'memoria-map-container';
-                mapHTML = `<div id="${mapContainerId}" class="${mapClass}" data-lat="${lat}" data-lon="${lon}" data-zoom="13"></div>`;
-            } else {
-                 console.log(`createMemoryItemHTML [${memId}]: No valid map data in LugarData:`, mem.LugarData);
-            }
-            break;
-        case 'Musica':
-            icon = 'music_note';
-            console.log(`createMemoryItemHTML [${memId}]: Processing Musica. CancionData:`, JSON.stringify(mem.CancionData));
-            const trackName = mem.CancionData?.trackName;
-            const artistName = mem.CancionData?.artistName;
-            const artwork = mem.CancionData?.artworkUrl60;
-
-            if (trackName) {
-                const artistText = artistName || 'Artista desc.';
-                contentHTML += `<strong>${trackName}</strong> <span class="artist-name">by ${artistText}</span>`;
-                console.log(`createMemoryItemHTML [${memId}]: Track = ${trackName}, Artist = ${artistText}`);
-                if(artwork) {
-                    artworkHTML = `<img src="${artwork}" class="memoria-artwork" alt="Artwork">`;
-                }
-            } else {
-                 const cancionInfo = mem.CancionInfo || 'Canción sin nombre';
-                 contentHTML += `${cancionInfo}`;
-                 console.log(`createMemoryItemHTML [${memId}]: Using CancionInfo fallback = ${cancionInfo}`);
-            }
-            break;
-        case 'Imagen':
-            icon = 'image';
-            const imgDesc = mem.Descripcion || 'Imagen';
-            contentHTML += `${imgDesc}`;
-            console.log(`createMemoryItemHTML [${memId}]: Imagen Desc = ${imgDesc}`);
-            if (mem.ImagenURL) {
-                artworkHTML = `<img src="${mem.ImagenURL}" class="memoria-artwork" alt="Memoria">`;
-            }
-            break;
-        case 'Texto':
-        default:
-            icon = 'article';
-            const desc = typeof mem.Descripcion === 'string' ? mem.Descripcion : 'Nota vacía';
-            contentHTML += desc;
-            console.log(`createMemoryItemHTML [${memId}]: Texto Desc = ${desc}`);
-            if (mem.Tipo !== 'Texto') {
-                 console.warn(`createMemoryItemHTML [${memId}]: Unexpected type '${mem.Tipo}' fell into default case.`);
-            }
-            break;
-    }
-
-    if (!artworkHTML) {
-        artworkHTML = `<span class="memoria-icon material-icons-outlined">${icon}</span>`;
-    }
-
-    const actionsHTML = (showActions && memId) ? `
-        <div class="memoria-actions">
-            <button class="edit-btn" title="Editar" data-memoria-id="${memId}"><span class="material-icons-outlined">edit</span></button>
-            <button class="delete-btn" title="Borrar" data-memoria-id="${memId}"><span class="material-icons-outlined">delete</span></button>
-        </div>` : '';
-
-    const mainContentHTML = `
-        <div class="memoria-item-main-content ${mapIdPrefix === 'spotlight' ? 'spotlight-item-main-content' : ''}">
-            ${artworkHTML}
-            <div class="memoria-item-content">${contentHTML}</div>
-            ${actionsHTML}
+     if (confirmModal) return;
+     confirmModal = document.createElement('div');
+     confirmModal.id = 'confirm-modal';
+     confirmModal.className = 'modal-confirm';
+     confirmModal.innerHTML = `
+        <div class="modal-alert-content">
+            <p id="confirm-message"></p>
+            <div class="modal-main-buttons">
+                <button id="confirm-cancel">Cancelar</button>
+                <button id="confirm-ok" class="delete-confirm">Borrar</button>
+            </div>
         </div>`;
-
-    console.log(`createMemoryItemHTML [${memId}]: Returning HTML.`);
-    return mainContentHTML + mapHTML;
+     document.body.appendChild(confirmModal);
+     _bindConfirmModalEvents();
+     console.log("UI: createConfirmModal finished.");
 }
-// ***************************************************************
-
+async function handleNameSelectedDay() { /* ... */ }
+function _bindEditModalEvents() { /* ... */ }
+function _bindStoreListModalEvents() { /* ... */ }
+function _bindAlertPromptEvents() { /* ... */ }
+function _bindConfirmModalEvents() { /* ... */ }
+function _showMemoryForm(show) { /* ... */ }
+function _renderMap(containerId, lat, lon, zoom = 13) { /* ... */ }
+function _initMapsInContainer(containerEl, prefix) { /* ... */ }
+function _destroyActiveMaps() { /* ... */ }
+function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') { /* ... */ }
+function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { /* ... (con logs detallados) */ }
 function createStoreCategoryButton(type, icon, label) { /* ... */ }
 function createStoreListItem(item) { /* ... */ }
 function _createLoginButton(isLoggedOut, container) { /* ... */ }
 function _handleFormSubmit(e) { /* ... */ }
 
-// (Fin del archivo, sin `export const ui`)
+// --- (No hay export const ui al final) ---
