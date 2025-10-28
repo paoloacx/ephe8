@@ -1,6 +1,6 @@
 /* api.js */
 /* Módulo para gestionar llamadas a APIs externas (iTunes, Nominatim) */
-/* (v1.8 - Cambiado proxy iTunes a api.codetabs.com) */
+/* (v1.9 - Eliminado proxy. iTunes permite CORS directo) */
 
 /**
  * Busca canciones en la API de iTunes.
@@ -8,32 +8,28 @@
  * @returns {Promise<object>} La respuesta JSON de la API.
  */
 export async function searchiTunes(term) {
-    // CAMBIO: Se usa 'api.codetabs.com'.
-    const proxy = 'https://api.codetabs.com/v1/proxy?quest=';
-    
-    // La URL de iTunes que queremos consultar
+    // CAMBIO: Llamada directa. No se necesita proxy.
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=5`;
     
-    // La URL final para codetabs (la URL de destino NO necesita codificación extra)
-    const fetchUrl = proxy + url;
-    
     try {
-        const response = await fetch(fetchUrl);
+        // Hacemos el fetch directamente a la API de iTunes
+        const response = await fetch(url);
+        
         if (!response.ok) {
-            throw new Error(`Proxy HTTP error! status: ${response.status}`);
+            // Esto capturaría errores 4xx o 5xx de la propia API de iTunes
+            throw new Error(`iTunes API error! status: ${response.status}`);
         }
         
-        // Este proxy devuelve el JSON directamente
+        // Devolver el JSON directamente
         return await response.json(); 
 
     } catch (error) {
-        console.error('iTunes API Error:', error);
+        console.error('iTunes API Error (Llamada Directa):', error);
         if (error instanceof SyntaxError) {
-             // Esto pasaría si la respuesta no es JSON (p.ej. error del proxy)
-             throw new Error("Error al parsear la respuesta del proxy. El proxy puede estar caído o la respuesta de iTunes fue inválida.");
+             throw new Error("Error al parsear la respuesta de iTunes.");
         }
-        // Si el fetch falla (como el ERR_NAME_NOT_RESOLVED) o el proxy falla
-        throw new Error(`Fallo en la API/Proxy: ${error.message}`);
+        // Si el fetch falla (p.ej. sin conexión)
+        throw new Error(`Fallo en la llamada a iTunes: ${error.message}`);
     }
 }
 
@@ -43,6 +39,7 @@ export async function searchiTunes(term) {
  * @returns {Promise<object>} La respuesta JSON de la API.
  */
 export async function searchNominatim(term) {
+    // Nominatim también permite CORS directo, así que no se toca
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&limit=5`;
     
     try {
