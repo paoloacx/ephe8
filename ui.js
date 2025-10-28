@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.23 - Restauradas funciones de Modales y Helpers)
+ * ui.js (v4.24 - Corregida UI de Almacén)
  * Módulo de interfaz de usuario.
  */
 
@@ -29,7 +29,7 @@ let _activeMaps = [];
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
-    console.log("UI Module init (v4.23 - Restauradas funciones)");
+    console.log("UI Module init (v4.24 - UI Almacén)");
     callbacks = mainCallbacks;
     _allDaysData = allDays || []; // ***** CAMBIO: Almacena allDays *****
 
@@ -962,7 +962,7 @@ function showConfirm(message) {
 /**
  * Renderiza un mapa Leaflet en un contenedor.
  * @param {string} containerId - El ID del elemento div.
- *... (El resto de esta sección está presente y correcta) ...*/
+... (El resto de esta sección está presente y correcta) ...*/
 function _renderMap(containerId, lat, lon, zoom = 13) {
     try {
         const container = document.getElementById(containerId);
@@ -1195,11 +1195,14 @@ function createStoreCategoryButton(type, icon, label) {
     const btn = document.createElement('button');
     btn.className = 'store-category-button';
     btn.dataset.type = type;
+    
+    // --- INICIO CAMBIO v4.24: Ajuste de HTML para CSS ---
     btn.innerHTML = `
         <span class="material-icons-outlined">${icon}</span>
         <span>${label}</span>
         <span class="material-icons-outlined">chevron_right</span>
     `;
+    // --- FIN CAMBIO v4.24 ---
     return btn;
 }
 
@@ -1212,19 +1215,86 @@ function createStoreListItem(item) {
     // Añadimos 'cursor: pointer' para que parezca clicable
     itemEl.style.cursor = 'pointer';
 
+    // --- INICIO CAMBIO v4.24: Nueva estructura HTML para Almacén ---
+    
+    let artworkHTML = '';
+    let topHTML = '';
+    let bottomHTML = '';
+    let icon = 'label'; // Icono por defecto
+
     if (item.type === 'Nombres') {
         // Renderizado especial para Días Nombrados
-        itemEl.innerHTML = `
-            <span class="memoria-icon material-icons-outlined">label</span>
-            <div class="memoria-item-content">
-                <small>${item.Nombre_Dia}</small>
-                <strong>${item.Nombre_Especial}</strong>
-            </div>`;
+        icon = 'label';
+        topHTML = `<div class="store-item-top">
+                        ${item.Nombre_Especial} 
+                        <small>(${item.Nombre_Dia})</small>
+                   </div>`;
+        bottomHTML = `<div class="store-item-bottom">Día nombrado</div>`;
+
     } else {
-        // Reutilizar el renderizado de memorias (sin acciones)
-        // Usamos 'store' como prefijo de mapa
-        itemEl.innerHTML = createMemoryItemHTML(item, false, 'store');
+        // Renderizado para Memorias (Texto, Lugar, Musica, Imagen)
+        let yearStr = 'Año desc.';
+        if (item.Fecha_Original) {
+            try {
+                const date = new Date(item.Fecha_Original.seconds * 1000 || item.Fecha_Original);
+                yearStr = date.getFullYear();
+            } catch (e) { /* fallback */ }
+        }
+        
+        topHTML = `<div class="store-item-top">${yearStr} <small>(${item.Nombre_Dia})</small></div>`;
+
+        switch (item.Tipo) {
+            case 'Lugar':
+                icon = 'place';
+                bottomHTML = `<div class="store-item-bottom">${item.LugarNombre || 'Lugar sin nombre'}</div>`;
+                break;
+            case 'Musica':
+                icon = 'music_note';
+                const trackName = item.CancionData?.trackName || item.CancionData?.title;
+                const artistName = item.CancionData?.artistName || item.CancionData?.artist?.name;
+                const artwork = item.CancionData?.artworkUrl60 || item.CancionData?.album?.cover_small;
+
+                if (trackName) {
+                    bottomHTML = `<div class="store-item-bottom">
+                                    <strong>${trackName}</strong> 
+                                    <span class="artist-name">by ${artistName || 'Artista desc.'}</span>
+                                 </div>`;
+                    if(artwork) {
+                        artworkHTML = `<img src="${artwork}" class="memoria-artwork" alt="Artwork">`;
+                    }
+                } else {
+                    bottomHTML = `<div class="store-item-bottom">${item.CancionInfo || 'Canción sin nombre'}</div>`;
+                }
+                break;
+            case 'Imagen':
+                icon = 'image';
+                bottomHTML = `<div class="store-item-bottom">${item.Descripcion || 'Imagen'}</div>`;
+                if (item.ImagenURL) {
+                    artworkHTML = `<img src="${item.ImagenURL}" class="memoria-artwork" alt="Memoria">`;
+                }
+                break;
+            case 'Texto':
+            default:
+                icon = 'article';
+                bottomHTML = `<div class="store-item-bottom">${item.Descripcion || 'Nota vacía'}</div>`;
+                break;
+        }
     }
+
+    if (!artworkHTML) {
+        artworkHTML = `<span class="memoria-icon material-icons-outlined">${icon}</span>`;
+    }
+
+    // Ensamblar el HTML final
+    itemEl.innerHTML = `
+        <div class="store-item-artwork">${artworkHTML}</div>
+        <div class="store-item-details">
+            ${topHTML}
+            ${bottomHTML}
+        </div>
+    `;
+    // --- FIN CAMBIO v4.24 ---
+
     return itemEl;
 }
 // --- FIN V4.23 ---
