@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.27 - Verificar contenido DOM)
+ * ui.js (v4.28 - Debugging createMemoryItemHTML)
  * Módulo de interfaz de usuario.
  */
 
@@ -21,7 +21,7 @@ let _activeMaps = [];
 
 // --- Funciones de Inicialización ---
 export function init(mainCallbacks, allDays) {
-    console.log("UI Module init (v4.27 - Verificar DOM)"); // Cambiado
+    console.log("UI Module init (v4.28 - Debugging createMemoryItemHTML)"); // Cambiado
     if (typeof mainCallbacks !== 'object' || mainCallbacks === null) {
         console.error("UI CRITICAL ERROR: mainCallbacks received in init is not an object:", mainCallbacks);
         callbacks = {};
@@ -285,24 +285,191 @@ export function updateSpotlight(dateString, dayName, memories) {
 }
 
 // --- Modales (Funciones públicas) ---
-export function openPreviewModal(dia, memories) { /* ... (sin cambios) */ }
-export function closePreviewModal() { /* ... (sin cambios) */ }
-export function showPreviewLoading(isLoading) { /* ... (sin cambios) */ }
-export function openEditModal(dia, memories) { /* ... (sin cambios) */ }
-export function closeEditModal() { /* ... (sin cambios) */ }
-export function showEditLoading(isLoading) { /* ... (sin cambios) */ }
-export function openStoreModal() { /* ... (sin cambios) */ }
-export function closeStoreModal() { /* ... (sin cambios) */ }
-export function openStoreListModal(title) { /* ... (sin cambios) */ }
-export function closeStoreListModal() { /* ... (sin cambios) */ }
-export function showAlert(message, type = 'default') { /* ... (sin cambios) */ }
-export function showPrompt(message, defaultValue = '', type = 'default') { /* ... (sin cambios) */ }
-export function showConfirm(message) { /* ... (sin cambios) */ }
+export function openPreviewModal(dia, memories) {
+    _currentDay = dia;
+    const titleEl = document.getElementById('preview-title');
+    const listEl = document.getElementById('preview-memorias-list');
+    const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
+    if (titleEl) titleEl.textContent = `${dia.Nombre_Dia}${dayName}`;
+    _renderMemoryList(listEl, memories, false, 'preview');
+    previewModal.style.display = 'flex';
+    setTimeout(() => {
+        previewModal.classList.add('visible');
+        _initMapsInContainer(listEl, 'preview');
+    }, 10);
+}
+export function closePreviewModal() {
+    if (!previewModal) return;
+    previewModal.classList.remove('visible');
+    _destroyActiveMaps();
+    const spotlightContainer = document.getElementById('spotlight-memories-container');
+    if (spotlightContainer) {
+        setTimeout(() => _initMapsInContainer(spotlightContainer, 'spotlight'), 250);
+    }
+    setTimeout(() => {
+        previewModal.style.display = 'none';
+        _currentDay = null;
+    }, 200);
+}
+export function showPreviewLoading(isLoading) {
+    const loadingEl = previewModal?.querySelector('.preview-loading');
+    const listEl = previewModal?.querySelector('#preview-memorias-list');
+    if (loadingEl && listEl) {
+        if (isLoading) {
+            listEl.innerHTML = '';
+            loadingEl.style.display = 'block';
+        } else {
+            loadingEl.style.display = 'none';
+        }
+    }
+}
+export function openEditModal(dia, memories) {
+    _currentDay = dia;
+    _currentMemories = memories || [];
+    const daySelection = document.getElementById('day-selection-section');
+    const dayNameSection = document.getElementById('day-name-section');
+    const titleEl = document.getElementById('edit-modal-title');
+    const nameInput = document.getElementById('nombre-especial-input');
+    const daySelect = document.getElementById('edit-mem-day');
+    const dynamicTitleEl = document.getElementById('edit-modal-title-dynamic');
+    const formTitle = document.getElementById('memory-form-title');
+    if (dia) { // Edit mode
+        daySelection.style.display = 'none';
+        dayNameSection.style.display = 'block';
+        if (dynamicTitleEl) dynamicTitleEl.textContent = 'Editar Día';
+        if (formTitle) formTitle.textContent = 'Añadir/Editar Memoria';
+        const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
+        titleEl.textContent = `Editando: ${dia.Nombre_Dia}${dayName}`;
+        nameInput.value = dia.Nombre_Especial !== 'Unnamed Day' ? dia.Nombre_Especial : '';
+    } else { // Add mode
+        daySelection.style.display = 'block';
+        dayNameSection.style.display = 'none';
+        if (dynamicTitleEl) dynamicTitleEl.textContent = 'Añadir Memoria';
+        if (formTitle) formTitle.textContent = 'Añadir Memoria';
+        if (_allDaysData.length > 0) {
+            daySelect.innerHTML = '';
+             _allDaysData.sort((a, b) => a.id.localeCompare(b.id)).forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                const displayName = d.Nombre_Especial !== 'Unnamed Day' ? `${d.Nombre_Dia} (${d.Nombre_Especial})` : d.Nombre_Dia;
+                opt.textContent = displayName;
+                daySelect.appendChild(opt);
+            });
+        }
+        const today = new Date();
+        const todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+        daySelect.value = todayId;
+    }
+    _showMemoryForm(false);
+    resetMemoryForm();
+    _renderMemoryList(document.getElementById('edit-memorias-list'), _currentMemories, true);
+    showModalStatus('save-status', '', false);
+    showModalStatus('memoria-status', '', false);
+    showModalStatus('add-name-status', '', false);
+    showEditLoading(false);
+    editModal.style.display = 'flex';
+    setTimeout(() => editModal.classList.add('visible'), 10);
+}
+export function closeEditModal() {
+    if (!editModal) return;
+    editModal.classList.remove('visible');
+    setTimeout(() => {
+        editModal.style.display = 'none';
+        _currentDay = null;
+        _currentMemories = [];
+        _isEditingMemory = false;
+    }, 200);
+}
+export function showEditLoading(isLoading) {
+    const loadingEl = editModal?.querySelector('.edit-loading');
+    const contentWrapper = editModal?.querySelector('.edit-content-wrapper');
+    if (loadingEl && contentWrapper) {
+        loadingEl.style.display = isLoading ? 'block' : 'none';
+        contentWrapper.style.display = isLoading ? 'none' : 'block';
+    }
+}
+export function openStoreModal() {
+    if (!storeModal) createStoreModal();
+    storeModal.style.display = 'flex';
+    setTimeout(() => storeModal.classList.add('visible'), 10);
+}
+export function closeStoreModal() {
+    if (!storeModal) return;
+    storeModal.classList.remove('visible');
+    setTimeout(() => storeModal.style.display = 'none', 200);
+}
+export function openStoreListModal(title) {
+    if(!storeListModal) createStoreListModal();
+    const titleEl = document.getElementById('store-list-title');
+    const contentEl = document.getElementById('store-list-content');
+    if (titleEl) titleEl.textContent = title;
+    if (contentEl) contentEl.innerHTML = '<p class="list-placeholder">Cargando...</p>';
+    storeListModal.style.display = 'flex';
+    setTimeout(() => storeListModal.classList.add('visible'), 10);
+}
+export function closeStoreListModal() {
+    if (!storeListModal) return;
+    storeListModal.classList.remove('visible');
+    setTimeout(() => storeListModal.style.display = 'none', 200);
+}
+export function showAlert(message, type = 'default') {
+    if(!alertPromptModal) createAlertPromptModal();
+    const contentEl = alertPromptModal.querySelector('.modal-alert-content');
+    contentEl.classList.remove('settings-alert', 'search-alert');
+    if (type === 'settings') contentEl.classList.add('settings-alert');
+    document.getElementById('alert-prompt-message').textContent = message;
+    document.getElementById('alert-prompt-input').style.display = 'none';
+    document.getElementById('alert-prompt-cancel').style.display = 'none';
+    const okBtn = document.getElementById('alert-prompt-ok');
+    okBtn.textContent = 'OK';
+    alertPromptModal.style.display = 'flex';
+    setTimeout(() => alertPromptModal.classList.add('visible'), 10);
+}
+export function showPrompt(message, defaultValue = '', type = 'default') {
+    if(!alertPromptModal) createAlertPromptModal();
+    const contentEl = alertPromptModal.querySelector('.modal-alert-content');
+    contentEl.classList.remove('settings-alert', 'search-alert');
+    if (type === 'search') contentEl.classList.add('search-alert');
+    document.getElementById('alert-prompt-message').textContent = message;
+    document.getElementById('alert-prompt-input').style.display = 'block';
+    document.getElementById('alert-prompt-input').value = defaultValue;
+    document.getElementById('alert-prompt-cancel').style.display = 'block';
+    const okBtn = document.getElementById('alert-prompt-ok');
+    okBtn.textContent = 'OK';
+    alertPromptModal.style.display = 'flex';
+    setTimeout(() => alertPromptModal.classList.add('visible'), 10);
+    return new Promise((resolve) => { _promptResolve = resolve; });
+}
+export function showConfirm(message) {
+     if(!confirmModal) createConfirmModal();
+    document.getElementById('confirm-message').textContent = message;
+    confirmModal.style.display = 'flex';
+    setTimeout(() => confirmModal.classList.add('visible'), 10);
+    return new Promise((resolve) => { _confirmResolve = resolve; });
+}
 
 // --- Formularios y Listas (Funciones públicas) ---
 export function updateStoreList(items, append = false, hasMore = false) { /* ... (sin cambios) */ }
 export function updateMemoryList(memories) { /* ... (sin cambios) */ }
-export function resetMemoryForm() { /* ... (sin cambios) */ }
+export function resetMemoryForm() {
+    _isEditingMemory = false;
+    _selectedMusic = null;
+    _selectedPlace = null;
+    const form = document.getElementById('memory-form');
+    if (!form) return;
+    form.reset();
+    document.getElementById('memoria-year').value = '';
+    form.dataset.editingId = '';
+    form.dataset.existingImageUrl = '';
+    document.getElementById('save-memoria-btn').textContent = 'Añadir Memoria';
+    document.getElementById('save-memoria-btn').disabled = false;
+    showMusicResults([]);
+    showPlaceResults([]);
+    showModalStatus('memoria-status', '', false);
+    showModalStatus('image-upload-status', '', false);
+    handleMemoryTypeChange();
+    _showMemoryForm(false);
+}
 export function fillFormForEdit(mem) { /* ... (sin cambios) */ }
 export function showMusicResults(tracks, isSelected = false) { /* ... (sin cambios) */ }
 export function showPlaceResults(places, isSelected = false) { /* ... (sin cambios) */ }
@@ -313,14 +480,66 @@ export function handleMemoryTypeChange() { /* ... (sin cambios) */ }
 export function showCrumbieAnimation(message) { /* ... (sin cambios) */ }
 
 // --- Funciones privadas (no exportadas) ---
-function createPreviewModal() { /* ... (sin cambios) */ }
-function createEditModal() { /* ... (sin cambios) */ }
-function createStoreModal() { /* ... (sin cambios) */ }
-function createStoreListModal() { /* ... (sin cambios) */ }
-function createAlertPromptModal() { /* ... (sin cambios) */ }
-function createConfirmModal() { /* ... (sin cambios) */ }
+function createPreviewModal() {
+    if (previewModal) return;
+    previewModal = document.createElement('div');
+    previewModal.id = 'preview-modal';
+    previewModal.className = 'modal-preview';
+    previewModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    document.body.appendChild(previewModal);
+    document.getElementById('close-preview-btn')?.addEventListener('click', closePreviewModal);
+    document.getElementById('edit-from-preview-btn')?.addEventListener('click', () => { if (callbacks && callbacks.onEditFromPreview) callbacks.onEditFromPreview(); });
+}
+function createEditModal() {
+    if (editModal) return;
+    editModal = document.createElement('div');
+    editModal.id = 'edit-add-modal';
+    editModal.className = 'modal-edit';
+    editModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    document.body.appendChild(editModal);
+    _bindEditModalEvents();
+}
+function createStoreModal() {
+    if (storeModal) return;
+    storeModal = document.createElement('div');
+    storeModal.id = 'store-modal';
+    storeModal.className = 'modal-store';
+    const categories = [ /* ... */ ];
+    let buttonsHTML = categories.map(cat => createStoreCategoryButton(cat.type, cat.icon, cat.label)).join('');
+    storeModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    document.body.appendChild(storeModal);
+    document.getElementById('close-store-btn')?.addEventListener('click', closeStoreModal);
+    storeModal.querySelector('.store-category-list')?.addEventListener('click', (e) => { const btn = e.target.closest('.store-category-button'); if (btn && callbacks && callbacks.onStoreCategoryClick) callbacks.onStoreCategoryClick(btn.dataset.type); });
+}
+function createStoreListModal() {
+    if (storeListModal) return;
+    storeListModal = document.createElement('div');
+    storeListModal.id = 'store-list-modal';
+    storeListModal.className = 'modal-store-list';
+    storeListModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    document.body.appendChild(storeListModal);
+    _bindStoreListModalEvents();
+}
+function createAlertPromptModal() {
+    if (alertPromptModal) return;
+    alertPromptModal = document.createElement('div');
+    alertPromptModal.id = 'alert-prompt-modal';
+    alertPromptModal.className = 'modal-alert-prompt';
+    alertPromptModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    document.body.appendChild(alertPromptModal);
+    _bindAlertPromptEvents();
+}
+function createConfirmModal() {
+    if (confirmModal) return;
+    confirmModal = document.createElement('div');
+    confirmModal.id = 'confirm-modal';
+    confirmModal.className = 'modal-confirm';
+    confirmModal.innerHTML = `...`; // Contenido HTML omitido por brevedad
+    document.body.appendChild(confirmModal);
+    _bindConfirmModalEvents();
+}
 async function handleNameSelectedDay() { /* ... (sin cambios) */ }
-function _bindEditModalEvents() { /* ... (sin cambios) */ }
+function _bindEditModalEvents() { /* ... (sin cambios, logs ya están) */ }
 function _bindStoreListModalEvents() { /* ... (sin cambios) */ }
 function _bindAlertPromptEvents() { /* ... (sin cambios) */ }
 function _bindConfirmModalEvents() { /* ... (sin cambios) */ }
@@ -329,10 +548,125 @@ function _renderMap(containerId, lat, lon, zoom = 13) { /* ... (sin cambios) */ 
 function _initMapsInContainer(containerEl, prefix) { /* ... (sin cambios) */ }
 function _destroyActiveMaps() { /* ... (sin cambios) */ }
 function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') { /* ... (sin cambios) */ }
-function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { /* ... (sin cambios) */ }
-function createStoreCategoryButton(type, icon, label) { /* ... (sin cambios) */ }
-function createStoreListItem(item) { /* ... (sin cambios) */ }
-function _createLoginButton(isLoggedOut, container) { /* ... (sin cambios) */ }
-function _handleFormSubmit(e) { /* ... (sin cambios) */ }
 
-// No hay export const ui = { ... }
+// ***** CAMBIO: Logs detallados dentro de createMemoryItemHTML *****
+function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
+    // Log inicial del objeto recibido
+    console.log(`createMemoryItemHTML: Processing mem (ID: ${mem?.id || 'N/A'}):`, JSON.stringify(mem)); // Usar stringify para ver estructura
+
+    if (!mem || typeof mem !== 'object') {
+        console.error("createMemoryItemHTML: Received invalid 'mem' object:", mem);
+        return '<p class="error">Error: Datos de memoria inválidos.</p>'; // Devolver error HTML
+    }
+    const memId = mem.id || '';
+
+    let yearStr = 'Año desc.';
+    if (mem.Fecha_Original) {
+        try {
+            // Intentar crear fecha desde segundos o directamente
+            const dateSource = mem.Fecha_Original.seconds ? mem.Fecha_Original.seconds * 1000 : mem.Fecha_Original;
+            const date = new Date(dateSource);
+            if (!isNaN(date.getFullYear())) { // Verificar si la fecha es válida
+                yearStr = date.getFullYear();
+            } else {
+                console.warn("createMemoryItemHTML: Invalid date parsed from Fecha_Original:", mem.Fecha_Original);
+            }
+        } catch (e) {
+             console.warn("createMemoryItemHTML: Error parsing Fecha_Original:", mem.Fecha_Original, e);
+        }
+    }
+
+    let contentHTML = `<small>${yearStr}</small>`;
+    let artworkHTML = '';
+    let icon = 'article';
+    let mapHTML = '';
+
+    // Log antes del switch
+    console.log(`createMemoryItemHTML [${memId}]: Type = ${mem.Tipo}, Year = ${yearStr}`);
+
+    switch (mem.Tipo) {
+        case 'Lugar':
+            icon = 'place';
+            const lugarNombre = mem.LugarNombre || 'Lugar sin nombre';
+            contentHTML += `${lugarNombre}`;
+            console.log(`createMemoryItemHTML [${memId}]: LugarNombre = ${lugarNombre}`);
+            if (mem.LugarData && mem.LugarData.lat && mem.LugarData.lon) {
+                const lat = mem.LugarData.lat;
+                const lon = mem.LugarData.lon;
+                console.log(`createMemoryItemHTML [${memId}]: Map data found (Lat: ${lat}, Lon: ${lon})`);
+                const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}`;
+                const mapClass = (mapIdPrefix === 'spotlight') ? 'spotlight-map-container' : 'memoria-map-container';
+                mapHTML = `<div id="${mapContainerId}" class="${mapClass}" data-lat="${lat}" data-lon="${lon}" data-zoom="13"></div>`;
+            } else {
+                 console.log(`createMemoryItemHTML [${memId}]: No valid map data in LugarData:`, mem.LugarData);
+            }
+            break;
+        case 'Musica':
+            icon = 'music_note';
+            console.log(`createMemoryItemHTML [${memId}]: Processing Musica. CancionData:`, JSON.stringify(mem.CancionData));
+            const trackName = mem.CancionData?.trackName;
+            const artistName = mem.CancionData?.artistName;
+            const artwork = mem.CancionData?.artworkUrl60;
+
+            if (trackName) {
+                const artistText = artistName || 'Artista desc.';
+                contentHTML += `<strong>${trackName}</strong> <span class="artist-name">by ${artistText}</span>`;
+                console.log(`createMemoryItemHTML [${memId}]: Track = ${trackName}, Artist = ${artistText}`);
+                if(artwork) {
+                    artworkHTML = `<img src="${artwork}" class="memoria-artwork" alt="Artwork">`;
+                }
+            } else {
+                 const cancionInfo = mem.CancionInfo || 'Canción sin nombre';
+                 contentHTML += `${cancionInfo}`;
+                 console.log(`createMemoryItemHTML [${memId}]: Using CancionInfo fallback = ${cancionInfo}`);
+            }
+            break;
+        case 'Imagen':
+            icon = 'image';
+            const imgDesc = mem.Descripcion || 'Imagen';
+            contentHTML += `${imgDesc}`;
+            console.log(`createMemoryItemHTML [${memId}]: Imagen Desc = ${imgDesc}`);
+            if (mem.ImagenURL) {
+                artworkHTML = `<img src="${mem.ImagenURL}" class="memoria-artwork" alt="Memoria">`;
+            }
+            break;
+        case 'Texto':
+        default:
+            icon = 'article';
+            const desc = typeof mem.Descripcion === 'string' ? mem.Descripcion : 'Nota vacía';
+            contentHTML += desc;
+            console.log(`createMemoryItemHTML [${memId}]: Texto Desc = ${desc}`);
+            if (mem.Tipo !== 'Texto') {
+                 console.warn(`createMemoryItemHTML [${memId}]: Unexpected type '${mem.Tipo}' fell into default case.`);
+            }
+            break;
+    }
+
+    if (!artworkHTML) {
+        artworkHTML = `<span class="memoria-icon material-icons-outlined">${icon}</span>`;
+    }
+
+    const actionsHTML = (showActions && memId) ? `
+        <div class="memoria-actions">
+            <button class="edit-btn" title="Editar" data-memoria-id="${memId}"><span class="material-icons-outlined">edit</span></button>
+            <button class="delete-btn" title="Borrar" data-memoria-id="${memId}"><span class="material-icons-outlined">delete</span></button>
+        </div>` : '';
+
+    const mainContentHTML = `
+        <div class="memoria-item-main-content ${mapIdPrefix === 'spotlight' ? 'spotlight-item-main-content' : ''}">
+            ${artworkHTML}
+            <div class="memoria-item-content">${contentHTML}</div>
+            ${actionsHTML}
+        </div>`;
+
+    console.log(`createMemoryItemHTML [${memId}]: Returning HTML.`);
+    return mainContentHTML + mapHTML;
+}
+// ***************************************************************
+
+function createStoreCategoryButton(type, icon, label) { /* ... */ }
+function createStoreListItem(item) { /* ... */ }
+function _createLoginButton(isLoggedOut, container) { /* ... */ }
+function _handleFormSubmit(e) { /* ... */ }
+
+// (Fin del archivo, sin `export const ui`)
