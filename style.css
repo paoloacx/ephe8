@@ -1,4 +1,4 @@
-/* style.css - v17.6 - Añadidos mapas Leaflet y fix UI modal */
+/* style.css - v17.7 - Mejora UI Resultados Música */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -869,6 +869,7 @@ main {
 }
 #edit-memorias-list .memoria-item:last-child {
     border-radius: 0 0 8px 8px;
+    border-bottom: none; /* Quitar borde inferior del último */
 }
 #edit-memorias-list .memoria-item small { /* Año */
     color: #555;
@@ -989,6 +990,62 @@ main {
 }
 /* --- FIN v17.2 --- */
 
+/* --- INICIO v17.7: Estilos para Resultados de Búsqueda de Música --- */
+.search-results {
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    max-height: 200px; /* Limitar altura */
+    overflow-y: auto;
+    background-color: #fff;
+}
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+.search-result-item:last-child {
+    border-bottom: none;
+}
+.search-result-item:hover {
+    background-color: #f0f0f0;
+}
+.search-result-item .memoria-artwork {
+    width: 40px; /* Imagen un poco más grande */
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+.search-result-item .memoria-item-content {
+    flex-grow: 1; /* Ocupa el espacio */
+    line-height: 1.3;
+    font-size: 14px;
+    min-width: 0; /* Para que el texto se ajuste */
+}
+.search-result-item .memoria-item-content small {
+    font-size: 12px;
+    color: #555;
+    display: block; /* Asegura línea separada */
+}
+.search-result-item .material-icons-outlined {
+    font-size: 24px;
+    color: #007aff; /* Azul */
+    margin-left: 10px; /* Espacio a la izquierda */
+    flex-shrink: 0;
+}
+.search-result-selected {
+    padding: 12px;
+    font-weight: bold;
+    color: #333;
+    background-color: #e9f5ff;
+    border: 1px solid #b3d7ff;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+/* --- FIN v17.7 --- */
 
 /* Footer Dock */
 .footer-dock {
@@ -1048,6 +1105,12 @@ a:hover { text-decoration: underline; }
     font-size: 18px;
     color: #ccc;
     padding: 40px;
+}
+.status-message {
+    margin-top: 10px;
+    font-size: 13px;
+    text-align: center;
+    min-height: 1.2em; /* Para evitar saltos de layout */
 }
 
 /* --- Scrollbars --- */
