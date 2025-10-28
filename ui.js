@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.19.2 - Integración de Leaflet y fix UI)
+ * ui.js (v4.21 - Revertido a iTunes API y Leaflet)
  * Módulo de interfaz de usuario.
  */
 
@@ -29,7 +29,7 @@ let _activeMaps = [];
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v4.19.2 - Integración Leaflet)");
+    console.log("UI Module init (v4.21 - Revertido a iTunes)");
     callbacks = mainCallbacks;
 
     _bindHeaderEvents();
@@ -1116,14 +1116,20 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6:
             break;
         case 'Musica':
             icon = 'music_note';
-            if (mem.CancionData?.trackName) {
-                contentHTML += `<strong>${mem.CancionData.trackName}</strong> <span class="artist-name">by ${mem.CancionData.artistName}</span>`;
-                if(mem.CancionData.artworkUrl60) {
-                    artworkHTML = `<img src="${mem.CancionData.artworkUrl60}" class="memoria-artwork" alt="Artwork">`;
+            // INICIO v2.1: Revertido a iTunes (y mantiene compatibilidad con Deezer si la hay)
+            const trackName = mem.CancionData?.trackName || mem.CancionData?.title;
+            const artistName = mem.CancionData?.artistName || mem.CancionData?.artist?.name;
+            const artwork = mem.CancionData?.artworkUrl60 || mem.CancionData?.album?.cover_small;
+
+            if (trackName) {
+                contentHTML += `<strong>${trackName}</strong> <span class="artist-name">by ${artistName || 'Artista desc.'}</span>`;
+                if(artwork) {
+                    artworkHTML = `<img src="${artwork}" class="memoria-artwork" alt="Artwork">`;
                 }
             } else {
                 contentHTML += `${mem.CancionInfo || 'Canción sin nombre'}`;
             }
+            // FIN v2.1
             break;
         case 'Imagen':
             icon = 'image';
@@ -1142,11 +1148,6 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') { // v17.6:
 
     if (!artworkHTML) {
         artworkHTML = `<span class="memoria-icon material-icons-outlined">${icon}</span>`;
-    }
-
-    // DEBUG: Comprobar datos al renderizar ítem en lista de edición
-    if (showActions) {
-        // console.log("Renderizando ítem (Editar Día):", mem); // DEBUG Original
     }
 
     const actionsHTML = (showActions && memId) ? `
@@ -1296,7 +1297,9 @@ function _handleFormSubmit(e) {
                 break;
             case 'Musica':
                  if (_selectedMusic) {
+                    // INICIO v2.1: Revertido a iTunes
                     formData.CancionInfo = `${_selectedMusic.trackName} - ${_selectedMusic.artistName}`;
+                    // Guardamos el objeto de iTunes
                     formData.CancionData = {
                         trackId: _selectedMusic.trackId,
                         trackName: _selectedMusic.trackName,
@@ -1304,6 +1307,7 @@ function _handleFormSubmit(e) {
                         artworkUrl60: _selectedMusic.artworkUrl60,
                         trackViewUrl: _selectedMusic.trackViewUrl
                      };
+                     // FIN v2.1
                 } else {
                     formData.CancionInfo = document.getElementById('memoria-music-search').value;
                     formData.CancionData = null;
@@ -1376,7 +1380,7 @@ function fillFormForEdit(mem) {
         case 'Musica':
              document.getElementById('memoria-music-search').value = mem.CancionInfo || '';
              if (mem.CancionData) {
-                _selectedMusic = mem.CancionData;
+                _selectedMusic = mem.CancionData; // Objeto iTunes (o Deezer antiguo)
                 showMusicResults([_selectedMusic], true);
              }
             break;
@@ -1438,29 +1442,37 @@ function showMusicResults(tracks, isSelected = false) {
 
     if (isSelected && tracks.length > 0) {
         const track = tracks[0];
-        _selectedMusic = track; // Guardar el objeto completo
-        resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${track.trackName}</p>`;
+        _selectedMusic = track; // Guardar el objeto completo (iTunes o Deezer)
+        // INICIO v2.1: Manejar ambos formatos (iTunes y Deezer antiguo)
+        const displayName = track.trackName || track.title;
+        resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${displayName}</p>`;
+        // FIN v2.1
         return;
     }
 
     if (!tracks || tracks.length === 0) return; // v17.6: Chequeo de nulidad
 
     tracks.forEach(track => {
+        // INICIO v2.1: Revertido a iTunes
+        const trackName = track.trackName;
+        const artistName = track.artistName;
+        const artwork = track.artworkUrl60;
+        // FIN v2.1
+
         const itemEl = document.createElement('div');
         itemEl.className = 'search-result-item';
-        const artwork = track.artworkUrl60 || '';
         itemEl.innerHTML = `
             <img src="${artwork}" class="memoria-artwork" alt="" ${artwork ? '' : 'style="display:none;"'}>
             <div class="memoria-item-content">
-                <small>${track.artistName}</small>
-                <strong>${track.trackName}</strong>
+                <small>${artistName}</small>
+                <strong>${trackName}</strong>
             </div>
             <span class="material-icons-outlined">add_circle_outline</span>
         `;
         itemEl.addEventListener('click', () => {
-            _selectedMusic = track; // Guardar el objeto completo
-            document.getElementById('memoria-music-search').value = `${track.trackName} - ${track.artistName}`;
-            resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${track.trackName}</p>`;
+            _selectedMusic = track; // Guardar el objeto completo de iTunes
+            document.getElementById('memoria-music-search').value = `${trackName} - ${artistName}`;
+            resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${trackName}</p>`;
         });
         resultsEl.appendChild(itemEl);
     });
