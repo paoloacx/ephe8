@@ -1,5 +1,5 @@
 /*
- * main.js (v4.17 - Revertido a iTunes v2.1)
+ * main.js (v4.18 - Pasar allDaysData a UI init)
  * Controlador principal de Ephemerides.
  */
 
@@ -19,9 +19,7 @@ import {
     getNamedDays,
     uploadImage
 } from './store.js';
-// INICIO v2.1: Revertido a iTunes
-import { searchMusic, searchNominatim } from './api.js'; 
-// FIN v2.1
+import { searchMusic, searchNominatim } from './api.js'; // v2.1
 import { ui } from './ui.js';
 
 // --- Estado Global de la App ---
@@ -41,7 +39,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v4.17 (iTunes Direct v2.1)...");
+    console.log("Iniciando Ephemerides v4.18 (Pasar allDaysData a UI)..."); // Cambiado
 
     try {
         ui.setLoading("Iniciando...", true);
@@ -61,7 +59,10 @@ async function checkAndRunApp() {
         const today = new Date();
         state.todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
 
-        ui.init(getUICallbacks());
+        // ***** CAMBIO AQUÍ *****
+        ui.init(getUICallbacks(), state.allDaysData); // Pasamos allDaysData
+        // **********************
+
         initAuthListener(handleAuthStateChange);
         if (user) handleAuthStateChange(user);
 
@@ -210,7 +211,8 @@ async function handleEditFromPreview() {
                  ui.showAlert(`Error al cargar memorias: ${e.message}`);
                  return;
             }
-            ui.openEditModal(dia, memories, state.allDaysData);
+            // Ahora openEditModal recibe _allDaysData de la variable del módulo ui
+            ui.openEditModal(dia, memories); 
         }, 250);
 
     } else {
@@ -226,8 +228,8 @@ async function handleFooterAction(action) {
                 ui.showAlert("Debes iniciar sesión para añadir memorias.");
                 return;
             }
-            // Abrir modal de edición en modo 'Añadir' (dia = null)
-            ui.openEditModal(null, [], state.allDaysData);
+            // Ahora openEditModal recibe _allDaysData de la variable del módulo ui
+            ui.openEditModal(null, []); 
             break;
 
         case 'store':
@@ -269,7 +271,7 @@ async function handleFooterAction(action) {
             break;
 
         case 'settings':
-            ui.showAlert("Settings\n\nApp Version: 4.17 (iTunes v2.1)\nMore settings coming soon!", 'settings');
+            ui.showAlert("Settings\n\nApp Version: 4.18 (Fix UI bugs)\nMore settings coming soon!", 'settings');
             break;
 
 
@@ -321,8 +323,8 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
 
         // Actualizar el título del modal si estamos en modo Edición
         const editModalTitle = document.getElementById('edit-modal-title');
-        // Usamos _currentDay (que se setea en openEditModal) para saber si estamos en modo Edición
-        if (statusElementId === 'save-status' && state.dayInPreview) { // dayInPreview se usa en handleEditFromPreview para abrir edit
+        // Usamos state.dayInPreview que se usa en handleEditFromPreview para abrir edit
+        if (statusElementId === 'save-status' && state.dayInPreview) { 
              const dia = state.dayInPreview;
              const dayName = finalName !== 'Unnamed Day' ? ` (${finalName})` : '';
              if (editModalTitle) editModalTitle.textContent = `Editando: ${dia.Nombre_Dia}${dayName}`;
