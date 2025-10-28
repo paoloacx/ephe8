@@ -1,4 +1,4 @@
-/* style.css - v17.7 - Mejora UI Resultados Música */
+/* style.css - v17.8 - Corrección Z-Index y UI Almacén */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -231,6 +231,10 @@ main {
     padding: 0 10px;
     max-width: 960px;
     margin: 0 auto;
+    /* INICIO CAMBIO: Corrección Z-Index */
+    position: relative;
+    z-index: 8; /* Debe estar debajo de .month-nav (z-index: 9) */
+    /* FIN CAMBIO */
 }
 #spotlight-date-header {
     font-size: 19px;
@@ -983,12 +987,101 @@ main {
 .store-category-button span:nth-of-type(1) { /* El texto */
     flex-grow: 1;
     font-weight: bold;
+    /* INICIO CAMBIO: Alinear texto a la derecha */
+    text-align: right;
+    margin-right: 10px; /* Espacio antes del chevron */
+    /* FIN CAMBIO */
 }
 .store-category-button .material-icons-outlined:last-child { /* El chevron */
     color: #aaa;
     font-size: 24px;
 }
 /* --- FIN v17.2 --- */
+
+/* --- INICIO CAMBIO: Estilos Almacén (Lista de Items) --- */
+#store-list-content .memoria-item {
+    /* Sobreescribir el padding por defecto */
+    padding: 10px;
+    display: flex; /* Usar flex para alinear icono y contenido */
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #ddd;
+    background-color: #f0f0f0; /* Fondo del modal */
+    border-radius: 0; /* Quitar radius */
+    border-left: none;
+    border-right: none;
+}
+#store-list-content .memoria-item:first-child {
+    border-top: none;
+    border-radius: 0;
+}
+#store-list-content .memoria-item:last-child {
+    border-bottom: none;
+    border-radius: 0;
+}
+#store-list-content .memoria-item:hover {
+    background-color: #f9f9f9;
+}
+/* Contenedor para Icono/Artwork */
+.store-item-artwork {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+}
+.store-item-artwork .memoria-icon {
+    font-size: 32px; /* Icono más grande */
+    color: #555;
+    text-align: center;
+    width: 40px;
+    height: 40px;
+    line-height: 40px; /* Centrar verticalmente */
+}
+.store-item-artwork .memoria-artwork {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+/* Contenedor para el texto (derecha) */
+.store-item-details {
+    flex-grow: 1;
+    min-width: 0; /* Para que el truncado funcione */
+    font-size: 14px;
+}
+/* Línea superior (Año o Nombre de Día) */
+.store-item-top {
+    font-size: 13px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+}
+/* Caso especial para "Días Nombrados" (mostramos el "1 de Enero") */
+.store-item-top small {
+    font-weight: normal;
+    color: #666;
+    font-size: 12px;
+}
+/* Línea inferior (Descripción) */
+.store-item-bottom {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.4;
+    /* Truncado de 2 líneas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word; /* Romper palabras largas */
+}
+.store-item-bottom .artist-name {
+    color: #777;
+    font-size: 0.9em;
+}
+/* --- FIN CAMBIO: Estilos Almacén --- */
+
 
 /* --- INICIO v17.7: Estilos para Resultados de Búsqueda de Música --- */
 .search-results {
