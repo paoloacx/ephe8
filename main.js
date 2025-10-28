@@ -1,5 +1,5 @@
 /*
- * main.js (v4.18 - Debugging botones)
+ * main.js (v4.19 - Debugging Calendar/Spotlight Load)
  * Controlador principal de Ephemerides.
  */
 
@@ -39,7 +39,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v4.18 (Debugging botones)..."); // Cambiado
+    console.log("Iniciando Ephemerides v4.19 (Debugging Load)..."); // Cambiado
 
     try {
         ui.setLoading("Iniciando...", true);
@@ -53,8 +53,12 @@ async function checkAndRunApp() {
         state.allDaysData = await loadAllDaysData();
 
         if (state.allDaysData.length === 0) {
-            throw new Error("La base de datos está vacía después de la verificación.");
+            // This case should be handled, maybe show an error?
+            console.error("CRITICAL: loadAllDaysData returned empty array after check/run.");
+             ui.setLoading("Error crítico: No se pudieron cargar los datos del calendario.", true);
+             return; // Stop execution if data is missing
         }
+        console.log(`Data loaded: ${state.allDaysData.length} days found.`); // DEBUG
 
         const today = new Date();
         state.todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
@@ -63,10 +67,28 @@ async function checkAndRunApp() {
         ui.init(getUICallbacks(), state.allDaysData); 
 
         initAuthListener(handleAuthStateChange);
-        if (user) handleAuthStateChange(user);
+        // We might need to wait for the first auth state change if user is null initially?
+        // Let's assume checkAuthState handles the initial user state correctly for now.
+        if (user) {
+             console.log("Initial user found, calling handleAuthStateChange."); // DEBUG
+             handleAuthStateChange(user);
+        } else {
+             console.log("No initial user found."); // DEBUG
+        }
 
+        // ***** DEBUG logs added *****
+        console.log(`Before drawCurrentMonth: allDaysData length = ${state.allDaysData.length}, currentMonthIndex = ${state.currentMonthIndex}`);
+        ui.setLoading("Dibujando calendario...", true); // Give user feedback
         drawCurrentMonth();
-        loadTodaySpotlight();
+        console.log("After drawCurrentMonth call.");
+
+        console.log("Before loadTodaySpotlight call.");
+        ui.setLoading("Cargando spotlight...", true); // Give user feedback
+        await loadTodaySpotlight(); // Added await here as it's async
+        console.log("After loadTodaySpotlight call.");
+        // ***************************
+
+        ui.setLoading(null, false); // Clear loading message
 
     } catch (err) {
         console.error("Error crítico durante el arranque:", err);
@@ -78,171 +100,73 @@ async function checkAndRunApp() {
     }
 }
 
-async function loadTodaySpotlight() { /* ... (sin cambios) */ }
-function drawCurrentMonth() { /* ... (sin cambios) */ }
+async function loadTodaySpotlight() {
+    const today = new Date();
+    const dateString = `Hoy, ${today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`;
 
+    console.log("loadTodaySpotlight: Fetching data..."); // DEBUG
+    const spotlightData = await getTodaySpotlight(state.todayId);
+    console.log("loadTodaySpotlight: Data received:", spotlightData); // DEBUG
+
+    if (spotlightData) {
+        spotlightData.memories.forEach(mem => {
+            if (!mem.Nombre_Dia && state.allDaysData.length > 0) { // Check allDaysData
+                mem.Nombre_Dia = state.allDaysData.find(d => d.id === mem.diaId)?.Nombre_Dia || "Día";
+            } else if (!state.allDaysData.length > 0) {
+                 console.warn("loadTodaySpotlight: state.allDaysData is empty when trying to find Nombre_Dia"); // DEBUG
+            }
+        });
+
+        const dayName = spotlightData.dayName !== 'Unnamed Day' ? spotlightData.dayName : null;
+        console.log("loadTodaySpotlight: Calling ui.updateSpotlight..."); // DEBUG
+        ui.updateSpotlight(dateString, dayName, spotlightData.memories);
+    } else {
+         console.warn("loadTodaySpotlight: getTodaySpotlight returned null or undefined."); // DEBUG
+         // Still update UI to show nothing
+         ui.updateSpotlight(dateString, null, []);
+    }
+}
+
+function drawCurrentMonth() {
+    const monthName = new Date(2024, state.currentMonthIndex, 1).toLocaleDateString('es-ES', { month: 'long' });
+    const monthNumber = state.currentMonthIndex + 1;
+
+    console.log(`drawCurrentMonth: Filtering days for month ${monthNumber}...`); // DEBUG
+    const diasDelMes = state.allDaysData.filter(dia =>
+        parseInt(dia.id.substring(0, 2), 10) === monthNumber
+    );
+    console.log(`drawCurrentMonth: Found ${diasDelMes.length} days. Today ID: ${state.todayId}`); // DEBUG
+
+    console.log("drawCurrentMonth: Calling ui.drawCalendar..."); // DEBUG
+    ui.drawCalendar(monthName, diasDelMes, state.todayId);
+    console.log("drawCurrentMonth: ui.drawCalendar finished."); // DEBUG
+}
+
+// --- Resto de main.js (sin cambios) ---
 // --- 2. Callbacks y Manejadores de Eventos ---
-
-function getUICallbacks() {
-    return {
-        onMonthChange: handleMonthChange,
-        onDayClick: handleDayClick,
-        onFooterAction: handleFooterAction,
-        onLogin: handleLoginClick,
-        onLogout: handleLogoutClick,
-        onEditFromPreview: handleEditFromPreview,
-        onSaveDayName: handleSaveDayName,
-        onSaveMemory: handleSaveMemorySubmit,
-        onDeleteMemory: handleDeleteMemory,
-        onSearchMusic: handleMusicSearch, 
-        onSearchPlace: handlePlaceSearch,
-        onStoreCategoryClick: handleStoreCategoryClick,
-        onStoreLoadMore: handleStoreLoadMore,
-        onStoreItemClick: handleStoreItemClick,
-        onCrumbieClick: handleCrumbieClick,
-    };
-}
-
+function getUICallbacks() { /* ... */ }
 // --- Manejadores de Autenticación ---
-async function handleLoginClick() { /* ... (sin cambios) */ }
-async function handleLogoutClick() { /* ... (sin cambios) */ }
-function handleAuthStateChange(user) { /* ... (sin cambios) */ }
-
+async function handleLoginClick() { /* ... */ }
+async function handleLogoutClick() { /* ... */ }
+function handleAuthStateChange(user) { /* ... */ }
 // --- Manejadores de UI ---
-function handleMonthChange(direction) { /* ... (sin cambios) */ }
-async function handleDayClick(dia) { /* ... (sin cambios) */ }
-async function handleEditFromPreview() { /* ... (sin cambios) */ }
-
-async function handleFooterAction(action) {
-    // ***** DEBUG: Añadido console.log *****
-    console.log(`handleFooterAction received: ${action}`);
-    // ************************************
-    switch (action) {
-        case 'add':
-            if (!state.currentUser) {
-                ui.showAlert("Debes iniciar sesión para añadir memorias.");
-                return;
-            }
-            ui.openEditModal(null, []); 
-            break;
-
-        case 'store':
-            ui.openStoreModal();
-            break;
-
-        case 'shuffle':
-            handleShuffleClick();
-            break;
-
-        case 'search':
-            const searchTerm = await ui.showPrompt("Buscar en todas las memorias:", '', 'search');
-            if (!searchTerm || searchTerm.trim() === '') return;
-            // ... (resto de lógica de búsqueda sin cambios)
-            const term = searchTerm.trim().toLowerCase();
-            ui.setLoading(`Buscando "${term}"...`, true);
-            try {
-                const results = await searchMemories(term);
-                ui.setLoading(null, false);
-                drawCurrentMonth(); // Restaurar calendario
-                // ... (mostrar resultados en spotlight)
-                 if (results.length === 0) {
-                    ui.updateSpotlight(`No hay resultados para "${term}"`, null, []);
-                } else {
-                    results.forEach(mem => {
-                        if (!mem.Nombre_Dia) {
-                            mem.Nombre_Dia = state.allDaysData.find(d => d.id === mem.diaId)?.Nombre_Dia || "Día";
-                        }
-                    });
-                    ui.updateSpotlight(`Resultados para "${term}" (${results.length})`, null, results);
-                }
-            } catch (err) {
-                 ui.setLoading(null, false);
-                 drawCurrentMonth(); // Restaurar calendario
-                 ui.showAlert(`Error al buscar: ${err.message}`);
-            }
-            break;
-
-        case 'settings':
-            ui.showAlert("Settings\n\nApp Version: 4.18 (Debug)\nMore settings coming soon!", 'settings');
-            break;
-
-
-        default:
-            console.warn("Acción de footer desconocida:", action);
-    }
-}
-
-function handleShuffleClick() { /* ... (sin cambios) */ }
-
-
+function handleMonthChange(direction) { /* ... */ }
+async function handleDayClick(dia) { /* ... */ }
+async function handleEditFromPreview() { /* ... */ }
+async function handleFooterAction(action) { /* ... */ }
+function handleShuffleClick() { /* ... */ }
 // --- 3. Lógica de Modales (Controlador) ---
-async function handleSaveDayName(diaId, newName, statusElementId = 'save-status') { /* ... (sin cambios) */ }
-async function handleSaveMemorySubmit(diaId, memoryData, isEditing) { /* ... (sin cambios) */ }
-
-async function handleDeleteMemory(diaId, mem) {
-    // ***** DEBUG: Añadido console.log *****
-    console.log(`handleDeleteMemory called with diaId: ${diaId}, memId: ${mem?.id}`);
-    // ************************************
-    
-    if (!state.currentUser) {
-        ui.showModalStatus('memoria-status', `Debes estar logueado`, true);
-        return;
-    }
-    if (!mem || !mem.id) {
-         ui.showModalStatus('memoria-status', `Error: Información de memoria inválida.`, true);
-         console.error("handleDeleteMemory recibió:", mem);
-         return;
-    }
-    if (!diaId) {
-         ui.showModalStatus('memoria-status', `Error: ID del día no proporcionado.`, true);
-         console.error("handleDeleteMemory recibió diaId nulo o indefinido");
-         return;
-    }
-
-
-    const info = mem.Descripcion || mem.LugarNombre || mem.CancionInfo || 'esta memoria';
-    const message = `¿Seguro que quieres borrar "${info.substring(0, 50)}..."?`;
-
-    const confirmed = await ui.showConfirm(message);
-
-    if (!confirmed) {
-        console.log("Borrado cancelado por el usuario."); // DEBUG
-        return;
-    }
-
-    try {
-        const imagenURL = (mem.Tipo === 'Imagen') ? mem.ImagenURL : null;
-        await deleteMemory(diaId, mem.id, imagenURL);
-        ui.showModalStatus('memoria-status', 'Memoria borrada', false);
-
-        const updatedMemories = await loadMemoriesForDay(diaId);
-        ui.updateMemoryList(updatedMemories); // Actualiza lista en el modal
-
-        if (updatedMemories.length === 0) {
-            const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
-            if (dayIndex !== -1) {
-                state.allDaysData[dayIndex].tieneMemorias = false;
-                drawCurrentMonth(); // Redibuja calendario para quitar dog-ear
-            }
-        }
-
-    } catch (err) {
-        console.error("Error borrando memoria:", err);
-        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true);
-    }
-}
-
+async function handleSaveDayName(diaId, newName, statusElementId = 'save-status') { /* ... */ }
+async function handleSaveMemorySubmit(diaId, memoryData, isEditing) { /* ... */ }
+async function handleDeleteMemory(diaId, mem) { /* ... */ }
 // --- 4. Lógica de API Externa (Controlador) ---
-async function handleMusicSearch(term) { /* ... (sin cambios) */ }
-async function handlePlaceSearch(term) { /* ... (sin cambios) */ }
-
+async function handleMusicSearch(term) { /* ... */ }
+async function handlePlaceSearch(term) { /* ... */ }
 // --- 5. Lógica del "Almacén" (Controlador) ---
-async function handleStoreCategoryClick(type) { /* ... (sin cambios) */ }
-async function handleStoreLoadMore() { /* ... (sin cambios) */ }
-function handleStoreItemClick(diaId) { /* ... (sin cambios) */ }
-
+async function handleStoreCategoryClick(type) { /* ... */ }
+async function handleStoreLoadMore() { /* ... */ }
+function handleStoreItemClick(diaId) { /* ... */ }
 // --- 6. Lógica de Crumbie (IA) ---
-function handleCrumbieClick() { /* ... (sin cambios) */ }
-
+function handleCrumbieClick() { /* ... */ }
 // --- 7. Ejecución Inicial ---
 checkAndRunApp();
