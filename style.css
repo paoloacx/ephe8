@@ -582,17 +582,13 @@ main {
     align-items: center;
     gap: 10px; /* Espacio entre select y botón */
     margin-bottom: 10px; /* Espacio debajo */
-    /* INICIO v17.6: Fix bug visual de overflow */
     min-width: 0; /* Permite que el flex-item se encoja */
-    /* FIN v17.6 */
 }
 #edit-mem-day {
     flex-grow: 1; /* El select ocupa el espacio sobrante */
-    /* INICIO v17.6: Fix bug visual de overflow */
     min-width: 0; /* Asegura que el select pueda encogerse */
     overflow: hidden; /* Opcional, ayuda a truncar texto si es necesario */
     text-overflow: ellipsis; /* Trunca el texto largo en la opción */
-    /* FIN v17.6 */
 }
 #btn-name-selected-day {
     flex-shrink: 0; /* El botón no se encoge */
@@ -867,7 +863,6 @@ main {
 }
 
 /* --- INICIO BLOQUE FALTANTE (v17.5 RE-AÑADIDO) --- */
-/* (Este bloque es necesario para los botones de editar/borrar en la lista) */
 #edit-memorias-list .memoria-actions {
     display: flex;
     flex-shrink: 0;
@@ -1004,7 +999,7 @@ a:hover { text-decoration: underline; }
     margin-top: 10px;
     font-size: 13px;
     text-align: center;
-    min-height: 1.2em; /* Original, para evitar saltos */
+    min-height: 1.2em; /* Original */
 }
 
 
