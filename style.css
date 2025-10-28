@@ -1,4 +1,4 @@
-/* style.css - v17.8 - Corrección Z-Index y UI Almacén */
+/* style.css - v17.9 - Corregida alineación categorías Almacén */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -987,9 +987,9 @@ main {
 .store-category-button span:nth-of-type(1) { /* El texto */
     flex-grow: 1;
     font-weight: bold;
-    /* INICIO CAMBIO: Alinear texto a la derecha */
-    text-align: right;
-    margin-right: 10px; /* Espacio antes del chevron */
+    /* INICIO CAMBIO v17.9: Revertido a alineación izquierda */
+    text-align: left;
+    margin-right: 0;
     /* FIN CAMBIO */
 }
 .store-category-button .material-icons-outlined:last-child { /* El chevron */
