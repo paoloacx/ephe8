@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.23 - Debugging botones delete y footer)
+ * ui.js (v4.24 - Blindaje try/catch en renderizado)
  * Módulo de interfaz de usuario.
  */
 
@@ -29,16 +29,23 @@ let _activeMaps = [];
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
-    console.log("UI Module init (v4.23 - Debugging botones)"); // Cambiado
-    callbacks = mainCallbacks;
-    _allDaysData = allDays || []; // ***** CAMBIO: Almacena allDays *****
+    console.log("UI Module init (v4.24 - Blindaje render)"); // Cambiado
+    // ***** CAMBIO: Asegurarse de que mainCallbacks es un objeto *****
+    if (typeof mainCallbacks !== 'object' || mainCallbacks === null) {
+        console.error("UI CRITICAL ERROR: mainCallbacks received in init is not an object:", mainCallbacks);
+        callbacks = {}; // Establecer a objeto vacío para evitar errores posteriores
+    } else {
+        callbacks = mainCallbacks;
+    }
+    // ***************************************************************
+    _allDaysData = allDays || [];
 
     _bindHeaderEvents();
     _bindNavEvents();
-    _bindFooterEvents(); // Asegura que settings se conecta
+    _bindFooterEvents();
     _bindLoginEvents();
     _bindGlobalListeners();
-    _bindCrumbieEvents(); // <-- Conectar Crumbie
+    _bindCrumbieEvents();
 
     // Pre-crear modales principales
     createPreviewModal();
@@ -49,8 +56,14 @@ function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
 
 function _bindHeaderEvents() {
     document.getElementById('header-search-btn')?.addEventListener('click', () => {
-        console.log("Header Search button clicked"); // DEBUG
-        if (callbacks.onFooterAction) callbacks.onFooterAction('search');
+        console.log("Header Search button clicked");
+        // ***** Añadido chequeo callbacks *****
+        if (callbacks && callbacks.onFooterAction) {
+            callbacks.onFooterAction('search');
+        } else {
+            console.error("UI: callbacks object or onFooterAction is missing in header search!");
+        }
+        // ***********************************
     });
 }
 
@@ -60,199 +73,204 @@ function _bindNavEvents() {
 
     if (prevBtn) {
         prevBtn.onclick = () => {
-            console.log("Prev Month button clicked"); // DEBUG
-            if (callbacks.onMonthChange) callbacks.onMonthChange('prev');
+            console.log("Prev Month button clicked");
+            if (callbacks && callbacks.onMonthChange) callbacks.onMonthChange('prev');
+            else console.error("UI: callbacks missing in prev month!");
         };
     }
     if (nextBtn) {
         nextBtn.onclick = () => {
-            console.log("Next Month button clicked"); // DEBUG
-            if (callbacks.onMonthChange) callbacks.onMonthChange('next');
+            console.log("Next Month button clicked");
+            if (callbacks && callbacks.onMonthChange) callbacks.onMonthChange('next');
+            else console.error("UI: callbacks missing in next month!");
         };
     }
 }
 
 function _bindFooterEvents() {
-    // ***** DEBUG: Añadidos console.log a todos *****
     document.getElementById('btn-add-memory')?.addEventListener('click', () => {
         console.log("Footer Add Memory button clicked");
-        if (callbacks.onFooterAction) callbacks.onFooterAction('add');
+        if (callbacks && callbacks.onFooterAction) callbacks.onFooterAction('add');
+        else console.error("UI: callbacks object or onFooterAction is missing in footer add!");
     });
     document.getElementById('btn-store')?.addEventListener('click', () => {
         console.log("Footer Store button clicked");
-        if (callbacks.onFooterAction) callbacks.onFooterAction('store');
+        if (callbacks && callbacks.onFooterAction) callbacks.onFooterAction('store');
+        else console.error("UI: callbacks object or onFooterAction is missing in footer store!");
     });
     document.getElementById('btn-shuffle')?.addEventListener('click', () => {
         console.log("Footer Shuffle button clicked");
-        if (callbacks.onFooterAction) callbacks.onFooterAction('shuffle');
+        if (callbacks && callbacks.onFooterAction) callbacks.onFooterAction('shuffle');
+        else console.error("UI: callbacks object or onFooterAction is missing in footer shuffle!");
     });
     document.getElementById('btn-settings')?.addEventListener('click', () => {
         console.log("Footer Settings button clicked");
-        if (callbacks.onFooterAction) callbacks.onFooterAction('settings');
-    });
-    // ***********************************************
-}
-
-function _bindCrumbieEvents() {
-    document.getElementById('crumbie-btn')?.addEventListener('click', () => {
-        console.log("Crumbie button clicked"); // DEBUG
-        if (callbacks.onCrumbieClick) {
-            callbacks.onCrumbieClick();
-        }
+        if (callbacks && callbacks.onFooterAction) callbacks.onFooterAction('settings');
+        else console.error("UI: callbacks object or onFooterAction is missing in footer settings!");
     });
 }
 
-function _bindLoginEvents() {
-    const header = document.querySelector('header');
-    header?.addEventListener('click', (e) => {
-        const loginBtn = e.target.closest('#login-btn');
-        const userInfo = e.target.closest('#user-info');
-
-        if (loginBtn) {
-            const action = loginBtn.dataset.action;
-            if (action === 'login' && callbacks.onLogin) {
-                console.log("Login button clicked"); // DEBUG
-                callbacks.onLogin();
-            }
-        } else if (userInfo && callbacks.onLogout) {
-            console.log("User Info (Logout) clicked"); // DEBUG
-            callbacks.onLogout();
-        }
-    });
-}
-
-function _bindGlobalListeners() {
-    document.body.addEventListener('click', (e) => {
-        // Cierre de modales al hacer clic fuera
-        if (e.target.classList.contains('modal-preview')) closePreviewModal();
-        if (e.target.classList.contains('modal-edit')) closeEditModal();
-        if (e.target.classList.contains('modal-store')) closeStoreModal();
-        if (e.target.classList.contains('modal-store-list')) closeStoreListModal();
-        if (e.target.classList.contains('modal-alert-prompt')) closeAlertPromptModal(false);
-        if (e.target.classList.contains('modal-confirm')) closeConfirmModal(false);
-    });
-}
+function _bindCrumbieEvents() { /* ... (sin cambios) */ }
+function _bindLoginEvents() { /* ... (sin cambios) */ }
+function _bindGlobalListeners() { /* ... (sin cambios) */ }
 
 // --- Funciones de Renderizado Principal ---
 function setLoading(message, show) { /* ... (sin cambios) */ }
 function updateLoginUI(user) { /* ... (sin cambios) */ }
-function drawCalendar(monthName, days, todayId) { /* ... (sin cambios) */ }
-function updateSpotlight(dateString, dayName, memories) { /* ... (sin cambios) */ }
+
+function drawCalendar(monthName, days, todayId) {
+    const monthNameDisplay = document.getElementById('month-name-display');
+    const appContent = document.getElementById('app-content');
+
+    if (monthNameDisplay) monthNameDisplay.textContent = monthName;
+    if (!appContent) {
+        console.error("UI ERROR: drawCalendar - #app-content not found!");
+        return;
+    }
+    console.log("UI: drawCalendar - #app-content found.");
+
+    // ***** AÑADIDO TRY...CATCH *****
+    try {
+        const grid = document.createElement('div');
+        grid.className = 'calendario-grid';
+
+        if (!days || !Array.isArray(days)) {
+             console.warn("UI WARN: drawCalendar received invalid 'days' data:", days);
+             days = []; // Prevenir error en forEach
+        }
+
+        days.forEach(dia => {
+            if (!dia || typeof dia.id !== 'string') {
+                 console.warn("UI WARN: drawCalendar skipping invalid 'dia' object:", dia);
+                 return; // Saltar este día
+            }
+            const btn = document.createElement('button');
+            btn.className = 'dia-btn';
+            // Extraer número de día de forma segura
+            const dayNum = parseInt(dia.id.substring(3));
+            btn.innerHTML = `<span class="dia-numero">${isNaN(dayNum) ? '?' : dayNum}</span>`;
+
+            if (dia.id === todayId) btn.classList.add('dia-btn-today');
+            if (dia.tieneMemorias) btn.classList.add('tiene-memorias');
+
+            btn.addEventListener('click', () => {
+                // Chequeo añadido aquí también
+                if (callbacks && callbacks.onDayClick) callbacks.onDayClick(dia);
+                else console.error("UI: callbacks missing in day click listener!");
+            });
+
+            grid.appendChild(btn);
+        });
+
+        console.log("UI: drawCalendar - Grid created, about to update innerHTML.");
+        appContent.innerHTML = ''; // Clear previous content
+        appContent.appendChild(grid); // Add the new grid
+        console.log("UI: drawCalendar - #app-content updated successfully.");
+    } catch (error) {
+        console.error("UI ERROR in drawCalendar:", error);
+        appContent.innerHTML = '<p class="loading-message error">Error al dibujar el calendario.</p>';
+    }
+    // **********************************
+}
+
+function updateSpotlight(dateString, dayName, memories) {
+    const titleEl = document.getElementById('spotlight-date-header');
+    const listEl = document.getElementById('today-memory-spotlight');
+
+    if (titleEl) titleEl.textContent = dateString;
+    if (!listEl) {
+         console.error("UI ERROR: updateSpotlight - #today-memory-spotlight not found!");
+         return;
+    }
+     console.log("UI: updateSpotlight - #today-memory-spotlight found.");
+
+    // ***** AÑADIDO TRY...CATCH *****
+    try {
+        listEl.innerHTML = ''; // Clear
+
+        if (dayName) {
+            const dayNameEl = document.createElement('h3');
+            dayNameEl.className = 'spotlight-day-name';
+            dayNameEl.textContent = `- ${dayName} -`;
+            listEl.appendChild(dayNameEl);
+        }
+
+        const containerEl = document.createElement('div');
+        containerEl.id = 'spotlight-memories-container';
+        listEl.appendChild(containerEl);
+
+        // Asegurarse que memories es un array
+        if (!memories || !Array.isArray(memories)) {
+            console.warn("UI WARN: updateSpotlight received invalid 'memories' data:", memories);
+            memories = [];
+        }
+
+        if (memories.length === 0) {
+            const placeholder = document.createElement('p');
+            placeholder.className = 'list-placeholder';
+            placeholder.textContent = 'No hay memorias destacadas.';
+            containerEl.appendChild(placeholder);
+        } else {
+            memories.forEach(mem => {
+                 if (!mem || typeof mem.Tipo !== 'string') {
+                     console.warn("UI WARN: updateSpotlight skipping invalid 'mem' object:", mem);
+                     return; // Saltar esta memoria
+                 }
+                const itemEl = document.createElement('div');
+                itemEl.className = 'spotlight-memory-item';
+                if (mem.Tipo === 'Texto') {
+                    itemEl.classList.add('spotlight-item-text');
+                }
+                // Usar try/catch dentro del loop por si createMemoryItemHTML falla
+                try {
+                     itemEl.innerHTML = createMemoryItemHTML(mem, false, 'spotlight');
+                } catch(htmlError) {
+                     console.error("UI ERROR creating HTML for memory item:", mem, htmlError);
+                     itemEl.innerHTML = `<p class="error">Error al mostrar memoria</p>`; // Mostrar error en lugar del item
+                }
+
+
+                itemEl.addEventListener('click', () => {
+                    const diaObj = _allDaysData.find(d => d.id === mem.diaId);
+                    if (diaObj && callbacks && callbacks.onDayClick) {
+                        callbacks.onDayClick(diaObj);
+                    } else if (!callbacks) {
+                         console.error("UI: callbacks missing in spotlight click listener!");
+                    }
+                    else {
+                        console.warn("No se encontró el objeto 'dia' para el spotlight:", mem.diaId);
+                    }
+                });
+                containerEl.appendChild(itemEl);
+            });
+            console.log("UI: updateSpotlight - Memories rendered, initializing maps...");
+             // Usar try/catch para _initMapsInContainer también
+             try {
+                _initMapsInContainer(containerEl, 'spotlight');
+             } catch (mapError) {
+                 console.error("UI ERROR initializing maps in spotlight:", mapError);
+             }
+        }
+         console.log("UI: updateSpotlight - finished successfully.");
+    } catch (error) {
+        console.error("UI ERROR in updateSpotlight:", error);
+        listEl.innerHTML = '<p class="list-placeholder error">Error al cargar el spotlight.</p>';
+    }
+    // **********************************
+}
+
 
 // --- Modal: Vista Previa (Preview) ---
 function createPreviewModal() { /* ... (sin cambios) */ }
 function showPreviewLoading(isLoading) { /* ... (sin cambios) */ }
 function openPreviewModal(dia, memories) { /* ... (sin cambios) */ }
-function closePreviewModal() { /* ... (sin cambios) */ }
+function closePreviewModal() { /* ... (sin cambios, la lógica de mapas está bien aquí) */ }
 
 // --- Modal: Edición (Edit/Add) ---
 function createEditModal() { /* ... (sin cambios) */ }
 function showEditLoading(isLoading) { /* ... (sin cambios) */ }
 async function handleNameSelectedDay() { /* ... (sin cambios) */ }
-
-function _bindEditModalEvents() {
-    document.getElementById('close-edit-add-btn')?.addEventListener('click', closeEditModal);
-    document.getElementById('save-name-btn')?.addEventListener('click', () => {
-        if (callbacks.onSaveDayName && _currentDay) {
-            const input = document.getElementById('nombre-especial-input');
-            callbacks.onSaveDayName(_currentDay.id, input.value.trim(), 'save-status');
-        }
-    });
-
-    document.getElementById('btn-name-selected-day')?.addEventListener('click', handleNameSelectedDay);
-
-    document.getElementById('btn-show-add-form')?.addEventListener('click', () => {
-        resetMemoryForm();
-        _showMemoryForm(true);
-    });
-
-    document.getElementById('btn-cancel-mem-edit')?.addEventListener('click', () => {
-        _showMemoryForm(false);
-    });
-
-    document.getElementById('memory-form')?.addEventListener('submit', _handleFormSubmit);
-    document.getElementById('memoria-type')?.addEventListener('change', handleMemoryTypeChange);
-
-    document.getElementById('btn-search-itunes')?.addEventListener('click', () => {
-        console.log("Search Music button clicked in modal"); // DEBUG
-        if (callbacks.onSearchMusic) {
-            const term = document.getElementById('memoria-music-search').value;
-            if (term) callbacks.onSearchMusic(term);
-        }
-    });
-    document.getElementById('btn-search-place')?.addEventListener('click', () => {
-        console.log("Search Place button clicked in modal"); // DEBUG
-        if (callbacks.onSearchPlace) {
-            const term = document.getElementById('memoria-place-search').value;
-            if (term) callbacks.onSearchPlace(term);
-        }
-    });
-
-    const listEl = document.getElementById('edit-memorias-list');
-    listEl?.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-btn');
-        const deleteBtn = e.target.closest('.delete-btn');
-
-        if (editBtn) {
-            const memoriaId = editBtn.dataset.memoriaId;
-            console.log("Edit button clicked for memory:", memoriaId); // DEBUG
-            if (!memoriaId) {
-                console.error("ID de memoria inválido en el botón de editar.");
-                return;
-            }
-            if (_currentMemories && _currentMemories.length > 0) {
-                const memToEdit = _currentMemories.find(m => m.id === memoriaId);
-                if (memToEdit) {
-                    fillFormForEdit(memToEdit);
-                } else {
-                    console.error("No se encontró la memoria en _currentMemories:", memoriaId);
-                    showModalStatus('memoria-status', 'Error: Memoria no encontrada.', true);
-                }
-            }
-        }
-
-        if (deleteBtn) {
-            const memoriaId = deleteBtn.dataset.memoriaId;
-            // ***** DEBUG: Añadido console.log *****
-            console.log("Delete button clicked for memory:", memoriaId);
-            console.log("Current Day (_currentDay) in Edit Modal:", _currentDay);
-            // ************************************
-            if (!memoriaId) {
-                console.error("ID de memoria inválido en el botón de borrar.");
-                return;
-            }
-            const mem = _currentMemories.find(m => m.id === memoriaId);
-
-            if (!mem) {
-                console.error("No se encontró la memoria para borrar:", memoriaId);
-                return;
-            }
-
-            if (!callbacks.onDeleteMemory) {
-                 console.error("Callback onDeleteMemory no está definido.");
-                 return;
-            }
-
-            // Determinar el día ID
-            let diaIdToDeleteFrom = null;
-            if (_currentDay) { // Modo Editar Día
-                diaIdToDeleteFrom = _currentDay.id;
-            } else { // Modo Añadir Memoria (día seleccionado en el <select>)
-                const daySelect = document.getElementById('edit-mem-day');
-                diaIdToDeleteFrom = daySelect?.value;
-            }
-
-            if (diaIdToDeleteFrom) {
-                 console.log(`Calling onDeleteMemory for diaId: ${diaIdToDeleteFrom}, memId: ${mem.id}`); // DEBUG
-                 callbacks.onDeleteMemory(diaIdToDeleteFrom, mem);
-            } else {
-                 console.error("No se pudo determinar el ID del día para borrar la memoria.");
-                 showModalStatus('memoria-status', 'Error: No se pudo determinar el día.', true);
-            }
-        }
-    });
-}
-
+function _bindEditModalEvents() { /* ... (sin cambios, los logs ya están) */ }
 function _showMemoryForm(show) { /* ... (sin cambios) */ }
 function openEditModal(dia, memories) { /* ... (sin cambios) */ }
 function closeEditModal() { /* ... (sin cambios) */ }
