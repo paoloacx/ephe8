@@ -1,58 +1,72 @@
 /* api.js */
 /* Módulo para gestionar llamadas a APIs externas (iTunes, Nominatim) */
-/* (v2.1 - Eliminado &media=music que causaba el redirect a musics://) */
+/* (v2.2 - Improved Error Handling & Logging) */
 
 /**
  * Busca canciones en la API de iTunes.
  * @param {string} term - El término de búsqueda.
- * @returns {Promise<object>} La respuesta JSON de la API.
+ * @returns {Promise<Array|null>} Un array de resultados o null si hay error.
  */
-export async function searchMusic(term) { // Renombrado de searchiTunes a searchMusic
-    
-    // CAMBIO: Llamada directa SIN el parámetro '&media=music'.
-    // Esto es lo que hace tu app claude2 y evita la redirección a 'musics://'.
+export async function searchMusic(term) {
+    // Llamada directa SIN el parámetro '&media=music'.
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=5`;
-    
+    console.log("[DEBUG API] Buscando música:", url); // Log añadido
+
     try {
-        // Hacemos el fetch directamente a la API de iTunes
         const response = await fetch(url);
-        
+        console.log("[DEBUG API] Respuesta iTunes status:", response.status); // Log añadido
+
         if (!response.ok) {
+            // Loguear el texto de la respuesta si es posible, puede dar pistas
+            let errorText = response.statusText;
+            try {
+                errorText = await response.text();
+            } catch (e) { /* Ignorar si no se puede leer el texto */ }
+            console.error(`[DEBUG API] iTunes API error! Status: ${response.status}, Mensaje: ${errorText}`);
             throw new Error(`iTunes API error! status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log("[DEBUG API] Datos iTunes recibidos:", data); // Log añadido
         
-        // La respuesta de iTunes está en 'data.results'
+        // Devolver el array de resultados o un array vacío si no hay
         return data.results || [];
 
     } catch (error) {
-        console.error('iTunes API Error (Llamada Directa v2.1):', error);
-        if (error instanceof SyntaxError) {
-             throw new Error("Error al parsear la respuesta de iTunes.");
-        }
-        // Si el fetch falla (p.ej. sin conexión o el redirect 'musics://')
-        throw new Error(`Fallo en la llamada a iTunes: ${error.message}`);
+        console.error('[DEBUG API] Error en searchMusic:', error);
+        // Devolver null para indicar que hubo un error
+        return null; 
     }
 }
 
 /**
  * Busca lugares en la API de Nominatim (OpenStreetMap).
  * @param {string} term - El término de búsqueda.
- * @returns {Promise<object>} La respuesta JSON de la API.
+ * @returns {Promise<Array|null>} Un array de resultados o null si hay error.
  */
 export async function searchNominatim(term) {
-    // Nominatim funciona bien con llamada directa
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&limit=5`;
+    console.log("[DEBUG API] Buscando lugar:", url); // Log añadido
     
     try {
         const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        console.log("[DEBUG API] Respuesta Nominatim status:", response.status); // Log añadido
+
         if (!response.ok) {
+             let errorText = response.statusText;
+            try {
+                errorText = await response.text();
+            } catch (e) { /* Ignorar */ }
+            console.error(`[DEBUG API] Nominatim API error! Status: ${response.status}, Mensaje: ${errorText}`);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return await response.json();
+        const data = await response.json();
+        console.log("[DEBUG API] Datos Nominatim recibidos:", data); // Log añadido
+        // Nominatim devuelve un array directamente
+        return data; 
     } catch (error) {
-        console.error('Nominatim API Error:', error);
-        throw new Error(`Nominatim API Error: ${error.message}`); // Lanza el error para que el controlador lo coja
+        console.error('[DEBUG API] Error en searchNominatim:', error);
+         // Devolver null para indicar que hubo un error
+        return null;
     }
 }
