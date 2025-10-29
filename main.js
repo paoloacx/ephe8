@@ -1,5 +1,5 @@
 /*
- * main.js (v4.20 - Pasa userId a Store)
+ * main.js (v4.21 - Restaurada lógica de búsqueda)
  * Controlador principal de Ephemerides.
  */
 
@@ -39,7 +39,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v4.20 (Pasa userId a Store)..."); // Cambiado
+    console.log("Iniciando Ephemerides v4.21 (Búsquedas restauradas)..."); // Cambiado
 
     try {
         ui.setLoading("Iniciando...", true);
@@ -292,7 +292,7 @@ async function handleFooterAction(action) {
     }
     // La acción 'settings' no requiere login
     if (action === 'settings') {
-         ui.showAlert("Settings\n\nApp Version: 4.20 (User Data)\nMore settings coming soon!", 'settings');
+         ui.showAlert("Settings\n\nApp Version: 4.21 (Búsquedas restauradas)\nMore settings coming soon!", 'settings');
          return;
     }
     
@@ -455,7 +455,7 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 
         ui.showModalStatus('memoria-status', isEditing ? 'Memoria actualizada' : 'Memoria guardada', false);
         
-        ui.resetMemoryForm(); // Esto oculta el form ahora
+        ui.resetMemoryForm(); // ESTA ES LA LÍNEA DEL FIX
 
         // CAMBIO: Pasar userId
         const updatedMemories = await loadMemoriesForDay(userId, diaId);
@@ -531,9 +531,32 @@ async function handleDeleteMemory(diaId, mem) {
 }
 
 // --- 4. Lógica de API Externa (Controlador) ---
-// (No necesitan userId)
-async function handleMusicSearch(term) { /* ... sin cambios ... */ }
-async function handlePlaceSearch(term) { /* ... sin cambios ... */ }
+
+// ***** CAMBIO: Lógica de búsqueda restaurada *****
+async function handleMusicSearch(term) {
+    if (!term || term.trim() === '') return;
+    try {
+        const results = await searchMusic(term);
+        ui.showMusicResults(results);
+    } catch (error) {
+        console.error("Error en handleMusicSearch:", error);
+        ui.showModalStatus('memoria-status', `Error al buscar música: ${error.message}`, true);
+        ui.showMusicResults([]); // Limpiar resultados en caso de error
+    }
+}
+
+async function handlePlaceSearch(term) {
+    if (!term || term.trim() === '') return;
+    try {
+        const results = await searchNominatim(term);
+        ui.showPlaceResults(results);
+    } catch (error) {
+        console.error("Error en handlePlaceSearch:", error);
+        ui.showModalStatus('memoria-status', `Error al buscar lugares: ${error.message}`, true);
+        ui.showPlaceResults([]); // Limpiar resultados en caso de error
+    }
+}
+// ***** FIN CAMBIO *****
 
 
 // --- 5. Lógica del "Almacén" (Controlador) ---
