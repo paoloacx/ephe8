@@ -1,10 +1,7 @@
 /*
- * ui.js (v2.69 - Modularización: Maps extraídos)
- * Módulo de interfaz de usuario.
+ * ui.js (v2.69 - Search Results Modal)
+ * Módulo de interfaz de usuario con modal de búsqueda global.
  */
-
-// --- IMPORTACIÓN DEL NUEVO MÓDULO ---
-import { uiMaps } from './ui-maps.js';
 
 // --- Variables privadas del módulo (Estado de la UI) ---
 let callbacks = {}; // Almacena las funciones de main.js
@@ -24,16 +21,15 @@ let previewModal = null;
 let editModal = null;
 let storeModal = null;
 let storeListModal = null;
+let searchResultsModal = null; // NUEVO
 
-// *** ELIMINADO: let _activeMaps = []; ***
-// Ahora se gestiona en ui-maps.js
+let _activeMaps = []; // Para gestionar mapas Leaflet
 
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.69 - Maps Modular)"); // Versión actualizada
+    console.log("UI Module init (v2.69 - Search Modal)");
     callbacks = mainCallbacks;
-    // _allDaysData se llenará con updateAllDaysData
 
     _bindHeaderEvents();
     _bindNavEvents();
@@ -47,6 +43,7 @@ function init(mainCallbacks) {
     createEditModal();
     createStoreModal();
     createStoreListModal();
+    createSearchResultsModal(); // NUEVO
     createAlertPromptModal();
     createConfirmModal();
 }
@@ -54,7 +51,7 @@ function init(mainCallbacks) {
 // --- Bindings ---
 function _bindHeaderEvents() {
     document.getElementById('header-search-btn')?.addEventListener('click', () => {
-        if (callbacks.onFooterAction) callbacks.onFooterAction('search');
+        if (callbacks.onHeaderAction) callbacks.onHeaderAction('search');
     });
 }
 function _bindNavEvents() {
@@ -91,6 +88,7 @@ function _bindGlobalListeners() {
         if (e.target.classList.contains('modal-edit')) closeEditModal();
         if (e.target.classList.contains('modal-store')) closeStoreModal();
         if (e.target.classList.contains('modal-store-list')) closeStoreListModal();
+        if (e.target.classList.contains('modal-search-results')) closeSearchResultsModal(); // NUEVO
         if (e.target.classList.contains('modal-alert-prompt')) closeAlertPromptModal(false);
         if (e.target.classList.contains('modal-confirm')) closeConfirmModal(false);
     });
@@ -217,12 +215,11 @@ function updateSpotlight(dateString, dayName, memories) {
         placeholder.className = 'list-placeholder';
         placeholder.textContent = 'No hay memorias destacadas.';
         containerEl.appendChild(placeholder);
-         uiMaps.destroyMapsInContainer(containerEl); // *** USA MÓDULO ***
+         _destroyActiveMaps(containerEl);
         return;
     }
 
-    // Limpiar mapas antiguos solo de este contenedor
-     uiMaps.destroyMapsInContainer(containerEl); // *** USA MÓDULO ***
+    _destroyActiveMaps(containerEl);
 
     memories.forEach(mem => {
         const itemEl = document.createElement('div');
@@ -246,8 +243,7 @@ function updateSpotlight(dateString, dayName, memories) {
         containerEl.appendChild(itemEl);
     });
 
-    // Inicializar mapas *después* de que todos los items estén en el DOM
-    uiMaps.initMapsInContainer(containerEl, 'spotlight'); // *** USA MÓDULO ***
+    _initMapsInContainer(containerEl, 'spotlight');
 }
 
 
@@ -305,15 +301,13 @@ function openPreviewModal(dia, memories) {
     const dayNameSpecial = dia.Nombre_Especial !== 'Unnamed Day' ? `: -${dia.Nombre_Especial}-` : '';
     if (titleEl) titleEl.textContent = `${dia.Nombre_Dia}${dayNameSpecial}`;
 
-    // Limpiar mapas antiguos (solo del modal) antes de renderizar
-    uiMaps.destroyMapsInContainer(previewModal); // *** USA MÓDULO ***
+    _destroyActiveMaps(previewModal);
     _renderMemoryList(listEl, memories, false, 'preview');
 
     previewModal.style.display = 'flex';
     setTimeout(() => {
         previewModal.classList.add('visible');
-        // Inicializar mapas después de que el modal sea visible y el contenido esté renderizado
-        uiMaps.initMapsInContainer(listEl, 'preview'); // *** USA MÓDULO ***
+        _initMapsInContainer(listEl, 'preview');
     }, 10);
 }
 
@@ -321,11 +315,110 @@ function closePreviewModal() {
     if (!previewModal) return;
     previewModal.classList.remove('visible');
 
-    uiMaps.destroyMapsInContainer(previewModal); // *** USA MÓDULO ***
+    _destroyActiveMaps(previewModal); 
 
     setTimeout(() => {
         previewModal.style.display = 'none';
         _currentDay = null;
+    }, 200);
+}
+
+
+// --- Modal: Resultados de Búsqueda (NUEVO) ---
+function createSearchResultsModal() {
+    if (searchResultsModal) return;
+
+    searchResultsModal = document.createElement('div');
+    searchResultsModal.id = 'search-results-modal';
+    searchResultsModal.className = 'modal-search-results';
+    searchResultsModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-preview-header">
+                <h3 id="search-results-title">Resultados de búsqueda</h3>
+            </div>
+            <div class="modal-content-scrollable striped-background" id="search-results-content">
+                <p class="list-placeholder">Buscando...</p>
+            </div>
+            <div class="modal-main-buttons">
+                <button id="close-search-results-btn" class="aqua-button">Cerrar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(searchResultsModal);
+
+    document.getElementById('close-search-results-btn')?.addEventListener('click', closeSearchResultsModal);
+    
+    // Hacer que los resultados sean clickeables
+    const contentEl = document.getElementById('search-results-content');
+    contentEl?.addEventListener('click', (e) => {
+        const item = e.target.closest('.search-result-memory-item');
+        if (item && item.dataset.diaId) {
+            const diaObj = _allDaysData.find(d => d.id === item.dataset.diaId);
+            if (diaObj && callbacks.onDayClick) {
+                closeSearchResultsModal();
+                setTimeout(() => {
+                    callbacks.onDayClick(diaObj);
+                }, 300);
+            }
+        }
+    });
+}
+
+function openSearchResultsModal(searchTerm, results) {
+    if (!searchResultsModal) createSearchResultsModal();
+
+    const titleEl = document.getElementById('search-results-title');
+    const contentEl = document.getElementById('search-results-content');
+
+    if (titleEl) {
+        titleEl.textContent = results.length > 0 
+            ? `Resultados para "${searchTerm}" (${results.length})`
+            : `Sin resultados para "${searchTerm}"`;
+    }
+
+    if (contentEl) {
+        contentEl.innerHTML = '';
+        
+        if (results.length === 0) {
+            contentEl.innerHTML = '<p class="list-placeholder" style="padding: 20px;">No se encontraron memorias.</p>';
+        } else {
+            _destroyActiveMaps(searchResultsModal);
+            
+            results.forEach(mem => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'search-result-memory-item';
+                itemEl.dataset.diaId = mem.diaId;
+                
+                const dayName = mem.Nombre_Dia || 'Día';
+                const daySpecial = mem.Nombre_Especial && mem.Nombre_Especial !== 'Unnamed Day' 
+                    ? ` (${mem.Nombre_Especial})` 
+                    : '';
+                
+                itemEl.innerHTML = `
+                    <div class="search-result-day-label">
+                        <span class="material-icons-outlined">event</span>
+                        ${dayName}${daySpecial}
+                    </div>
+                    ${createMemoryItemHTML(mem, false, 'search')}
+                `;
+                
+                contentEl.appendChild(itemEl);
+            });
+            
+            _initMapsInContainer(contentEl, 'search');
+        }
+    }
+
+    searchResultsModal.style.display = 'flex';
+    setTimeout(() => searchResultsModal.classList.add('visible'), 10);
+}
+
+function closeSearchResultsModal() {
+    if (!searchResultsModal) return;
+    searchResultsModal.classList.remove('visible');
+    _destroyActiveMaps(searchResultsModal);
+    setTimeout(() => {
+        searchResultsModal.style.display = 'none';
     }, 200);
 }
 
@@ -511,7 +604,6 @@ function _showMemoryForm(show) {
     if (form) form.style.display = show ? 'block' : 'none';
     if (addMemoryButtonContainer) addMemoryButtonContainer.style.display = show ? 'none' : 'block';
 
-    // La lista solo se muestra si NO estamos mostrando el formulario Y estamos en modo Editar Día
     if (memoryListContainer) {
         memoryListContainer.style.display = (!show && _currentDay) ? 'block' : 'none';
     }
@@ -530,7 +622,7 @@ function openEditModal(dia, memories) {
     const addMemoryButtonContainer = document.getElementById('add-memory-button-container');
     const memoryListContainer = document.getElementById('edit-memorias-list-container');
 
-    if (dia) { // Modo Editar Día
+    if (dia) {
         daySelection.style.display = 'none';
         dayNameSection.style.display = 'block';
         addMemoryButtonContainer.style.display = 'block';
@@ -541,7 +633,7 @@ function openEditModal(dia, memories) {
         titleEl.textContent = `${dia.Nombre_Dia}${dayName}`;
         nameInput.value = dia.Nombre_Especial !== 'Unnamed Day' ? dia.Nombre_Especial : '';
 
-    } else { // Modo Añadir Memoria
+    } else {
         daySelection.style.display = 'block';
         addMemoryButtonContainer.style.display = 'block';
         dayNameSection.style.display = 'none';
@@ -583,7 +675,7 @@ function openEditModal(dia, memories) {
 function closeEditModal() {
     if (!editModal) return;
     editModal.classList.remove('visible');
-    uiMaps.destroyMapsInContainer(editModal); // *** USA MÓDULO ***
+    _destroyActiveMaps(editModal);
     setTimeout(() => {
         editModal.style.display = 'none';
         _currentDay = null;
@@ -869,8 +961,72 @@ function showConfirm(message) {
 
 
 // --- Funciones de Ayuda (Helpers) de UI ---
-// *** ELIMINADAS: _renderMap, _initMapsInContainer, _destroyActiveMaps ***
-// Ahora están en ui-maps.js
+
+function _renderMap(containerId, lat, lon, zoom = 13) {
+    try {
+        const container = document.getElementById(containerId);
+        if (!container || container._leaflet_id) {
+            return;
+        }
+        const map = L.map(containerId).setView([lat, lon], zoom);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        L.marker([lat, lon]).addTo(map);
+        _activeMaps.push(map);
+    } catch (e) {
+        console.error("Error renderizando mapa Leaflet:", e);
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = "Error al cargar el mapa.";
+        }
+    }
+}
+
+function _initMapsInContainer(containerEl, prefix) {
+    if (!containerEl) return;
+    const mapPlaceholders = containerEl.querySelectorAll(`div[id^="${prefix}-map-"][data-lat]`);
+    mapPlaceholders.forEach(el => {
+        if (el._leaflet_id) return;
+        const lat = el.dataset.lat;
+        const lon = el.dataset.lon;
+        const zoom = el.dataset.zoom || 13;
+        if (lat && lon) {
+            setTimeout(() => {
+                 _renderMap(el.id, parseFloat(lat), parseFloat(lon), parseInt(zoom));
+            }, 50); 
+        }
+    });
+}
+
+function _destroyActiveMaps(containerEl) {
+    if (!containerEl) {
+        console.warn("_destroyActiveMaps llamada sin contenedor. Abortando.");
+        return; 
+    }
+
+    const mapsToDestroy = [];
+    const stillActiveMaps = [];
+
+    _activeMaps.forEach(map => {
+        if (containerEl.contains(map.getContainer())) {
+            mapsToDestroy.push(map);
+        } else {
+            stillActiveMaps.push(map);
+        }
+    });
+
+    mapsToDestroy.forEach(map => {
+        try { 
+            map.remove(); 
+        } catch(e) { 
+            console.warn("Error removing map:", e); 
+        }
+    });
+    
+    _activeMaps = stillActiveMaps;
+}
+
 
 function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') {
     if (!listEl) return;
@@ -905,9 +1061,9 @@ function updateMemoryList(memories) {
 
     const previewList = document.getElementById('preview-memorias-list');
     if (previewList && previewModal && previewModal.classList.contains('visible') && _currentDay) {
-         uiMaps.destroyMapsInContainer(previewModal); // *** USA MÓDULO ***
+         _destroyActiveMaps(previewModal);
          _renderMemoryList(previewList, _currentMemories, false, 'preview');
-         setTimeout(() => uiMaps.initMapsInContainer(previewList, 'preview'), 10); // *** USA MÓDULO ***
+         setTimeout(() => _initMapsInContainer(previewList, 'preview'), 10);
     }
 }
 
@@ -939,7 +1095,7 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
                 const lat = mem.LugarData.lat;
                 const lon = mem.LugarData.lon;
                 const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-                const mapClass = (mapIdPrefix === 'spotlight') ? 'spotlight-map-container' : 'memoria-map-container';
+                const mapClass = (mapIdPrefix === 'spotlight' || mapIdPrefix === 'search') ? 'spotlight-map-container' : 'memoria-map-container';
                 mapHTML = `<div id="${mapContainerId}"
                                 class="${mapClass}"
                                 data-lat="${lat}"
@@ -992,7 +1148,7 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
         </div>` : '';
 
     const mainContentHTML = `
-        <div class="memoria-item-main-content ${mapIdPrefix === 'spotlight' ? 'spotlight-item-main-content' : ''}">
+        <div class="memoria-item-main-content ${mapIdPrefix === 'spotlight' || mapIdPrefix === 'search' ? 'spotlight-item-main-content' : ''}">
             ${artworkHTML}
             <div class="memoria-item-content">${contentHTML}</div>
             ${actionsHTML}
@@ -1357,6 +1513,8 @@ export const ui = {
     closeStoreModal,
     openStoreListModal,
     closeStoreListModal,
+    openSearchResultsModal,  // NUEVO
+    closeSearchResultsModal, // NUEVO
     showAlert,
     showPrompt,
     showConfirm,
