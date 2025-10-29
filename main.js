@@ -1,5 +1,5 @@
 /*
- * main.js (v4.20 - Pasa userId a Store)
+ * main.js (v4.21 - Improved API Error Handling & Logging)
  * Controlador principal de Ephemerides.
  */
 
@@ -19,7 +19,7 @@ import {
     getNamedDays,
     uploadImage
 } from './store.js';
-import { searchMusic, searchNominatim } from './api.js'; // v2.1
+import { searchMusic, searchNominatim } from './api.js'; // v2.2 (Import actualizado si es necesario)
 import { ui } from './ui.js';
 
 // --- Estado Global de la App ---
@@ -39,13 +39,13 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v4.20 (Pasa userId a Store)..."); // Cambiado
+    console.log("Iniciando Ephemerides v4.21 (API Error Handling)..."); // Cambiado
 
     try {
         ui.setLoading("Iniciando...", true);
         initFirebase();
         
-        ui.init(getUICallbacks(), []); 
+        ui.init(getUICallbacks()); // ui.init ya no necesita allDays
         initAuthListener(handleAuthStateChange); 
 
         ui.setLoading("Autenticando...", true);
@@ -65,7 +65,6 @@ async function checkAndRunApp() {
 }
 
 async function initializeUserSession() {
-    // CAMBIO: Asegurarse de tener currentUser antes de proceder
     if (!state.currentUser || !state.currentUser.uid) {
         console.error("initializeUserSession llamado sin usuario válido.");
         ui.showApp(false);
@@ -78,29 +77,26 @@ async function initializeUserSession() {
 
     try {
         ui.setLoading("Verificando base de datos...", true);
-        // CAMBIO: Pasar userId
         await storeCheckAndRun(userId, (message) => ui.setLoading(message, true));
         
         ui.setLoading("Cargando calendario...", true);
-        // CAMBIO: Pasar userId
         state.allDaysData = await loadAllDaysData(userId);
 
         if (state.allDaysData.length === 0 && state.currentUser) {
-             // Si sigue vacío después de checkAndRun, puede ser un error raro o
-             // que checkAndRun no pudo generar. Mostramos mensaje, pero dejamos la app visible (vacía).
             console.error(`Error: No se cargaron días para ${userId} incluso después de checkAndRunApp.`);
             ui.showAlert("No se pudieron cargar los datos del calendario. Intenta recargar.");
-             // No lanzamos error para permitir al usuario interactuar (ej. logout)
         }
 
         const today = new Date();
         state.todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
 
+        // Pasar los datos a la UI *después* de cargarlos
         ui.updateAllDaysData(state.allDaysData); 
 
-        drawCurrentMonth(); // Dibuja con los datos (posiblemente vacíos si hubo error)
-        loadTodaySpotlight(); // Carga spotlight (posiblemente vacío)
+        drawCurrentMonth(); 
+        loadTodaySpotlight(); 
         
+        // Mostrar la app al final
         ui.showApp(true); 
 
     } catch (err) {
@@ -111,20 +107,17 @@ async function initializeUserSession() {
 }
 
 async function loadTodaySpotlight() {
-    // CAMBIO: Asegurarse de tener userId
     if (!state.currentUser || !state.currentUser.uid) return;
     const userId = state.currentUser.uid;
 
     const today = new Date();
     const dateString = `Hoy, ${today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`;
 
-    // CAMBIO: Pasar userId
     const spotlightData = await getTodaySpotlight(userId, state.todayId);
 
     if (spotlightData) {
         spotlightData.memories.forEach(mem => {
             if (!mem.Nombre_Dia) {
-                // state.allDaysData puede estar vacío si la carga falló, añadir check
                 mem.Nombre_Dia = state.allDaysData.find(d => d.id === mem.diaId)?.Nombre_Dia || "Día";
             }
         });
@@ -135,11 +128,9 @@ async function loadTodaySpotlight() {
 }
 
 function drawCurrentMonth() {
-    // Esta función no necesita userId directamente, usa state.allDaysData
     const monthName = new Date(2024, state.currentMonthIndex, 1).toLocaleDateString('es-ES', { month: 'long' });
     const monthNumber = state.currentMonthIndex + 1;
 
-    // Si allDaysData está vacío, diasDelMes estará vacío, drawCalendar mostrará nada (correcto)
     const diasDelMes = state.allDaysData.filter(dia =>
         parseInt(dia.id.substring(0, 2), 10) === monthNumber
     );
@@ -161,8 +152,8 @@ function getUICallbacks() {
         onSaveDayName: handleSaveDayName,
         onSaveMemory: handleSaveMemorySubmit,
         onDeleteMemory: handleDeleteMemory,
-        onSearchMusic: handleMusicSearch,
-        onSearchPlace: handlePlaceSearch,
+        onSearchMusic: handleMusicSearch, // Vinculado
+        onSearchPlace: handlePlaceSearch, // Vinculado
         onStoreCategoryClick: handleStoreCategoryClick,
         onStoreLoadMore: handleStoreLoadMore,
         onStoreItemClick: handleStoreItemClick,
@@ -191,34 +182,36 @@ async function handleLogoutClick() {
 }
 
 function handleAuthStateChange(user) {
-    const previousUser = state.currentUser; // Guardar estado anterior
+    const previousUser = state.currentUser; 
     state.currentUser = user;
     ui.updateLoginUI(user);
     console.log("Estado de autenticación cambiado:", user ? user.uid : "Logged out");
 
     if (user) {
-        // Solo inicializar si es un usuario NUEVO o si no había datos cargados
         if (!previousUser || state.allDaysData.length === 0) {
             initializeUserSession(); 
         } else {
-             // Si el usuario ya estaba logueado (ej. recarga de página),
-             // checkAuthState ya habrá disparado esto, no hacer nada extra.
              console.log("Sesión ya inicializada, mostrando app.");
-             ui.showApp(true); // Asegurarse de que la app es visible
+             ui.showApp(true); 
         }
     } else {
+        // Limpiar estado y UI al cerrar sesión
         ui.showApp(false); 
         state.allDaysData = []; 
-        ui.updateAllDaysData([]); 
-        ui.closeEditModal();
+        ui.updateAllDaysData([]); // Limpiar datos en UI
+        ui.closeEditModal();    // Cerrar modales abiertos
         ui.closePreviewModal(); 
+        ui.closeStoreModal();
+        ui.closeStoreListModal();
+        // Limpiar spotlight
+        ui.updateSpotlight("Hoy", null, []);
     }
 }
 
 // --- Manejadores de UI ---
 
 function handleMonthChange(direction) {
-    if (!state.currentUser) return; // No hacer nada si no hay usuario
+    if (!state.currentUser) return; 
     if (direction === 'prev') {
         state.currentMonthIndex = (state.currentMonthIndex - 1 + 12) % 12;
     } else {
@@ -228,7 +221,6 @@ function handleMonthChange(direction) {
 }
 
 async function handleDayClick(dia) {
-    // CAMBIO: Verificar usuario
     if (!state.currentUser || !state.currentUser.uid) return;
     const userId = state.currentUser.uid;
     
@@ -236,7 +228,6 @@ async function handleDayClick(dia) {
     let memories = [];
     try {
         ui.showPreviewLoading(true);
-        // CAMBIO: Pasar userId
         memories = await loadMemoriesForDay(userId, dia.id);
         ui.showPreviewLoading(false);
     } catch (e) {
@@ -256,7 +247,6 @@ async function handleEditFromPreview() {
         return;
     }
 
-    // CAMBIO: Verificar usuario aquí también
     if (!state.currentUser || !state.currentUser.uid) {
         ui.showAlert("Debes iniciar sesión para poder editar.");
         return;
@@ -268,7 +258,6 @@ async function handleEditFromPreview() {
         let memories = [];
         try {
              ui.showEditLoading(true);
-             // CAMBIO: Pasar userId
              memories = await loadMemoriesForDay(userId, dia.id);
              ui.showEditLoading(false);
         } catch (e) {
@@ -277,27 +266,23 @@ async function handleEditFromPreview() {
              ui.showAlert(`Error al cargar memorias: ${e.message}`);
              return;
         }
-        // openEditModal necesita los datos generales (_allDaysData) que ya tiene la UI
         ui.openEditModal(dia, memories); 
     }, 250);
 }
 
 
 async function handleFooterAction(action) {
-    // CAMBIO: Mover la comprobación de currentUser al principio para acciones protegidas
     const protectedActions = ['add', 'store', 'shuffle', 'search'];
     if (protectedActions.includes(action) && !state.currentUser) {
          ui.showAlert("Debes iniciar sesión para usar esta función.");
          return;
     }
-    // La acción 'settings' no requiere login
     if (action === 'settings') {
-         ui.showAlert("Settings\n\nApp Version: 4.20 (User Data)\nMore settings coming soon!", 'settings');
+         ui.showAlert("Settings\n\nApp Version: 4.21 (API Error Handling)\nMore settings coming soon!", 'settings');
          return;
     }
     
-    // Si llegamos aquí y es una acción protegida, tenemos currentUser
-    const userId = state.currentUser?.uid; // Puede ser null si es 'settings', pero no entraremos
+    const userId = state.currentUser?.uid; 
 
     switch (action) {
         case 'add':
@@ -309,7 +294,7 @@ async function handleFooterAction(action) {
             break;
 
         case 'shuffle':
-            handleShuffleClick(); // Ya tiene check interno de datos cargados
+            handleShuffleClick(); 
             break;
 
         case 'search':
@@ -320,7 +305,6 @@ async function handleFooterAction(action) {
             ui.setLoading(`Buscando "${term}"...`, true);
 
             try {
-                // CAMBIO: Pasar userId
                 const results = await searchMemories(userId, term);
                 ui.setLoading(null, false);
                 drawCurrentMonth(); // Redibujar por si acaso searchMemories fue lento
@@ -348,7 +332,6 @@ async function handleFooterAction(action) {
 }
 
 function handleShuffleClick() {
-    // Ya comprueba state.allDaysData, que solo se llena si hay usuario
     if (state.allDaysData.length === 0) return;
 
     const randomIndex = Math.floor(Math.random() * state.allDaysData.length);
@@ -361,7 +344,7 @@ function handleShuffleClick() {
     }
 
     setTimeout(() => {
-        handleDayClick(randomDia); // handleDayClick ya verifica usuario
+        handleDayClick(randomDia); 
     }, 100);
 
     window.scrollTo(0, 0);
@@ -371,7 +354,6 @@ function handleShuffleClick() {
 // --- 3. Lógica de Modales (Controlador) ---
 
 async function handleSaveDayName(diaId, newName, statusElementId = 'save-status') {
-    // CAMBIO: Verificar usuario
     if (!state.currentUser || !state.currentUser.uid) {
         ui.showModalStatus(statusElementId, `Debes estar logueado`, true);
         return;
@@ -381,26 +363,23 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
     const finalName = newName && newName.trim() !== '' ? newName.trim() : "Unnamed Day";
 
     try {
-        // CAMBIO: Pasar userId
         await saveDayName(userId, diaId, finalName);
 
         // Actualizar estado local
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
         if (dayIndex !== -1) {
             state.allDaysData[dayIndex].Nombre_Especial = finalName;
-            // No es necesario llamar a ui.updateAllDaysData, modificamos el array directamente
         }
 
         ui.showModalStatus(statusElementId, 'Nombre guardado', false);
-        drawCurrentMonth(); // Redibujar calendario con el posible nuevo dog-ear si aplica
+        drawCurrentMonth(); 
 
         // Actualizar UI del modal (select o título)
         if (statusElementId === 'save-status' && state.dayInPreview && state.dayInPreview.id === diaId) { 
-             const dia = state.dayInPreview; // Usar el día que está en preview/edición
+             const dia = state.dayInPreview; 
              const dayNameUI = finalName !== 'Unnamed Day' ? ` (${finalName})` : '';
              const editModalTitle = document.getElementById('edit-modal-title');
              if (editModalTitle) editModalTitle.textContent = `Editando: ${dia.Nombre_Dia}${dayNameUI}`;
-             // También actualizamos el Nombre_Especial en state.dayInPreview por si acaso
              state.dayInPreview.Nombre_Especial = finalName;
         }
          const daySelect = document.getElementById('edit-mem-day');
@@ -420,17 +399,22 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
 
 
 async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
-    // CAMBIO: Verificar usuario
     if (!state.currentUser || !state.currentUser.uid) {
         ui.showModalStatus('memoria-status', `Debes estar logueado`, true);
+         // Reactivar botón si falla la validación inicial
+         const saveBtn = document.getElementById('save-memoria-btn');
+         if (saveBtn) {
+             saveBtn.disabled = false;
+             saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
+         }
         return;
     }
     const userId = state.currentUser.uid;
 
-    const saveBtn = document.getElementById('save-memoria-btn');
+    const saveBtn = document.getElementById('save-memoria-btn'); // Mover aquí para usar en finally
 
     try {
-        // ... validaciones de fecha ...
+        // Validaciones de fecha (sin cambios)
         if (!memoryData.year || isNaN(parseInt(memoryData.year))) throw new Error('El año es obligatorio.');
         const year = parseInt(memoryData.year);
         if (year < 1900 || year > 2100) throw new Error('Año debe estar entre 1900-2100.');
@@ -442,22 +426,22 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
         memoryData.Fecha_Original = fullDate;
         delete memoryData.year;
 
-        // Lógica de subida de imagen (ya usa userId implícitamente en la ruta)
+        // Lógica de subida de imagen (sin cambios)
         if (memoryData.Tipo === 'Imagen' && memoryData.file) {
             ui.showModalStatus('image-upload-status', 'Subiendo imagen...', false);
-            memoryData.ImagenURL = await uploadImage(memoryData.file, userId, diaId); // uploadImage necesita userId
+            memoryData.ImagenURL = await uploadImage(memoryData.file, userId, diaId); 
             ui.showModalStatus('image-upload-status', 'Imagen subida.', false);
         }
 
         const memoryId = isEditing ? memoryData.id : null;
-        // CAMBIO: Pasar userId
         await saveMemory(userId, diaId, memoryData, memoryId);
 
         ui.showModalStatus('memoria-status', isEditing ? 'Memoria actualizada' : 'Memoria guardada', false);
         
-        ui.resetMemoryForm(); // Esto oculta el form ahora
+        // Ocultar form y limpiar después de guardar con éxito
+        ui.resetMemoryForm(); 
+        ui._showMemoryForm(false); // Ocultar el formulario explícitamente
 
-        // CAMBIO: Pasar userId
         const updatedMemories = await loadMemoriesForDay(userId, diaId);
         ui.updateMemoryList(updatedMemories); 
 
@@ -465,20 +449,17 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
         if (dayIndex !== -1 && !state.allDaysData[dayIndex].tieneMemorias) {
             state.allDaysData[dayIndex].tieneMemorias = true;
-            // No llamar a ui.updateAllDaysData, modificar el array directamente
             drawCurrentMonth(); 
         }
 
     } catch (err) {
         console.error("Error guardando memoria:", err);
         ui.showModalStatus('memoria-status', `Error: ${err.message}`, true);
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
-        }
+        // No ocultar form si hay error, para que el usuario pueda corregir
+
     } finally {
-        // Asegurarse de reactivar el botón incluso si hay error no capturado
-         if (saveBtn && saveBtn.disabled) {
+        // Asegurarse de reactivar el botón siempre
+         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
         }
@@ -486,7 +467,6 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 }
 
 async function handleDeleteMemory(diaId, mem) {
-    // CAMBIO: Verificar usuario
     if (!state.currentUser || !state.currentUser.uid) {
         ui.showModalStatus('memoria-status', `Debes estar logueado`, true);
         return;
@@ -506,20 +486,17 @@ async function handleDeleteMemory(diaId, mem) {
 
     try {
         const imagenURL = (mem.Tipo === 'Imagen') ? mem.ImagenURL : null;
-        // CAMBIO: Pasar userId
         await deleteMemory(userId, diaId, mem.id, imagenURL);
         ui.showModalStatus('memoria-status', 'Memoria borrada', false);
 
-        // CAMBIO: Pasar userId
         const updatedMemories = await loadMemoriesForDay(userId, diaId);
         ui.updateMemoryList(updatedMemories); 
 
         // Actualizar estado local y redibujar si ya no quedan memorias
         if (updatedMemories.length === 0) {
             const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
-            if (dayIndex !== -1 && state.allDaysData[dayIndex].tieneMemorias) { // Verificar si tenía antes
+            if (dayIndex !== -1 && state.allDaysData[dayIndex].tieneMemorias) { 
                 state.allDaysData[dayIndex].tieneMemorias = false;
-                // No llamar a ui.updateAllDaysData
                 drawCurrentMonth(); 
             }
         }
@@ -531,14 +508,55 @@ async function handleDeleteMemory(diaId, mem) {
 }
 
 // --- 4. Lógica de API Externa (Controlador) ---
-// (No necesitan userId)
-async function handleMusicSearch(term) { /* ... sin cambios ... */ }
-async function handlePlaceSearch(term) { /* ... sin cambios ... */ }
+
+// ***** CAMBIOS: Añadir logging y manejo de error (null) *****
+async function handleMusicSearch(term) {
+    console.log("[DEBUG MAIN] Iniciando búsqueda de música para:", term);
+    try {
+        const tracks = await searchMusic(term); // Espera Array o null
+        console.log("[DEBUG MAIN] Resultado de searchMusic:", tracks);
+
+        // Si api.js devuelve null por un error, mostrar alerta y limpiar resultados
+        if (tracks === null) {
+            ui.showAlert(`Error al buscar música: ${term}. Inténtalo de nuevo.`);
+            ui.showMusicResults([]); // Limpiar resultados en UI
+        } else {
+            ui.showMusicResults(tracks); // Pasar el array (puede ser vacío) a la UI
+        }
+    } catch (err) {
+        // Este catch es por si searchMusic lanza un error inesperado (aunque ahora devuelve null)
+        console.error("Error inesperado en handleMusicSearch:", err);
+        ui.showAlert(`Error inesperado al buscar música: ${err.message}`);
+        ui.showMusicResults([]); // Limpiar resultados en UI
+    }
+}
+
+async function handlePlaceSearch(term) {
+    console.log("[DEBUG MAIN] Iniciando búsqueda de lugar para:", term);
+    try {
+        const places = await searchNominatim(term); // Espera Array o null
+        console.log("[DEBUG MAIN] Resultado de searchNominatim:", places);
+
+        // Si api.js devuelve null por un error, mostrar alerta y limpiar resultados
+        if (places === null) {
+             ui.showAlert(`Error al buscar lugar: ${term}. Inténtalo de nuevo.`);
+             ui.showPlaceResults([]); // Limpiar resultados en UI
+        } else {
+             ui.showPlaceResults(places); // Pasar el array (puede ser vacío) a la UI
+        }
+    } catch (err) {
+         // Este catch es por si searchNominatim lanza un error inesperado
+        console.error("Error inesperado en handlePlaceSearch:", err);
+        ui.showAlert(`Error inesperado al buscar lugar: ${err.message}`);
+        ui.showPlaceResults([]); // Limpiar resultados en UI
+    }
+}
+// ***** FIN CAMBIOS *****
 
 
 // --- 5. Lógica del "Almacén" (Controlador) ---
 async function handleStoreCategoryClick(type) {
-    // Ya tiene check de currentUser al principio de handleFooterAction
+    if (!state.currentUser) return; // Ya comprobado en handleFooterAction
     const userId = state.currentUser.uid;
     console.log(`Cargando Almacén para ${type} - Usuario: ${userId}`);
 
@@ -551,7 +569,6 @@ async function handleStoreCategoryClick(type) {
 
     try {
         let result;
-        // CAMBIO: Pasar userId
         if (type === 'Nombres') {
             result = await getNamedDays(userId, 10);
         } else {
@@ -560,40 +577,38 @@ async function handleStoreCategoryClick(type) {
 
         // Asegurarse de que cada item tenga Nombre_Dia (si aplica)
         result.items.forEach(item => {
-            if (!item.Nombre_Dia && item.diaId) { // Días nombrados ya tienen Nombre_Dia
+            if (!item.Nombre_Dia && item.diaId) { 
                 item.Nombre_Dia = state.allDaysData.find(d => d.id === item.diaId)?.Nombre_Dia || "Día";
             }
         });
 
-        state.store.lastVisible = result.lastVisible; // Puede ser null si no hay resultados
+        state.store.lastVisible = result.lastVisible; 
         state.store.isLoading = false;
 
         ui.updateStoreList(result.items, false, result.hasMore);
 
     } catch (err) {
         console.error(`Error cargando categoría ${type} para ${userId}:`, err);
-        ui.updateStoreList([], false, false); // Mostrar lista vacía
-        if (err.code === 'failed-precondition' || err.message.includes("index")) { // Firebase a veces cambia el mensaje
+        ui.updateStoreList([], false, false); 
+        if (err.code === 'failed-precondition' || err.message.includes("index")) { 
             console.error("¡ÍNDICE DE FIREBASE REQUERIDO!", err.message);
             ui.showAlert("Error de Firebase: Se requiere un índice. Revisa la consola (F12) para ver el enlace de creación.");
         } else {
             ui.showAlert(`Error al cargar ${type}: ${err.message}`);
         }
-        ui.closeStoreListModal(); // Cerrar si hubo error grave
+        // No cerrar modal automáticamente si hay error, para que el usuario vea el mensaje vacío
+        // ui.closeStoreListModal(); 
     }
 }
 
 async function handleStoreLoadMore() {
     const { currentType, lastVisible, isLoading } = state.store;
-    // CAMBIO: Añadir check de currentUser
     if (isLoading || !currentType || !state.currentUser) return; 
-    // lastVisible puede ser null si la primera carga no tuvo resultados, permitir reintentar si no está isLoading
 
     const userId = state.currentUser.uid;
     console.log(`Cargando más ${currentType} para ${userId}...`);
     state.store.isLoading = true;
 
-    // Actualizar botón en UI
      const loadMoreBtn = document.getElementById('load-more-btn');
      if (loadMoreBtn) {
             loadMoreBtn.disabled = true;
@@ -602,12 +617,9 @@ async function handleStoreLoadMore() {
 
     try {
         let result;
-        // CAMBIO: Pasar userId y el lastVisible correcto
         if (currentType === 'Nombres') {
-            // getNamedDays espera el DocumentSnapshot directamente
             result = await getNamedDays(userId, 10, lastVisible); 
         } else {
-            // getMemoriesByType también espera el DocumentSnapshot
             result = await getMemoriesByType(userId, currentType, 10, lastVisible);
         }
 
@@ -617,17 +629,16 @@ async function handleStoreLoadMore() {
             }
         });
 
-        state.store.lastVisible = result.lastVisible; // Actualizar con el nuevo último
+        state.store.lastVisible = result.lastVisible; 
         state.store.isLoading = false;
 
-        ui.updateStoreList(result.items, true, result.hasMore); // `true` para append
+        ui.updateStoreList(result.items, true, result.hasMore); 
 
     } catch (err) {
         console.error(`Error cargando más ${currentType} para ${userId}:`, err);
         state.store.isLoading = false;
         if(loadMoreBtn) {
              loadMoreBtn.textContent = "Error al cargar";
-             // Podríamos querer reactivarlo después de un tiempo
              setTimeout(() => {
                  if (loadMoreBtn.textContent === "Error al cargar") {
                     loadMoreBtn.disabled = false;
@@ -640,7 +651,6 @@ async function handleStoreLoadMore() {
 }
 
 function handleStoreItemClick(diaId) {
-    // Ya tiene check de currentUser al principio de la función que lo llama
     if (!state.currentUser) return;
 
     const dia = state.allDaysData.find(d => d.id === diaId);
@@ -659,7 +669,7 @@ function handleStoreItemClick(diaId) {
     }
 
     setTimeout(() => {
-        handleDayClick(dia); // handleDayClick ya verifica usuario
+        handleDayClick(dia); 
     }, 100);
 
     window.scrollTo(0, 0);
@@ -668,7 +678,6 @@ function handleStoreItemClick(diaId) {
 // --- 6. Lógica de Crumbie (IA) ---
 
 function handleCrumbieClick() {
-     // Ya tiene check de currentUser al principio de handleFooterAction
      if (!state.currentUser) {
         ui.showAlert("Debes iniciar sesión para usar Crumbie.");
         return;
