@@ -1,4 +1,4 @@
-/* style.css - v17.8 - iOS Deep Blue Modals & Notebook Fixes */
+/* style.css - v17.9 - Fix Notebook holes and Preview Year */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -687,15 +687,14 @@ main {
     flex-grow: 1;
 }
 
-/* --- INICIO CAMBIO: ESTILO CUADERNO PREVIEW (Punto 4) --- */
+/* --- INICIO CAMBIO: ESTILO CUADERNO PREVIEW (Punto 2) --- */
 .modal-preview-notebook-paper {
     flex-grow: 1;
     overflow-y: auto;
     background-color: #fdf5e6;
-    /* CAMBIO: Padding izquierdo más grande para anillas y línea */
     padding: 20px 20px 20px 50px; 
     position: relative;
-    /* CAMBIO: Líneas horizontales (negras) y quitada línea vertical de aquí */
+    /* Líneas horizontales */
     background-image:
         repeating-linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 24px);
     background-size: 100% 24px;
@@ -708,23 +707,21 @@ main {
     content: '';
     position: absolute;
     top: 0;
-    /* CAMBIO: Movido a la izquierda para hacer espacio a las anillas */
     left: 15px; 
     bottom: 0;
     width: 25px; /* Ancho para anillas y línea */
-    /* CAMBIO: Línea roja a la derecha de este pseudo-elemento */
-    border-right: 2px solid rgba(255, 100, 100, 0.5);
-    /* CAMBIO: Agujeros de anillado */
+    border-right: 2px solid rgba(255, 100, 100, 0.5); /* Línea roja */
+    
+    /* CAMBIO: Agujeros de anillado (Punto 2) */
     background-image: repeating-radial-gradient(
         circle at center,
-        #fdf5e6 0, /* Color del papel */
-        #fdf5e6 4px,
-        rgba(0,0,0,0.1) 4px, /* Borde del agujero */
-        rgba(0,0,0,0.1) 5px,
-        transparent 5px,
-        transparent 24px /* Espaciado (igual que line-height) */
+        rgba(0,0,0,0.2) 0, 
+        rgba(0,0,0,0.2) 5px, /* 5px de radio */
+        transparent 5px
     );
-    background-position: 5px 22px; /* Posición de los agujeros */
+    background-repeat: repeat-y;
+    background-size: 100% 48px; /* Espaciado de ~50px (2 líneas) */
+    background-position: center 22px; /* Centrado horizontal, 22px desde arriba */
 }
 /* --- FIN CAMBIO: ESTILO CUADERNO PREVIEW --- */
 
@@ -754,40 +751,42 @@ main {
     flex-direction: column; /* CAMBIO: Columna para mapa */
 }
 
-/* --- INICIO CAMBIO: Estilo Preview (Punto 5) --- */
+/* --- INICIO CAMBIO: Estilo Preview (Punto 1) --- */
 .modal-preview-notebook-paper .memoria-item-main-content {
     display: flex;
-    align-items: center; /* CAMBIO: Alinear al centro (como spotlight) */
-    gap: 8px; /* CAMBIO: Añadido gap (como spotlight) */
+    align-items: center; 
+    gap: 8px; 
 }
 .modal-preview-notebook-paper .memoria-item small { /* Año */
-    color: #777; /* CAMBIO: (como spotlight) */
-    margin-bottom: 3px; /* CAMBIO: (como spotlight) */
-    margin-right: 0; /* CAMBIO: (quitado) */
-    display: block; /* CAMBIO: (como spotlight) */
-    font-size: 11px; /* CAMBIO: (como spotlight) */
-    min-width: 0; /* CAMBIO: (quitado) */
-    text-align: left; /* CAMBIO: (quitado text-align: right) */
-    flex-shrink: 1; /* CAMBIO: (quitado flex-shrink: 0) */
-    font-weight: bold; /* CAMBIO: (como spotlight) */
+    /* CAMBIO (Punto 1): Negro y negrita */
+    color: #000;
+    font-weight: bold; 
+    
+    margin-bottom: 3px; 
+    margin-right: 0; 
+    display: block; 
+    font-size: 11px; 
+    min-width: 0; 
+    text-align: left; 
+    flex-shrink: 1; 
 }
 .modal-preview-notebook-paper .memoria-item-content {
-    display: block; /* CAMBIO: (quitado display: inline) */
-    flex-grow: 1; /* Ocupa espacio restante */
-    word-break: break-word; /* Romper palabras largas */
+    display: block; 
+    flex-grow: 1; 
+    word-break: break-word; 
 }
 .modal-preview-notebook-paper .memoria-artwork {
-    width: 30px; /* CAMBIO: Más grande (como spotlight) */
-    height: 30px; /* CAMBIO: Más grande (como spotlight) */
+    width: 30px; 
+    height: 30px; 
     vertical-align: middle;
-    margin-right: 0; /* CAMBIO: (quitado, ahora usa gap) */
+    margin-right: 0; 
     flex-shrink: 0;
     border-radius: 3px;
 }
 .modal-preview-notebook-paper .memoria-icon {
-    font-size: 20px; /* CAMBIO: Más grande (como spotlight) */
+    font-size: 20px; 
     vertical-align: middle;
-    margin-right: 0; /* CAMBIO: (quitado, ahora usa gap) */
+    margin-right: 0; 
     flex-shrink: 0;
     color: #666;
 }
@@ -1032,7 +1031,53 @@ main {
     color: #aaa;
     font-size: 24px;
 }
+
+/* --- Estilos Modal Almacén Lista --- */
+.store-list-container {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.store-list-item {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+.store-list-item:hover {
+    background: #f8f8f8;
+}
+.store-list-item .memoria-icon {
+    margin-right: 15px;
+    color: #555;
+    font-size: 24px;
+}
+.store-list-item .memoria-item-content {
+    flex-grow: 1;
+    line-height: 1.4;
+}
+.store-list-item .memoria-item-content strong {
+    display: block;
+    font-size: 15px;
+    color: #000;
+}
+.store-list-item .memoria-item-content small {
+    font-size: 12px;
+    color: #555;
+}
+.store-list-item .material-icons-outlined:last-child { /* El chevron */
+    color: #aaa;
+    font-size: 24px;
+}
+
 /* --- FIN v17.2 --- */
+
 
 /* --- INICIO v17.7: Estilos para Resultados de Búsqueda de Música --- */
 .search-results {
