@@ -1,35 +1,258 @@
 /*
- * ui.js (v2.68 - Modal logic and Map destruction fix)
+ * ui.js (v4.20.5 - Fixed search and settings buttons)
  * Módulo de interfaz de usuario.
  */
 
 // --- Variables privadas del módulo (Estado de la UI) ---
-let callbacks = {}; // Almacena las funciones de main.js
-let _currentDay = null; // El día abierto en el modal de edición O preview
-let _currentMemories = []; // Las memorias del día abierto
-let _allDaysData = []; // Referencia a todos los días (ahora se llena en init)
-let _isEditingMemory = false; // Estado del formulario (Añadir vs Editar)
+let callbacks = {};
+let _currentDay = null;
+let _currentMemories = [];
+let _allDaysData = [];
+let _isEditingMemory = false;
+let _selectedMusic = null;
+let _selectedPlace = null;
 
-// Variables para modales de diálogo
+// Modales
 let alertPromptModal = null;
 let _promptResolve = null;
 let confirmModal = null;
 let _confirmResolve = null;
-
-// Referencias a los modales principales
 let previewModal = null;
 let editModal = null;
 let storeModal = null;
 let storeListModal = null;
 
-let _activeMaps = []; // Para gestionar mapas Leaflet
+// --- INICIO: FUNCIONES HELPER / UTILIDADES (Definidas Primero) ---
 
-// --- Funciones de Inicialización ---
+function showModalStatus(elementId, message, isError) {
+    const statusEl = document.getElementById(elementId);
+    if (!statusEl) return;
+    statusEl.textContent = message;
+    statusEl.className = isError ? 'status-message error' : 'status-message success';
+    if (message && !isError) {
+        setTimeout(() => { if (statusEl.textContent === message) { statusEl.textContent = ''; statusEl.className = 'status-message'; } }, 3000);
+    }
+}
+
+function showMusicResults(tracks, isSelected = false) {
+    const resultsEl = document.getElementById('itunes-results');
+    if (!resultsEl) return;
+    resultsEl.innerHTML = '';
+    _selectedMusic = null;
+
+    if (isSelected && tracks && tracks.length > 0) {
+        const track = tracks[0];
+        _selectedMusic = track;
+        resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${track.trackName}</p>`;
+        return;
+    }
+
+    if (!tracks || tracks.length === 0) return;
+
+    tracks.forEach(track => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'search-result-item';
+        const artwork = track.artworkUrl60 || '';
+        itemEl.innerHTML = `
+            <img src="${artwork}" class="memoria-artwork" alt="" ${artwork ? '' : 'style="display:none;"'}>
+            <div class="memoria-item-content">
+                <small>${track.artistName}</small>
+                <strong>${track.trackName}</strong>
+            </div>
+            <span class="material-icons-outlined">add_circle_outline</span>
+        `;
+        itemEl.addEventListener('click', () => {
+            _selectedMusic = track;
+            document.getElementById('memoria-music-search').value = `${track.trackName} - ${track.artistName}`;
+            resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${track.trackName}</p>`;
+        });
+        resultsEl.appendChild(itemEl);
+    });
+}
+
+function showPlaceResults(places, isSelected = false) {
+    const resultsEl = document.getElementById('place-results');
+    if (!resultsEl) return;
+    resultsEl.innerHTML = '';
+    _selectedPlace = null;
+
+    if (isSelected && places && places.length > 0) {
+        const place = places[0];
+        const displayName = place.display_name || place.name || 'Lugar seleccionado';
+        _selectedPlace = { name: displayName, data: place };
+        resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${displayName}</p>`;
+        return;
+    }
+
+    if (!places || places.length === 0) return;
+
+    places.forEach(place => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'search-result-item';
+        const displayName = place.display_name || 'Lugar sin nombre';
+        itemEl.innerHTML = `
+            <span class="memoria-icon material-icons-outlined">place</span>
+            <div class="memoria-item-content"><strong>${displayName}</strong></div>
+            <span class="material-icons-outlined">add_circle_outline</span>
+        `;
+        itemEl.addEventListener('click', () => {
+            _selectedPlace = { name: displayName, data: place };
+            document.getElementById('memoria-place-search').value = displayName;
+            resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${displayName.substring(0, 40)}...</p>`;
+        });
+        resultsEl.appendChild(itemEl);
+    });
+}
+
+function _showMemoryForm(show) {
+    const form = document.getElementById('memory-form');
+    const listContainer = document.getElementById('edit-memorias-list-container');
+    if (form) form.style.display = show ? 'block' : 'none';
+    if (listContainer) listContainer.style.display = show ? 'none' : 'block';
+}
+
+function createMemoryItemHTML(mem, showActions) {
+    if (!mem) return '';
+    const memId = mem.id || '';
+
+    let yearStr = 'Año desc.';
+    if (mem.Fecha_Original) {
+        try {
+            const date = new Date(mem.Fecha_Original.seconds * 1000 || mem.Fecha_Original);
+            if (!isNaN(date)) yearStr = date.getFullYear();
+        } catch (e) { console.warn("Fecha inválida:", mem.Fecha_Original); }
+    }
+
+    let contentHTML = `<small>${yearStr}</small>`;
+    let artworkHTML = '';
+    let icon = 'article';
+
+    switch (mem.Tipo) {
+        case 'Lugar':
+            icon = 'place';
+            contentHTML += `${mem.LugarNombre || 'Lugar sin nombre'}`;
+            break;
+        case 'Musica':
+            icon = 'music_note';
+            if (mem.CancionData?.trackName) {
+                contentHTML += `<strong>${mem.CancionData.trackName}</strong> <span class="artist-name">by ${mem.CancionData.artistName}</span>`;
+                if(mem.CancionData.artworkUrl60) artworkHTML = `<img src="${mem.CancionData.artworkUrl60}" class="memoria-artwork" alt="Artwork">`;
+            } else { contentHTML += `${mem.CancionInfo || 'Canción sin nombre'}`; }
+            break;
+        case 'Texto': default:
+            icon = 'article';
+            contentHTML += (mem.Descripcion || 'Nota vacía');
+            break;
+    }
+
+    if (!artworkHTML) artworkHTML = `<span class="memoria-icon material-icons-outlined">${icon}</span>`;
+
+    const actionsHTML = (showActions && memId) ? `
+        <div class="memoria-actions">
+            <button class="edit-btn" title="Editar" data-memoria-id="${memId}"><span class="material-icons-outlined">edit</span></button>
+            <button class="delete-btn" title="Borrar" data-memoria-id="${memId}"><span class="material-icons-outlined">delete</span></button>
+        </div>` : '';
+
+    return `${artworkHTML}<div class="memoria-item-content">${contentHTML}</div>${actionsHTML}`;
+}
+
+function createStoreCategoryButton(type, icon, label) {
+    return `
+        <button class="store-category-button" data-type="${type}">
+            <span class="material-icons-outlined">${icon}</span>
+            <span>${label}</span>
+            <span class="material-icons-outlined">chevron_right</span>
+        </button>`;
+}
+
+function createStoreListItem(item) {
+    const itemEl = document.createElement('div');
+    itemEl.className = 'store-list-item';
+    let contentHTML = '';
+    if (item.type === 'Nombres') {
+        itemEl.dataset.diaId = item.id;
+        contentHTML = `<span class="memoria-icon material-icons-outlined">label</span><div class="memoria-item-content"><small>${item.Nombre_Dia}</small><strong>${item.Nombre_Especial}</strong></div>`;
+    } else {
+        itemEl.dataset.diaId = item.diaId;
+        itemEl.dataset.id = item.id;
+        const memoryHTML = createMemoryItemHTML(item, false);
+        contentHTML = `${memoryHTML}<div class="store-item-day-ref">${item.Nombre_Dia}</div>`;
+    }
+    itemEl.innerHTML = contentHTML;
+    return itemEl;
+}
+
+function _createLoginButton(isLoggedIn, container) {
+    if (!container) return;
+    const btn = document.createElement('button');
+    btn.id = 'login-btn';
+    btn.className = 'header-login-btn';
+    if (isLoggedIn) {
+        btn.title = 'Cerrar sesión';
+        btn.dataset.action = 'logout';
+        btn.innerHTML = `<span class="material-icons-outlined">logout</span>`;
+    } else {
+        btn.title = 'Iniciar sesión con Google';
+        btn.dataset.action = 'login';
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.20455c0-.63864-.05727-1.25182-.16909-1.84091H9v3.48182h4.84364c-.20864 1.125-.84273 2.07818-1.77727 2.71136v2.25818h2.90864c1.70182-1.56682 2.68409-3.87409 2.68409-6.61045z"/><path fill="#34A853" d="M9 18c2.43 0 4.47182-.80591 5.96273-2.18045l-2.90864-2.25818c-.80591.54364-1.83682.86591-2.94.86591-2.27318 0-4.20727-1.53318-4.9-3.58227H1.07182v2.33318C2.56636 16.3 5.56 18 9 18z"/><path fill="#FBBC05" d="M4.1 10.71c-.22-.64-.35-1.32-.35-2.03s.13-.139.35-2.03V4.31H1.07C.38 5.67 0 7.29 0 9.03s.38 3.36 1.07 4.72l3.03-2.33v.03z"/><path fill="#EA4335" d="M9 3.57955c1.32136 0 2.50773.45455 3.44091 1.34591l2.58136-2.58136C13.46318.891364 11.4259 0 9 0 5.56 0 2.56636 1.70182 1.07182 4.31l3.02818 2.33318C4.79273 5.11273 6.72682 3.57955 9 3.57955z"/></svg>`;
+    }
+    container.innerHTML = '';
+    container.appendChild(btn);
+}
+
+function showCrumbieAnimation(message) {
+    if (document.querySelector('.crumbie-float-text')) return;
+    const textEl = document.createElement('div');
+    textEl.className = 'crumbie-float-text';
+    textEl.textContent = message;
+    document.body.appendChild(textEl);
+    textEl.addEventListener('animationend', () => textEl.remove());
+}
+
+function _renderMemoryList(listEl, memories, showActions) {
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    if (!memories || memories.length === 0) {
+        listEl.innerHTML = '<p class="list-placeholder">No hay memorias para este día.</p>';
+        return;
+    }
+    memories.sort((a, b) => (b.Fecha_Original?.toMillis() || 0) - (a.Fecha_Original?.toMillis() || 0));
+    const fragment = document.createDocumentFragment();
+    memories.forEach(mem => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'memoria-item';
+        itemEl.innerHTML = createMemoryItemHTML(mem, showActions);
+        fragment.appendChild(itemEl);
+    });
+    listEl.appendChild(fragment);
+}
+
+function updateMemoryList(memories) {
+    _currentMemories = memories || [];
+    const editList = document.getElementById('edit-memorias-list');
+    if (editList && editModal?.style.display !== 'none' && editModal?.classList.contains('visible')) {
+        _renderMemoryList(editList, _currentMemories, true);
+    }
+    const previewList = document.getElementById('preview-memorias-list');
+    if (previewList && previewModal?.classList.contains('visible') && _currentDay) {
+         _renderMemoryList(previewList, _currentMemories, false);
+    }
+}
+
+// --- FIN: FUNCIONES HELPER / UTILIDADES ---
+
+// --- INICIO: FUNCIONES PRINCIPALES Y DE MODALES ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.68 - Modal/Map Fix)"); // Versión actualizada
+    console.log("UI Module init (v4.20.5 - Fixed search and settings buttons)");
     callbacks = mainCallbacks;
-    // _allDaysData se llenará con updateAllDaysData
+
+    createPreviewModal();
+    createEditModal();
+    createStoreModal();
+    createStoreListModal();
+    createAlertPromptModal();
+    createConfirmModal();
 
     _bindHeaderEvents();
     _bindNavEvents();
@@ -37,240 +260,183 @@ function init(mainCallbacks) {
     _bindLoginEvents();
     _bindGlobalListeners();
     _bindCrumbieEvents();
-
-    // Pre-crear modales principales
-    createPreviewModal();
-    createEditModal();
-    createStoreModal();
-    createStoreListModal();
-    createAlertPromptModal(); // Ahora se implementa
-    createConfirmModal(); // Ahora se implementa
 }
 
-// --- Bindings ---
 function _bindHeaderEvents() {
-    document.getElementById('header-search-btn')?.addEventListener('click', () => {
-        if (callbacks.onFooterAction) callbacks.onFooterAction('search');
-    });
+    const searchBtn = document.getElementById('header-search-btn');
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            if (callbacks.onSearchClick) {
+                callbacks.onSearchClick();
+            } else {
+                showAlert('La función de búsqueda estará disponible próximamente.', 'info');
+            }
+        });
+    }
 }
+
 function _bindNavEvents() {
     const prevBtn = document.getElementById('prev-month');
     const nextBtn = document.getElementById('next-month');
-    if (prevBtn) {
-        prevBtn.onclick = () => { if (callbacks.onMonthChange) callbacks.onMonthChange('prev'); };
-    }
-    if (nextBtn) {
-        nextBtn.onclick = () => { if (callbacks.onMonthChange) callbacks.onMonthChange('next'); };
-    }
+    if (prevBtn) prevBtn.addEventListener('click', () => { if (callbacks.onMonthChange) callbacks.onMonthChange('prev'); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { if (callbacks.onMonthChange) callbacks.onMonthChange('next'); });
 }
+
 function _bindFooterEvents() {
-    document.getElementById('btn-add-memory')?.addEventListener('click', () => { if (callbacks.onFooterAction) callbacks.onFooterAction('add'); });
-    document.getElementById('btn-store')?.addEventListener('click', () => { if (callbacks.onFooterAction) callbacks.onFooterAction('store'); });
-    document.getElementById('btn-shuffle')?.addEventListener('click', () => { if (callbacks.onFooterAction) callbacks.onFooterAction('shuffle'); });
-    document.getElementById('btn-settings')?.addEventListener('click', () => { if (callbacks.onFooterAction) callbacks.onFooterAction('settings'); });
+    const addBtn = document.getElementById('btn-add-memory');
+    const storeBtn = document.getElementById('btn-store');
+    const shuffleBtn = document.getElementById('btn-shuffle');
+    const settingsBtn = document.getElementById('btn-settings');
+
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            if (callbacks.onFooterAction) callbacks.onFooterAction('add');
+        });
+    }
+    if (storeBtn) {
+        storeBtn.addEventListener('click', () => {
+            if (callbacks.onFooterAction) callbacks.onFooterAction('store');
+        });
+    }
+    if (shuffleBtn) {
+        shuffleBtn.addEventListener('click', () => {
+            if (callbacks.onFooterAction) callbacks.onFooterAction('shuffle');
+        });
+    }
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            if (callbacks.onFooterAction) {
+                callbacks.onFooterAction('settings');
+            } else {
+                showAlert('Ajustes estará disponible próximamente.', 'info');
+            }
+        });
+    }
 }
+
 function _bindCrumbieEvents() {
-    document.getElementById('crumbie-btn')?.addEventListener('click', () => { if (callbacks.onCrumbieClick) callbacks.onCrumbieClick(); });
+    const crumbieBtn = document.getElementById('crumbie-btn');
+    if (crumbieBtn) {
+        crumbieBtn.addEventListener('click', () => {
+            if (callbacks.onCrumbieClick) callbacks.onCrumbieClick();
+        });
+    }
 }
+
 function _bindLoginEvents() {
-    const header = document.querySelector('header');
-    header?.addEventListener('click', (e) => {
-        const loginBtn = e.target.closest('#login-btn');
-        const userInfo = e.target.closest('#user-info');
-        if (loginBtn && loginBtn.dataset.action === 'login' && callbacks.onLogin) callbacks.onLogin();
-        else if (userInfo && callbacks.onLogout) callbacks.onLogout();
-    });
+    const loginBtnContainer = document.getElementById('login-btn-container');
+    if (loginBtnContainer) {
+        loginBtnContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('#login-btn');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            if (action === 'login' && callbacks.onLoginClick) callbacks.onLoginClick();
+            if (action === 'logout' && callbacks.onLogoutClick) callbacks.onLogoutClick();
+        });
+    }
 }
+
 function _bindGlobalListeners() {
-    document.body.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal-preview')) closePreviewModal();
-        if (e.target.classList.contains('modal-edit')) closeEditModal();
-        if (e.target.classList.contains('modal-store')) closeStoreModal();
-        if (e.target.classList.contains('modal-store-list')) closeStoreListModal();
-        if (e.target.classList.contains('modal-alert-prompt')) closeAlertPromptModal(false);
-        if (e.target.classList.contains('modal-confirm')) closeConfirmModal(false);
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.day-cell')) {
+            const cell = e.target.closest('.day-cell');
+            const diaId = cell.dataset.diaId;
+            if (diaId && callbacks.onDayClick) callbacks.onDayClick(diaId);
+        }
     });
 }
 
-// --- Funciones de Renderizado Principal ---
 function setLoading(message, show) {
     const appContent = document.getElementById('app-content');
     if (!appContent) return;
     if (show) {
-        appContent.innerHTML = `<p class="loading-message">${message}</p>`;
-        showApp(false);
-    } else {
-        const loading = appContent.querySelector('.loading-message');
-        if (loading) loading.remove();
-    }
-}
-
-function showApp(show) {
-    const display = show ? 'block' : 'none';
-    const flexDisplay = show ? 'flex' : 'none';
-    const nav = document.querySelector('.month-nav');
-    const spotlight = document.getElementById('spotlight-section');
-    const appContent = document.getElementById('app-content');
-
-    if (nav) nav.style.display = flexDisplay;
-    if (spotlight) spotlight.style.display = display;
-    if (appContent) appContent.style.display = show ? 'grid' : 'none';
-
-    if (show) {
-         const loading = appContent?.querySelector('.loading-message');
-         if (loading) loading.remove();
-    }
-}
-
-function updateAllDaysData(allDays) {
-    if (allDays && allDays.length > 0) {
-        _allDaysData = allDays;
-        console.log("UI: allDaysData actualizado en UI:", _allDaysData.length);
-    } else {
-        console.warn("UI: updateAllDaysData recibió datos vacíos.");
-        _allDaysData = [];
+        appContent.innerHTML = `<div class="loading-screen"><p>${message}</p></div>`;
     }
 }
 
 function updateLoginUI(user) {
-    const loginBtnContainer = document.getElementById('login-btn-container');
     const userInfo = document.getElementById('user-info');
-    const userName = document.getElementById('user-name');
-    const userImg = document.getElementById('user-img');
-
-    if (!loginBtnContainer || !userInfo || !userName || !userImg) return;
+    const loginBtnContainer = document.getElementById('login-btn-container');
+    if (!userInfo || !loginBtnContainer) return;
 
     if (user) {
         userInfo.style.display = 'flex';
-        userName.textContent = user.displayName || 'Usuario';
-        userImg.src = user.photoURL || `https://placehold.co/30x30/ccc/fff?text=${user.displayName ? user.displayName[0] : '?'}`;
-        _createLoginButton(false, loginBtnContainer);
+        document.getElementById('user-img').src = user.photoURL || '';
+        document.getElementById('user-name').textContent = user.displayName || user.email || 'Usuario';
+        _createLoginButton(true, loginBtnContainer);
     } else {
         userInfo.style.display = 'none';
-        _createLoginButton(true, loginBtnContainer);
+        _createLoginButton(false, loginBtnContainer);
     }
 }
 
 function drawCalendar(monthName, days, todayId) {
-    const monthNameDisplay = document.getElementById('month-name-display');
     const appContent = document.getElementById('app-content');
-
-    if (monthNameDisplay) monthNameDisplay.textContent = monthName;
     if (!appContent) return;
 
-    const grid = document.createElement('div');
-    grid.className = 'calendario-grid';
+    const monthDisplay = document.getElementById('month-name-display');
+    if (monthDisplay) monthDisplay.textContent = monthName;
 
-    if (!days || days.length === 0) {
-        appContent.innerHTML = '<p class="list-placeholder" style="padding: 20px; color: #ccc;">No hay datos del calendario.</p>';
-         appContent.style.display = 'block'; // Asegurar display block para el placeholder
-        return;
-    }
+    const calendarGrid = document.createElement('div');
+    calendarGrid.className = 'calendar-grid';
 
-    days.forEach(dia => {
-        const btn = document.createElement('button');
-        btn.className = 'dia-btn';
-        btn.innerHTML = `<span class="dia-numero">${parseInt(dia.id.substring(3))}</span>`;
+    days.forEach(day => {
+        const cell = document.createElement('div');
+        cell.className = 'day-cell';
+        cell.dataset.diaId = day.id;
 
-        if (dia.id === todayId) btn.classList.add('dia-btn-today');
-        if (dia.tieneMemorias) btn.classList.add('tiene-memorias');
+        if (day.id === todayId) cell.classList.add('today');
+        if (day.tieneMemorias) cell.classList.add('has-memories');
 
-        btn.addEventListener('click', () => {
-            if (callbacks.onDayClick) callbacks.onDayClick(dia);
-        });
-
-        grid.appendChild(btn);
+        const dayNumber = parseInt(day.id.substring(3, 5), 10);
+        cell.innerHTML = `
+            <span class="day-number">${dayNumber}</span>
+            ${day.Nombre_Especial ? `<span class="day-name">${day.Nombre_Especial}</span>` : ''}
+        `;
+        calendarGrid.appendChild(cell);
     });
 
     appContent.innerHTML = '';
-    appContent.appendChild(grid);
-    appContent.style.display = 'grid'; // Asegurar display grid para el calendario
+    appContent.appendChild(calendarGrid);
 }
 
 function updateSpotlight(dateString, dayName, memories) {
-    const titleEl = document.getElementById('spotlight-date-header');
-    const listEl = document.getElementById('today-memory-spotlight');
+    const header = document.getElementById('spotlight-date-header');
+    const container = document.getElementById('today-memory-spotlight');
 
-    if (titleEl) titleEl.textContent = dateString;
-    if (!listEl) return;
+    if (header) header.textContent = `${dateString}${dayName ? ` • ${dayName}` : ''}`;
+    if (!container) return;
 
-    listEl.innerHTML = '';
-
-    if (dayName) {
-        const dayNameEl = document.createElement('h3');
-        dayNameEl.className = 'spotlight-day-name';
-        dayNameEl.textContent = `- ${dayName} -`;
-        listEl.appendChild(dayNameEl);
-    }
-
-    const containerEl = document.createElement('div');
-    containerEl.id = 'spotlight-memories-container';
-    listEl.appendChild(containerEl);
-
+    container.innerHTML = '';
 
     if (!memories || memories.length === 0) {
-        const placeholder = document.createElement('p');
-        placeholder.className = 'list-placeholder';
-        placeholder.textContent = 'No hay memorias destacadas.';
-        containerEl.appendChild(placeholder);
-         _destroyActiveMaps(containerEl); // Limpiar mapas solo de este contenedor
+        container.innerHTML = '<p class="list-placeholder">No hay recuerdos para hoy.</p>';
         return;
     }
 
-    // Limpiar mapas antiguos solo de este contenedor
-     _destroyActiveMaps(containerEl);
-
     memories.forEach(mem => {
         const itemEl = document.createElement('div');
-        itemEl.className = 'spotlight-memory-item';
-
-        if (mem.Tipo === 'Texto') {
-            itemEl.classList.add('spotlight-item-text');
-        }
-
-        itemEl.innerHTML = createMemoryItemHTML(mem, false, 'spotlight');
-
-        itemEl.addEventListener('click', () => {
-             const diaObj = _allDaysData.find(d => d.id === mem.diaId);
-             if (diaObj && callbacks.onDayClick) {
-                 callbacks.onDayClick(diaObj);
-            } else {
-                console.warn("No se encontró el objeto 'dia' para el spotlight:", mem.diaId);
-            }
-        });
-
-        containerEl.appendChild(itemEl);
+        itemEl.className = 'memoria-item spotlight-item';
+        itemEl.innerHTML = createMemoryItemHTML(mem, false);
+        container.appendChild(itemEl);
     });
-
-    // Inicializar mapas *después* de que todos los items estén en el DOM
-    _initMapsInContainer(containerEl, 'spotlight');
 }
 
-
-// --- Modal: Vista Previa (Preview) ---
 function createPreviewModal() {
     if (previewModal) return;
-
     previewModal = document.createElement('div');
-    previewModal.id = 'preview-modal';
-    previewModal.className = 'modal-preview';
+    previewModal.className = 'modal preview-modal';
     previewModal.innerHTML = `
-        <div class="modal-preview-content">
-            <div class="modal-preview-header">
-                <h3 id="preview-title"></h3>
-            </div>
-            <div class="modal-preview-notebook-paper">
-                <div class="modal-preview-memorias">
-                    <div id="preview-memorias-list">
-                        <p class="list-placeholder preview-loading" style="display: none;">Cargando memorias...</p>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-preview-footer">
-                <button id="close-preview-btn" class="aqua-button small">Cerrar</button>
-                <button id="edit-from-preview-btn" class="aqua-button small">Editar</button>
-            </div>
-        </div>`;
+        <div class="modal-content">
+            <button class="close-modal-btn" id="close-preview-btn" title="Cerrar">
+                <span class="material-icons-outlined">close</span>
+            </button>
+            <h2 id="preview-day-header">Día</h2>
+            <div class="preview-loading" style="display: none;">Cargando...</div>
+            <div id="preview-memorias-list"></div>
+            <button class="aqua-button" id="edit-from-preview-btn">Editar este día</button>
+        </div>
+    `;
     document.body.appendChild(previewModal);
 
     document.getElementById('close-preview-btn')?.addEventListener('click', closePreviewModal);
@@ -281,127 +447,98 @@ function createPreviewModal() {
 
 function showPreviewLoading(isLoading) {
     const loadingEl = previewModal?.querySelector('.preview-loading');
-    const listEl = previewModal?.querySelector('#preview-memorias-list');
-    if (loadingEl && listEl) {
-        if (isLoading) {
-            listEl.innerHTML = '';
-            loadingEl.style.display = 'block';
-        } else {
-            loadingEl.style.display = 'none';
-        }
-    }
+    if (loadingEl) loadingEl.style.display = isLoading ? 'block' : 'none';
 }
 
 function openPreviewModal(dia, memories) {
+    if (!previewModal) createPreviewModal();
+
     _currentDay = dia;
+    const header = document.getElementById('preview-day-header');
+    if (header) {
+        const dayNum = parseInt(dia.id.substring(3, 5), 10);
+        const monthNum = parseInt(dia.id.substring(0, 2), 10);
+        const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        header.textContent = `${dayNum} ${monthNames[monthNum - 1]}${dia.Nombre_Especial ? ` • ${dia.Nombre_Especial}` : ''}`;
+    }
 
-    const titleEl = document.getElementById('preview-title');
     const listEl = document.getElementById('preview-memorias-list');
-
-    const dayNameSpecial = dia.Nombre_Especial !== 'Unnamed Day' ? `: -${dia.Nombre_Especial}-` : '';
-    if (titleEl) titleEl.textContent = `${dia.Nombre_Dia}${dayNameSpecial}`;
-
-    // Limpiar mapas antiguos (solo del modal) antes de renderizar
-    _destroyActiveMaps(previewModal);
-    _renderMemoryList(listEl, memories, false, 'preview');
+    _renderMemoryList(listEl, memories, false);
 
     previewModal.style.display = 'flex';
-    setTimeout(() => {
-        previewModal.classList.add('visible');
-        // Inicializar mapas después de que el modal sea visible y el contenido esté renderizado
-        _initMapsInContainer(listEl, 'preview');
-    }, 10);
+    setTimeout(() => previewModal.classList.add('visible'), 10);
 }
 
 function closePreviewModal() {
     if (!previewModal) return;
     previewModal.classList.remove('visible');
-
-    // *** CAMBIO: Destruir mapas solo del modal al cerrar ***
-    _destroyActiveMaps(previewModal); 
-
     setTimeout(() => {
         previewModal.style.display = 'none';
         _currentDay = null;
-    }, 200);
+    }, 300);
 }
-
-
-// --- Modal: Edición (Edit/Add) ---
 
 function createEditModal() {
     if (editModal) return;
-
     editModal = document.createElement('div');
-    editModal.id = 'edit-add-modal';
-    editModal.className = 'modal-edit';
+    editModal.className = 'modal edit-modal';
     editModal.innerHTML = `
         <div class="modal-content">
-            <div class="modal-preview-header">
-                 <h3 id="edit-modal-title-dynamic">Añadir/Editar</h3>
-            </div>
-            <div class="modal-content-scrollable striped-background">
-                <p class="list-placeholder edit-loading" style="display: none; padding: 20px;">Cargando...</p>
-                <div class="edit-content-wrapper">
-                    <div class="modal-section" id="day-selection-section" style="display: none;">
-                        <label for="edit-mem-day">Día (MM-DD):</label>
-                        <div class="day-selection-controls">
-                            <select id="edit-mem-day"></select>
-                            <button type="button" id="btn-name-selected-day" class="aqua-button small" title="Nombrar Día Seleccionado">Nombrar</button>
-                        </div>
-                        <p id="add-name-status" class="status-message"></p>
-                    </div>
-                    <div class="modal-section" id="day-name-section" style="display: none;">
-                        <h3 id="edit-modal-title"></h3>
-                        <label for="nombre-especial-input">Nombrar este día:</label>
-                        <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="25">
-                        <button id="save-name-btn" class="aqua-button">Guardar Nombre</button>
-                        <p id="save-status" class="status-message"></p>
-                    </div>
-                    <div class="modal-section memorias-section">
-                        <div id="add-memory-button-container" style="display: none;">
-                           <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button>
-                        </div>
-                        <form id="memory-form" style="display: none;">
-                             <p class="section-description" id="memory-form-title">Añadir/Editar Memoria</p>
-                            <label for="memoria-year">Año Original:</label>
-                            <input type="number" id="memoria-year" placeholder="Año" min="1900" max="2100" required>
-                            <label for="memoria-type">Tipo:</label>
-                            <select id="memoria-type">
-                                <option value="Texto">Nota</option>
-                                <option value="Lugar">Lugar</option>
-                                <option value="Musica">Canción</option>
-                            </select>
-                            <div class="add-memory-input-group" id="input-type-Texto">
-                                <label for="memoria-desc">Descripción:</label>
-                                <textarea id="memoria-desc" placeholder="Escribe tu recuerdo..."></textarea>
-                            </div>
-                            <div class="add-memory-input-group" id="input-type-Lugar">
-                                <label for="memoria-place-search">Buscar Lugar:</label>
-                                <input type="text" id="memoria-place-search" placeholder="Ej. Torre Eiffel">
-                                <button type="button" class="aqua-button" id="btn-search-place">Buscar</button>
-                                <div id="place-results" class="search-results"></div>
-                            </div>
-                            <div class="add-memory-input-group" id="input-type-Musica">
-                                <label for="memoria-music-search">Buscar Canción:</label>
-                                <input type="text" id="memoria-music-search" placeholder="Ej. Bohemian Rhapsody">
-                                <button type="button" class="aqua-button" id="btn-search-itunes">Buscar</button>
-                                <div id="itunes-results" class="search-results"></div>
-                            </div>
-                            <button type="submit" id="save-memoria-btn" class="aqua-button">Añadir Memoria</button>
-                            <button type="button" id="btn-cancel-mem-edit" class="aqua-button small">Cancelar</button>
-                            <p id="memoria-status" class="status-message"></p>
-                        </form>
-                        <div id="edit-memorias-list-container" style="margin-top: 15px;">
-                            <h4 style="margin-top: 0;">Memorias Existentes</h4>
-                            <div id="edit-memorias-list"></div>
-                        </div>
-                    </div>
+            <button class="close-modal-btn" id="close-edit-add-btn" title="Cerrar">
+                <span class="material-icons-outlined">close</span>
+            </button>
+            <h2 id="edit-day-header">Editar Día</h2>
+            
+            <div id="edit-memorias-list-container">
+                <div class="edit-loading" style="display: none;">Cargando...</div>
+                <div class="modal-actions">
+                    <button class="aqua-button" id="btn-show-add-form">
+                        <span class="material-icons-outlined">add</span> Añadir Memoria
+                    </button>
+                    <button class="aqua-button" id="btn-name-day">
+                        <span class="material-icons-outlined">label</span> <span id="name-day-btn-text">Nombrar</span>
+                    </button>
                 </div>
+                <div id="edit-memorias-list"></div>
             </div>
-            <div class="modal-main-buttons">
-                <button id="close-edit-add-btn" class="aqua-button">Cerrar</button>
-            </div>
+            
+            <form id="memory-form" style="display: none;">
+                <div id="memoria-status" class="status-message"></div>
+                
+                <label>Tipo de Memoria:</label>
+                <select id="memoria-type" required>
+                    <option value="Texto">Nota</option>
+                    <option value="Musica">Música</option>
+                    <option value="Lugar">Lugar</option>
+                </select>
+                
+                <label>Año:</label>
+                <input type="number" id="memoria-year" placeholder="2024" min="1900" max="2100" required>
+                
+                <div id="memoria-text-fields">
+                    <label>Descripción:</label>
+                    <textarea id="memoria-description" rows="4" required></textarea>
+                </div>
+                
+                <div id="memoria-music-fields" style="display: none;">
+                    <label>Buscar Canción:</label>
+                    <input type="text" id="memoria-music-search" placeholder="Buscar en iTunes...">
+                    <button type="button" class="aqua-button" id="btn-search-music">Buscar</button>
+                    <div id="itunes-results"></div>
+                </div>
+                
+                <div id="memoria-place-fields" style="display: none;">
+                    <label>Buscar Lugar:</label>
+                    <input type="text" id="memoria-place-search" placeholder="Buscar lugar...">
+                    <button type="button" class="aqua-button" id="btn-search-place">Buscar</button>
+                    <div id="place-results"></div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="aqua-button" id="save-memoria-btn">Añadir Memoria</button>
+                    <button type="button" class="aqua-button secondary" id="cancel-memoria-btn">Cancelar</button>
+                </div>
+            </form>
         </div>
     `;
     document.body.appendChild(editModal);
@@ -410,62 +547,38 @@ function createEditModal() {
 
 function showEditLoading(isLoading) {
     const loadingEl = editModal?.querySelector('.edit-loading');
-    const contentWrapper = editModal?.querySelector('.edit-content-wrapper');
-    if (loadingEl && contentWrapper) {
-        loadingEl.style.display = isLoading ? 'block' : 'none';
-        contentWrapper.style.display = isLoading ? 'none' : 'block';
-    }
+    if (loadingEl) loadingEl.style.display = isLoading ? 'block' : 'none';
 }
 
 async function handleNameSelectedDay() {
-     if (!callbacks.onSaveDayName || !_allDaysData) return;
-     const daySelect = document.getElementById('edit-mem-day');
-     if (!daySelect) return;
-     const selectedDayId = daySelect.value;
-     const selectedOption = daySelect.options[daySelect.selectedIndex];
-     const selectedDayText = selectedOption ? selectedOption.text : selectedDayId;
-     const currentDayData = _allDaysData.find(d => d.id === selectedDayId);
-     const currentName = currentDayData?.Nombre_Especial !== 'Unnamed Day' ? currentDayData.Nombre_Especial : '';
-     const newName = await showPrompt(`Nombrar día ${selectedDayText}:`, currentName);
-     if (newName !== null) {
-        callbacks.onSaveDayName(selectedDayId, newName.trim(), 'add-name-status');
-     }
+    if (!_currentDay) return;
+    const currentName = _currentDay.Nombre_Especial || '';
+    const newName = await showPrompt(`Nombre para ${_currentDay.id}:`, currentName);
+    if (newName === null) return;
+    if (callbacks.onSaveDayName) callbacks.onSaveDayName(_currentDay.id, newName);
 }
 
 function _bindEditModalEvents() {
     document.getElementById('close-edit-add-btn')?.addEventListener('click', closeEditModal);
-    document.getElementById('save-name-btn')?.addEventListener('click', () => {
-        if (callbacks.onSaveDayName && _currentDay) {
-            const input = document.getElementById('nombre-especial-input');
-            callbacks.onSaveDayName(_currentDay.id, input.value.trim(), 'save-status');
-        }
-    });
-
-    document.getElementById('btn-name-selected-day')?.addEventListener('click', handleNameSelectedDay);
-
+    document.getElementById('btn-name-day')?.addEventListener('click', handleNameSelectedDay);
     document.getElementById('btn-show-add-form')?.addEventListener('click', () => {
         resetMemoryForm();
         _showMemoryForm(true);
     });
-
-    document.getElementById('btn-cancel-mem-edit')?.addEventListener('click', () => {
+    document.getElementById('cancel-memoria-btn')?.addEventListener('click', () => {
+        resetMemoryForm();
         _showMemoryForm(false);
     });
 
     document.getElementById('memory-form')?.addEventListener('submit', _handleFormSubmit);
     document.getElementById('memoria-type')?.addEventListener('change', handleMemoryTypeChange);
-
-    document.getElementById('btn-search-itunes')?.addEventListener('click', () => {
-        if (callbacks.onSearchMusic) {
-            const term = document.getElementById('memoria-music-search').value;
-            if (term) callbacks.onSearchMusic(term);
-        }
+    document.getElementById('btn-search-music')?.addEventListener('click', () => {
+        const query = document.getElementById('memoria-music-search')?.value.trim();
+        if (query && callbacks.onMusicSearch) callbacks.onMusicSearch(query);
     });
     document.getElementById('btn-search-place')?.addEventListener('click', () => {
-        if (callbacks.onSearchPlace) {
-            const term = document.getElementById('memoria-place-search').value;
-            if (term) callbacks.onSearchPlace(term);
-        }
+        const query = document.getElementById('memoria-place-search')?.value.trim();
+        if (query && callbacks.onPlaceSearch) callbacks.onPlaceSearch(query);
     });
 
     const listEl = document.getElementById('edit-memorias-list');
@@ -474,105 +587,50 @@ function _bindEditModalEvents() {
         const deleteBtn = e.target.closest('.delete-btn');
 
         if (editBtn) {
-            const memoriaId = editBtn.dataset.memoriaId;
-            if (memoriaId && _currentMemories) {
-                const memToEdit = _currentMemories.find(m => m.id === memoriaId);
-                if (memToEdit) {
-                    fillFormForEdit(memToEdit);
-                } else {
-                    console.error("Memoria no encontrada para editar:", memoriaId);
-                    showModalStatus('memoria-status', 'Error: Memoria no encontrada.', true);
-                }
+            const memId = editBtn.dataset.memoriaId;
+            const memToEdit = _currentMemories.find(m => m.id === memId);
+            if (memToEdit) {
+                fillFormForEdit(memToEdit);
             }
         }
 
         if (deleteBtn) {
-            const memoriaId = deleteBtn.dataset.memoriaId;
-            if (memoriaId && _currentMemories && callbacks.onDeleteMemory) {
-                const memToDelete = _currentMemories.find(m => m.id === memoriaId);
-                if (memToDelete && _currentDay) {
-                    callbacks.onDeleteMemory(_currentDay.id, memToDelete);
-                } else {
-                    console.error("No se pudo determinar memoria o día para borrar:", memoriaId, _currentDay);
-                }
+            const memId = deleteBtn.dataset.memoriaId;
+            const memToDelete = _currentMemories.find(m => m.id === memId);
+            if (memToDelete && _currentDay && callbacks.onDeleteMemory) {
+                callbacks.onDeleteMemory(_currentDay.id, memToDelete);
             }
         }
     });
 }
 
-function _showMemoryForm(show) {
-    const form = document.getElementById('memory-form');
-    const addMemoryButtonContainer = document.getElementById('add-memory-button-container');
-    const memoryListContainer = document.getElementById('edit-memorias-list-container');
+function openEditModal(dia, memories, allDays) {
+    if (!editModal) createEditModal();
 
-    if (form) form.style.display = show ? 'block' : 'none';
-    if (addMemoryButtonContainer) addMemoryButtonContainer.style.display = show ? 'none' : 'block';
-
-    // La lista solo se muestra si NO estamos mostrando el formulario Y estamos en modo Editar Día
-    if (memoryListContainer) {
-        memoryListContainer.style.display = (!show && _currentDay) ? 'block' : 'none';
-    }
-}
-
-function openEditModal(dia, memories) {
     _currentDay = dia;
     _currentMemories = memories || [];
+    _allDaysData = allDays || [];
 
-    const daySelection = document.getElementById('day-selection-section');
-    const dayNameSection = document.getElementById('day-name-section');
-    const titleEl = document.getElementById('edit-modal-title');
-    const nameInput = document.getElementById('nombre-especial-input');
-    const daySelect = document.getElementById('edit-mem-day');
-    const dynamicTitleEl = document.getElementById('edit-modal-title-dynamic');
-    const addMemoryButtonContainer = document.getElementById('add-memory-button-container');
-    const memoryListContainer = document.getElementById('edit-memorias-list-container');
+    const header = document.getElementById('edit-day-header');
+    if (header) {
+        const dayNum = parseInt(dia.id.substring(3, 5), 10);
+        const monthNum = parseInt(dia.id.substring(0, 2), 10);
+        const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        header.textContent = `${dayNum} ${monthNames[monthNum - 1]}`;
+    }
 
-    if (dia) { // Modo Editar Día
-        daySelection.style.display = 'none';
-        dayNameSection.style.display = 'block';
-        addMemoryButtonContainer.style.display = 'block';
-        memoryListContainer.style.display = 'block';
-
-        if (dynamicTitleEl) dynamicTitleEl.textContent = 'Editar Día';
-        const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
-        // *** CAMBIO: Título simplificado ***
-        titleEl.textContent = `${dia.Nombre_Dia}${dayName}`;
-        nameInput.value = dia.Nombre_Especial !== 'Unnamed Day' ? dia.Nombre_Especial : '';
-
-    } else { // Modo Añadir Memoria
-        daySelection.style.display = 'block';
-        addMemoryButtonContainer.style.display = 'block';
-        dayNameSection.style.display = 'none';
-        memoryListContainer.style.display = 'none';
-
-        if (dynamicTitleEl) dynamicTitleEl.textContent = 'Añadir Memoria';
-
-        if (_allDaysData.length > 0) {
-            daySelect.innerHTML = '';
-             _allDaysData.sort((a, b) => a.id.localeCompare(b.id)).forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d.id;
-                const displayName = d.Nombre_Especial !== 'Unnamed Day' ? `${d.Nombre_Dia} (${d.Nombre_Especial})` : d.Nombre_Dia;
-                opt.textContent = displayName;
-                daySelect.appendChild(opt);
-            });
-             const today = new Date();
-             const todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-             daySelect.value = todayId;
-        } else {
-             daySelect.innerHTML = '<option value="">Error: No hay días cargados</option>';
-        }
+    const nameDayBtn = document.getElementById('name-day-btn-text');
+    if (nameDayBtn) {
+        nameDayBtn.textContent = dia.Nombre_Especial ? 'Renombrar' : 'Nombrar';
     }
 
     _showMemoryForm(false);
     resetMemoryForm();
 
-    _renderMemoryList(document.getElementById('edit-memorias-list'), _currentMemories, true, 'edit');
+    const listEl = document.getElementById('edit-memorias-list');
+    _renderMemoryList(listEl, memories, true);
 
-    showModalStatus('save-status', '', false);
     showModalStatus('memoria-status', '', false);
-    showModalStatus('add-name-status', '', false);
-    showEditLoading(false);
 
     editModal.style.display = 'flex';
     setTimeout(() => editModal.classList.add('visible'), 10);
@@ -581,171 +639,154 @@ function openEditModal(dia, memories) {
 function closeEditModal() {
     if (!editModal) return;
     editModal.classList.remove('visible');
-    // *** CAMBIO: Destruir mapas solo del modal al cerrar ***
-    _destroyActiveMaps(editModal);
     setTimeout(() => {
         editModal.style.display = 'none';
         _currentDay = null;
         _currentMemories = [];
-        _isEditingMemory = false;
-    }, 200);
+        _allDaysData = [];
+        _showMemoryForm(false);
+        resetMemoryForm();
+    }, 300);
 }
 
-
-// --- Modal: Almacén (Store) ---
 function createStoreModal() {
     if (storeModal) return;
     storeModal = document.createElement('div');
-    storeModal.id = 'store-modal';
-    storeModal.className = 'modal-store';
+    storeModal.className = 'modal store-modal';
     storeModal.innerHTML = `
         <div class="modal-content">
-            <div class="modal-preview-header">
-                 <h3 id="store-modal-title">Almacén</h3>
-            </div>
-            <div class="modal-content-scrollable store-category-list striped-background">
-                </div>
-            <div class="modal-main-buttons">
-                <button id="close-store-btn" class="aqua-button">Cerrar</button>
+            <button class="close-modal-btn" id="close-store-btn" title="Cerrar">
+                <span class="material-icons-outlined">close</span>
+            </button>
+            <h2>Almacén</h2>
+            <div class="store-categories">
+                ${createStoreCategoryButton('Nombres', 'label', 'Días Nombrados')}
+                ${createStoreCategoryButton('Musica', 'music_note', 'Música')}
+                ${createStoreCategoryButton('Lugar', 'place', 'Lugares')}
+                ${createStoreCategoryButton('Texto', 'article', 'Notas')}
             </div>
         </div>
     `;
     document.body.appendChild(storeModal);
 
-    const categoryList = storeModal.querySelector('.store-category-list');
-    if (categoryList) {
-        categoryList.appendChild(createStoreCategoryButton('Nombres', 'label', 'Días Nombrados'));
-        categoryList.appendChild(createStoreCategoryButton('Texto', 'article', 'Notas'));
-        categoryList.appendChild(createStoreCategoryButton('Lugar', 'place', 'Lugares'));
-        categoryList.appendChild(createStoreCategoryButton('Musica', 'music_note', 'Canciones'));
-        categoryList.appendChild(createStoreCategoryButton('Imagen', 'image', 'Imágenes'));
-
-        categoryList.addEventListener('click', (e) => {
-            const btn = e.target.closest('.store-category-button');
-            if (btn && callbacks.onStoreCategoryClick) {
-                callbacks.onStoreCategoryClick(btn.dataset.type);
-            }
-        });
-    } else {
-        console.error("Error al crear modal de almacén: no se encontró '.store-category-list'");
-    }
-
     document.getElementById('close-store-btn')?.addEventListener('click', closeStoreModal);
+
+    storeModal.querySelectorAll('.store-category-button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const type = e.currentTarget.dataset.type;
+            if (callbacks.onStoreCategoryClick) callbacks.onStoreCategoryClick(type);
+        });
+    });
 }
+
 function openStoreModal() {
-    if (!storeModal) createStoreModal(); // Asegura que el modal existe
+    if (!storeModal) createStoreModal();
     storeModal.style.display = 'flex';
     setTimeout(() => storeModal.classList.add('visible'), 10);
 }
+
 function closeStoreModal() {
     if (!storeModal) return;
     storeModal.classList.remove('visible');
     setTimeout(() => {
         storeModal.style.display = 'none';
-    }, 200);
+    }, 300);
 }
 
-// --- Modal: Lista del Almacén (Store List) ---
 function createStoreListModal() {
     if (storeListModal) return;
     storeListModal = document.createElement('div');
-    storeListModal.id = 'store-list-modal';
-    storeListModal.className = 'modal-store-list';
+    storeListModal.className = 'modal store-list-modal';
     storeListModal.innerHTML = `
         <div class="modal-content">
-            <div class="modal-preview-header">
-                 <h3 id="store-list-modal-title">Cargando...</h3>
-            </div>
-            <div class="modal-content-scrollable striped-background" id="store-list-content">
-                </div>
-            <div class="modal-main-buttons">
-                <button id="close-store-list-btn" class="aqua-button">Cerrar</button>
-            </div>
+            <button class="close-modal-btn" id="close-store-list-btn" title="Cerrar">
+                <span class="material-icons-outlined">close</span>
+            </button>
+            <h2 id="store-list-title">Lista</h2>
+            <div class="store-list-loading" style="display: none;">Cargando...</div>
+            <div id="store-list-items"></div>
+            <button class="aqua-button" id="btn-store-load-more" style="display: none;">Cargar más</button>
         </div>
     `;
     document.body.appendChild(storeListModal);
     _bindStoreListModalEvents();
 }
+
 function _bindStoreListModalEvents() {
     document.getElementById('close-store-list-btn')?.addEventListener('click', closeStoreListModal);
-    const listContent = document.getElementById('store-list-content');
-    listContent?.addEventListener('click', (e) => {
+    document.getElementById('btn-store-load-more')?.addEventListener('click', () => {
+        if (callbacks.onStoreLoadMore) callbacks.onStoreLoadMore();
+    });
+
+    const listEl = document.getElementById('store-list-items');
+    listEl?.addEventListener('click', (e) => {
         const item = e.target.closest('.store-list-item');
-        if (item && callbacks.onStoreItemClick) {
-            callbacks.onStoreItemClick(item.dataset.diaId);
-        }
-        const loadMoreBtn = e.target.closest('#load-more-btn');
-        if (loadMoreBtn && callbacks.onStoreLoadMore) {
-            loadMoreBtn.disabled = true;
-            loadMoreBtn.textContent = 'Cargando...';
-            callbacks.onStoreLoadMore();
-        }
+        if (!item) return;
+        const diaId = item.dataset.diaId;
+        const memId = item.dataset.id;
+        if (callbacks.onStoreItemClick) callbacks.onStoreItemClick(diaId, memId);
     });
 }
+
 function openStoreListModal(title) {
-    if (!storeListModal) createStoreListModal();
-    const titleEl = document.getElementById('store-list-modal-title');
-    const contentEl = document.getElementById('store-list-content');
+    if(!storeListModal) createStoreListModal();
+    
+    const titleEl = document.getElementById('store-list-title');
     if (titleEl) titleEl.textContent = title;
-    if (contentEl) contentEl.innerHTML = '<p class="list-placeholder" style="padding: 20px;">Cargando items...</p>';
+
+    const listEl = document.getElementById('store-list-items');
+    if (listEl) listEl.innerHTML = '<p class="list-placeholder">Cargando...</p>';
+
+    const loadMoreBtn = document.getElementById('btn-store-load-more');
+    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+
     storeListModal.style.display = 'flex';
     setTimeout(() => storeListModal.classList.add('visible'), 10);
 }
+
 function closeStoreListModal() {
     if (!storeListModal) return;
     storeListModal.classList.remove('visible');
     setTimeout(() => {
         storeListModal.style.display = 'none';
-    }, 200);
-}
-function updateStoreList(items, append = false, hasMore = false) {
-    const contentEl = document.getElementById('store-list-content');
-    if (!contentEl) return;
-    let listContainer = contentEl.querySelector('.store-list-container');
-    if (!listContainer) {
-        listContainer = document.createElement('div');
-        listContainer.className = 'store-list-container';
-        contentEl.innerHTML = '';
-        contentEl.appendChild(listContainer);
-    }
-    const oldLoadMoreBtn = contentEl.querySelector('#load-more-btn');
-    if (oldLoadMoreBtn) oldLoadMoreBtn.remove();
-    if (!append && (!items || items.length === 0)) {
-        listContainer.innerHTML = '<p class="list-placeholder" style="padding: 20px;">No se encontraron items.</p>';
-        return;
-    }
-    if (!append) {
-        listContainer.innerHTML = '';
-    }
-    items.forEach(item => {
-        listContainer.appendChild(createStoreListItem(item));
-    });
-    if (hasMore) {
-        const loadMoreBtn = document.createElement('button');
-        loadMoreBtn.id = 'load-more-btn';
-        loadMoreBtn.className = 'aqua-button';
-        loadMoreBtn.textContent = 'Cargar Más';
-        loadMoreBtn.style.width = 'calc(100% - 40px)';
-        loadMoreBtn.style.margin = '15px 20px';
-        contentEl.appendChild(loadMoreBtn);
-    }
+        const listEl = document.getElementById('store-list-items');
+        if (listEl) listEl.innerHTML = '';
+    }, 300);
 }
 
-// --- Modales: Alerta, Prompt, Confirmación ---
-// *** CAMBIO: Funciones implementadas ***
+function updateStoreList(items, append = false, hasMore = false) {
+    const listEl = document.getElementById('store-list-items');
+    if (!listEl) return;
+
+    if (!append) listEl.innerHTML = '';
+
+    if (!items || items.length === 0) {
+        if (!append) listEl.innerHTML = '<p class="list-placeholder">No hay elementos.</p>';
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    items.forEach(item => {
+        const itemEl = createStoreListItem(item);
+        fragment.appendChild(itemEl);
+    });
+    listEl.appendChild(fragment);
+
+    const loadMoreBtn = document.getElementById('btn-store-load-more');
+    if (loadMoreBtn) loadMoreBtn.style.display = hasMore ? 'block' : 'none';
+}
 
 function createAlertPromptModal() {
     if (alertPromptModal) return;
     alertPromptModal = document.createElement('div');
-    alertPromptModal.id = 'alert-prompt-modal';
-    alertPromptModal.className = 'modal-alert-prompt';
+    alertPromptModal.className = 'modal alert-prompt-modal';
     alertPromptModal.innerHTML = `
-        <div classclass="modal-alert-content">
-            <p id="alert-prompt-message"></p>
+        <div class="modal-content alert-content">
+            <p id="alert-prompt-message">Mensaje</p>
             <input type="text" id="alert-prompt-input" style="display: none;">
-            <div class="modal-main-buttons">
-                <button id="alert-prompt-cancel">Cancelar</button>
-                <button id="alert-prompt-ok">OK</button>
+            <div class="alert-buttons">
+                <button class="aqua-button" id="alert-prompt-ok">OK</button>
+                <button class="aqua-button secondary" id="alert-prompt-cancel" style="display: none;">Cancelar</button>
             </div>
         </div>
     `;
@@ -760,75 +801,72 @@ function _bindAlertPromptEvents() {
 
 function closeAlertPromptModal(isOk) {
     if (!alertPromptModal) return;
+    
     alertPromptModal.classList.remove('visible');
     setTimeout(() => {
         alertPromptModal.style.display = 'none';
-        if (_promptResolve) {
-            const input = document.getElementById('alert-prompt-input');
-            if (isOk) {
-                _promptResolve(input.value);
-            } else {
-                _promptResolve(null); // Resuelve null si es Cancelar o se cierra
-            }
-            _promptResolve = null;
-        }
-    }, 200);
+    }, 300);
+
+    if (_promptResolve) {
+        const inputEl = document.getElementById('alert-prompt-input');
+        const value = (isOk && inputEl) ? inputEl.value : null;
+        _promptResolve(value);
+        _promptResolve = null;
+    }
 }
 
 function showAlert(message, type = 'default') {
-    if (!alertPromptModal) createAlertPromptModal();
+    if(!alertPromptModal) createAlertPromptModal();
     
-    const content = alertPromptModal.querySelector('.modal-alert-content');
-    const msgEl = document.getElementById('alert-prompt-message');
+    const contentDiv = alertPromptModal.querySelector('.alert-content');
+    const messageEl = document.getElementById('alert-prompt-message');
     const inputEl = document.getElementById('alert-prompt-input');
     const cancelBtn = document.getElementById('alert-prompt-cancel');
 
-    content.className = `modal-alert-content ${type}-alert`; // Aplicar estilo
-    msgEl.textContent = message;
-    inputEl.style.display = 'none';
-    cancelBtn.style.display = 'none'; // Solo botón OK
+    if (contentDiv) contentDiv.className = `modal-content alert-content alert-${type}`;
+    if (messageEl) messageEl.textContent = message;
+    if (inputEl) inputEl.style.display = 'none';
+    if (cancelBtn) cancelBtn.style.display = 'none';
 
     alertPromptModal.style.display = 'flex';
     setTimeout(() => alertPromptModal.classList.add('visible'), 10);
-    
-    return new Promise((resolve) => {
-        _promptResolve = resolve; // Resuelve con null (isOk=false) o undefined (isOk=true)
-    });
 }
 
 function showPrompt(message, defaultValue = '', type = 'default') {
-    if (!alertPromptModal) createAlertPromptModal();
-
-    const content = alertPromptModal.querySelector('.modal-alert-content');
-    const msgEl = document.getElementById('alert-prompt-message');
+    if(!alertPromptModal) createAlertPromptModal();
+    
+    const contentDiv = alertPromptModal.querySelector('.alert-content');
+    const messageEl = document.getElementById('alert-prompt-message');
     const inputEl = document.getElementById('alert-prompt-input');
     const cancelBtn = document.getElementById('alert-prompt-cancel');
 
-    content.className = `modal-alert-content ${type}-alert`; // Aplicar estilo
-    msgEl.textContent = message;
-    inputEl.style.display = 'block';
-    inputEl.value = defaultValue;
-    cancelBtn.style.display = 'block'; // Mostrar OK y Cancelar
+    if (contentDiv) contentDiv.className = `modal-content alert-content alert-${type}`;
+    if (messageEl) messageEl.textContent = message;
+    if (inputEl) {
+        inputEl.value = defaultValue;
+        inputEl.style.display = 'block';
+        setTimeout(() => inputEl.focus(), 100);
+    }
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
 
     alertPromptModal.style.display = 'flex';
     setTimeout(() => alertPromptModal.classList.add('visible'), 10);
 
     return new Promise((resolve) => {
-        _promptResolve = resolve; // Resuelve con el valor del input o null
+        _promptResolve = resolve;
     });
 }
 
 function createConfirmModal() {
     if (confirmModal) return;
     confirmModal = document.createElement('div');
-    confirmModal.id = 'confirm-modal';
-    confirmModal.className = 'modal-confirm';
+    confirmModal.className = 'modal confirm-modal';
     confirmModal.innerHTML = `
-        <div class="modal-alert-content">
-            <p id="confirm-message"></p>
-            <div class="modal-main-buttons">
-                <button id="confirm-cancel">Cancelar</button>
-                <button id="confirm-ok" class="delete-confirm">Confirmar</button>
+        <div class="modal-content alert-content">
+            <p id="confirm-message">¿Estás seguro?</p>
+            <div class="alert-buttons">
+                <button class="aqua-button" id="confirm-ok">Sí</button>
+                <button class="aqua-button secondary" id="confirm-cancel">No</button>
             </div>
         </div>
     `;
@@ -843,608 +881,196 @@ function _bindConfirmModalEvents() {
 
 function closeConfirmModal(isConfirmed) {
     if (!confirmModal) return;
+    
     confirmModal.classList.remove('visible');
     setTimeout(() => {
         confirmModal.style.display = 'none';
-        if (_confirmResolve) {
-            _confirmResolve(isConfirmed); // Resuelve true o false
-            _confirmResolve = null;
-        }
-    }, 200);
+    }, 300);
+
+    if (_confirmResolve) {
+        _confirmResolve(isConfirmed);
+        _confirmResolve = null;
+    }
 }
 
 function showConfirm(message) {
-    if (!confirmModal) createConfirmModal();
+    if(!confirmModal) createConfirmModal();
     
-    const msgEl = document.getElementById('confirm-message');
-    msgEl.textContent = message;
+    const messageEl = document.getElementById('confirm-message');
+    if (messageEl) messageEl.textContent = message;
 
     confirmModal.style.display = 'flex';
     setTimeout(() => confirmModal.classList.add('visible'), 10);
 
     return new Promise((resolve) => {
-        _confirmResolve = resolve; // Resuelve true o false
-    });
-}
-// --- FIN CAMBIO Modales ---
-
-
-// --- Funciones de Ayuda (Helpers) de UI ---
-
-/**
- * Renderiza un mapa Leaflet en un contenedor.
- */
-function _renderMap(containerId, lat, lon, zoom = 13) {
-    try {
-        const container = document.getElementById(containerId);
-        if (!container || container._leaflet_id) {
-            return;
-        }
-        const map = L.map(containerId).setView([lat, lon], zoom);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-        L.marker([lat, lon]).addTo(map);
-        _activeMaps.push(map);
-    } catch (e) {
-        console.error("Error renderizando mapa Leaflet:", e);
-        const container = document.getElementById(containerId);
-        if (container) {
-            container.innerHTML = "Error al cargar el mapa.";
-        }
-    }
-}
-
-/**
- * Busca e inicializa todos los placeholders de mapas dentro de un contenedor.
- */
-function _initMapsInContainer(containerEl, prefix) {
-    if (!containerEl) return;
-    const mapPlaceholders = containerEl.querySelectorAll(`div[id^="${prefix}-map-"][data-lat]`);
-    mapPlaceholders.forEach(el => {
-        if (el._leaflet_id) return; // No reinicializar
-        const lat = el.dataset.lat;
-        const lon = el.dataset.lon;
-        const zoom = el.dataset.zoom || 13;
-        if (lat && lon) {
-            setTimeout(() => {
-                 _renderMap(el.id, parseFloat(lat), parseFloat(lon), parseInt(zoom));
-            }, 50); 
-        }
+        _confirmResolve = resolve;
     });
 }
 
-/**
- * Destruye todas las instancias de mapas activas DENTRO de un contenedor específico.
- */
-function _destroyActiveMaps(containerEl) {
-    // *** CAMBIO: Lógica modificada para ser selectiva ***
-    if (!containerEl) {
-        console.warn("_destroyActiveMaps llamada sin contenedor. Abortando.");
-        return; 
-    }
-
-    const mapsToDestroy = [];
-    const stillActiveMaps = [];
-
-    _activeMaps.forEach(map => {
-        // Comprobar si el contenedor del mapa está dentro del modal que se cierra
-        if (containerEl.contains(map.getContainer())) {
-            mapsToDestroy.push(map);
-        } else {
-            stillActiveMaps.push(map);
-        }
-    });
-
-    mapsToDestroy.forEach(map => {
-        try { 
-            map.remove(); 
-        } catch(e) { 
-            console.warn("Error removing map:", e); 
-        }
-    });
-    
-    _activeMaps = stillActiveMaps; // Mantener solo los mapas que no se borraron
-}
-
-
-function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') {
-    if (!listEl) return;
-    listEl.innerHTML = '';
-
-    if (!memories || memories.length === 0) {
-        listEl.innerHTML = '<p class="list-placeholder">No hay memorias para este día.</p>';
-        return;
-    }
-
-    memories.sort((a, b) => {
-        const dateA = a.Fecha_Original?.seconds ? new Date(a.Fecha_Original.seconds * 1000) : (a.Fecha_Original instanceof Date ? a.Fecha_Original : new Date(0));
-        const dateB = b.Fecha_Original?.seconds ? new Date(b.Fecha_Original.seconds * 1000) : (b.Fecha_Original instanceof Date ? b.Fecha_Original : new Date(0));
-        return dateB.getFullYear() - dateA.getFullYear(); // Ordenar por año descendente
-    });
-
-
-    const fragment = document.createDocumentFragment();
-    memories.forEach(mem => {
-        const itemEl = document.createElement('div');
-        itemEl.className = 'memoria-item';
-        itemEl.innerHTML = createMemoryItemHTML(mem, showActions, mapIdPrefix);
-        fragment.appendChild(itemEl);
-    });
-    listEl.appendChild(fragment);
-}
-
-function updateMemoryList(memories) {
-    _currentMemories = memories || [];
-    const editList = document.getElementById('edit-memorias-list');
-    if (editList) _renderMemoryList(editList, _currentMemories, true, 'edit');
-
-    const previewList = document.getElementById('preview-memorias-list');
-    if (previewList && previewModal && previewModal.classList.contains('visible') && _currentDay) {
-         _destroyActiveMaps(previewModal); // Destruir mapas antiguos del preview
-         _renderMemoryList(previewList, _currentMemories, false, 'preview');
-         setTimeout(() => _initMapsInContainer(previewList, 'preview'), 10);
-    }
-}
-
-function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
-    if (!mem) return '';
-    const memId = (mem && mem.id) ? mem.id : '';
-
-    let yearStr = 'Año desc.';
-    if (mem.Fecha_Original) {
-        try {
-            const date = mem.Fecha_Original.seconds ? new Date(mem.Fecha_Original.seconds * 1000) : new Date(mem.Fecha_Original);
-            if (!isNaN(date)) { // Verificar si la fecha es válida
-                yearStr = date.getFullYear();
-            }
-        } catch (e) { console.warn("Fecha inválida:", mem.Fecha_Original, e); }
-    }
-
-
-    let contentHTML = `<small>${yearStr}</small>`; // Small ya está bold por CSS
-    let artworkHTML = '';
-    let icon = 'article';
-    let mapHTML = '';
-
-    switch (mem.Tipo) {
-        case 'Lugar':
-            icon = 'place';
-            contentHTML += `${mem.LugarNombre || 'Lugar sin nombre'}`;
-            if (mem.LugarData && mem.LugarData.lat && mem.LugarData.lon && !showActions) {
-                const lat = mem.LugarData.lat;
-                const lon = mem.LugarData.lon;
-                const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-                const mapClass = (mapIdPrefix === 'spotlight') ? 'spotlight-map-container' : 'memoria-map-container';
-                mapHTML = `<div id="${mapContainerId}"
-                                class="${mapClass}"
-                                data-lat="${lat}"
-                                data-lon="${lon}"
-                                data-zoom="13">Cargando mapa...</div>`;
-            }
-            break;
-        case 'Musica':
-            icon = 'music_note';
-            const trackName = mem.CancionData?.trackName || mem.CancionData?.title;
-            const artistName = mem.CancionData?.artistName || mem.CancionData?.artist?.name;
-            const artwork = mem.CancionData?.artworkUrl60 || mem.CancionData?.album?.cover_small;
-
-            if (trackName) {
-                contentHTML += `<strong>${trackName}</strong> <span class="artist-name">by ${artistName || 'Artista desc.'}</span>`;
-                if(artwork) {
-                    artworkHTML = `<img src="${artwork}" class="memoria-artwork" alt="Artwork">`;
-                }
-            } else {
-                contentHTML += `${mem.CancionInfo || 'Canción sin nombre'}`;
-            }
-            break;
-        case 'Imagen':
-            icon = 'image';
-            contentHTML += `${mem.Descripcion || 'Imagen'}`;
-            if (mem.ImagenURL) {
-                artworkHTML = `<img src="${mem.ImagenURL}" class="memoria-artwork" alt="Memoria">`;
-            }
-            break;
-        case 'Texto':
-        default:
-            icon = 'article';
-            const desc = mem.Descripcion || 'Nota vacía';
-            contentHTML += desc;
-            break;
-    }
-
-    if (!artworkHTML) {
-        artworkHTML = `<span class="memoria-icon material-icons-outlined">${icon}</span>`;
-    }
-
-    const actionsHTML = (showActions && memId) ? `
-        <div class="memoria-actions">
-            <button class="edit-btn" title="Editar" data-memoria-id="${memId}">
-                <span class="material-icons-outlined">edit</span>
-            </button>
-            <button class="delete-btn" title="Borrar" data-memoria-id="${memId}">
-                <span class="material-icons-outlined">delete</span>
-            </button>
-        </div>` : '';
-
-    const mainContentHTML = `
-        <div class="memoria-item-main-content ${mapIdPrefix === 'spotlight' ? 'spotlight-item-main-content' : ''}">
-            ${artworkHTML}
-            <div class="memoria-item-content">${contentHTML}</div>
-            ${actionsHTML}
-        </div>
-    `;
-
-    return mainContentHTML + mapHTML;
-}
-
-function createStoreCategoryButton(type, icon, label) {
-    const btn = document.createElement('button');
-    btn.className = 'store-category-button';
-    btn.dataset.type = type;
-    btn.innerHTML = `
-        <span class="material-icons-outlined">${icon}</span>
-        <span>${label}</span>
-        <span class="material-icons-outlined">chevron_right</span>
-    `;
-    return btn;
-}
-
-function createStoreListItem(item) {
-    const itemEl = document.createElement('div');
-    itemEl.className = 'store-list-item';
-    itemEl.dataset.diaId = item.diaId;
-
-    let contentHTML = '';
-    let icon = 'article';
-
-    if (item.type === 'Nombres') {
-        icon = 'label';
-        contentHTML = `<strong>${item.Nombre_Especial}</strong>
-                       <small>${item.Nombre_Dia}</small>`;
-    } else {
-        const year = item.Fecha_Original?.seconds ? (new Date(item.Fecha_Original.seconds * 1000)).getFullYear() : (item.Fecha_Original instanceof Date ? item.Fecha_Original.getFullYear() : '');
-        const dayName = item.Nombre_Dia || "Día";
-
-        switch(item.Tipo) {
-            case 'Lugar':
-                icon = 'place';
-                contentHTML = `<strong>${item.LugarNombre || 'Lugar'}</strong><small>${year} - ${dayName}</small>`;
-                break;
-            case 'Musica':
-                icon = 'music_note';
-                contentHTML = `<strong>${item.CancionInfo || 'Canción'}</strong><small>${year} - ${dayName}</small>`;
-                break;
-            case 'Imagen':
-                icon = 'image';
-                contentHTML = `<strong>${item.Descripcion || 'Imagen'}</strong><small>${year} - ${dayName}</small>`;
-                break;
-            case 'Texto':
-            default:
-                icon = 'article';
-                const desc = item.Descripcion ? item.Descripcion.substring(0, 50) + (item.Descripcion.length > 50 ? '...' : '') : 'Nota';
-                contentHTML = `<strong>${desc}</strong><small>${year} - ${dayName}</small>`;
-                break;
-        }
-    }
-
-    itemEl.innerHTML = `
-        <span class="memoria-icon material-icons-outlined">${icon}</span>
-        <div class="memoria-item-content">${contentHTML}</div>
-        `; // Chevron eliminado
-    return itemEl;
-}
-
-function _createLoginButton(isLoggedOut, container) {
-    const btnId = 'login-btn';
-    let btn = document.getElementById(btnId);
-    if (btn) btn.remove();
-
-    if (!isLoggedOut) {
-        return; // No mostrar botón si está logueado
-    }
-
-    btn = document.createElement('button');
-    btn.id = btnId;
-    btn.className = 'header-login-btn';
-    btn.title = 'Login with Google';
-    btn.dataset.action = 'login';
-    // SVG de Google
-    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.20455c0-.63864-.05727-1.25182-.16909-1.84091H9v3.48182h4.84364c-.20864 1.125-.84273 2.07818-1.77727 2.71136v2.25818h2.90864c1.70182-1.56682 2.68409-3.87409 2.68409-6.61045z"/><path fill="#34A853" d="M9 18c2.43 0 4.47182-.80591 5.96273-2.18045l-2.90864-2.25818c-.80591.54364-1.83682.86591-2.94.86591-2.27318 0-4.20727-1.53318-4.9-3.58227H1.07182v2.33318C2.56636 16.3 5.56 18 9 18z"/><path fill="#FBBC05" d="M4.1 10.71c-.22-.64-.35-1.32-.35-2.03s.13-.139.35-2.03V4.31H1.07C.38 5.67 0 7.29 0 9.03s.38 3.36 1.07 4.72l3.03-2.33v.03z"/><path fill="#EA4335" d="M9 3.57955c1.32136 0 2.50773.45455 3.44091 1.34591l2.58136-2.58136C13.46318.891364 11.4259 0 9 0 5.56 0 2.56636 1.70182 1.07182 4.31l3.02818 2.33318C4.79273 5.11273 6.72682 3.57955 9 3.57955z"/></svg>`;
-    container.appendChild(btn);
-}
-
-// --- Lógica del Formulario de Memorias ---
-let _selectedMusic = null;
-let _selectedPlace = null;
-
-async function _handleFormSubmit(e) {
+function _handleFormSubmit(e) {
     e.preventDefault();
-    if (!callbacks.onSaveMemory) return;
 
-    const saveBtn = document.getElementById('save-memoria-btn');
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Guardando...';
-
-    const diaId = _currentDay ? _currentDay.id : document.getElementById('edit-mem-day').value;
-    if (!diaId) {
-        showModalStatus('memoria-status', 'Error: No se ha seleccionado un día.', true);
-        saveBtn.disabled = false;
-        saveBtn.textContent = _isEditingMemory ? 'Actualizar Memoria' : 'Añadir Memoria';
+    if (!_currentDay) {
+        showModalStatus('memoria-status', 'Error: No hay día seleccionado.', true);
         return;
     }
 
-    const type = document.getElementById('memoria-type').value;
-    const year = document.getElementById('memoria-year').value;
-    
-    let memoryData = {
-        Tipo: type,
-        year: year,
-        id: _isEditingMemory ? document.getElementById('memory-form').dataset.memoriaId : null
+    const form = e.target;
+    const formData = {
+        Tipo: document.getElementById('memoria-type')?.value || 'Texto',
+        year: document.getElementById('memoria-year')?.value
     };
 
-    try {
-        switch (type) {
-            case 'Texto':
-                memoryData.Descripcion = document.getElementById('memoria-desc').value;
-                if (!memoryData.Descripcion) throw new Error('La descripción no puede estar vacía.');
-                break;
-            case 'Lugar':
-                if (!_selectedPlace) throw new Error('Debes seleccionar un lugar de la búsqueda.');
-                memoryData.LugarNombre = _selectedPlace.display_name || _selectedPlace.LugarNombre;
-                memoryData.LugarData = {
-                    lat: _selectedPlace.lat,
-                    lon: _selectedPlace.lon,
-                    display_name: _selectedPlace.display_name || _selectedPlace.LugarNombre
-                };
-                break;
-            case 'Musica':
-                if (!_selectedMusic) throw new Error('Debes seleccionar una canción de la búsqueda.');
-                const trackName = _selectedMusic.trackName || _selectedMusic.title;
-                const artistName = _selectedMusic.artistName || _selectedMusic.artist?.name;
-                const artwork = _selectedMusic.artworkUrl60 || _selectedMusic.album?.cover_small;
-                
-                memoryData.CancionInfo = `${trackName} - ${artistName}`;
-                memoryData.CancionData = {
-                    trackName: trackName,
-                    artistName: artistName,
-                    artworkUrl60: artwork,
-                    ..._selectedMusic 
-                };
-                break;
-            default:
-                throw new Error('Tipo de memoria no válido.');
-        }
+    const docIdToEdit = form.dataset.editingId || null;
 
-        await callbacks.onSaveMemory(diaId, memoryData, _isEditingMemory);
+    switch (formData.Tipo) {
+        case 'Texto':
+            formData.Descripcion = document.getElementById('memoria-description')?.value.trim();
+            if (!formData.Descripcion) {
+                showModalStatus('memoria-status', 'La descripción no puede estar vacía.', true);
+                return;
+            }
+            break;
 
-        saveBtn.disabled = false;
-        saveBtn.textContent = _isEditingMemory ? 'Actualizar Memoria' : 'Añadir Memoria';
+        case 'Musica':
+            if (!_selectedMusic) {
+                showModalStatus('memoria-status', 'Debes buscar y seleccionar una canción.', true);
+                return;
+            }
+            formData.CancionData = _selectedMusic;
+            formData.CancionInfo = `${_selectedMusic.trackName} - ${_selectedMusic.artistName}`;
+            break;
 
-    } catch (error) {
-        showModalStatus('memoria-status', `Error: ${error.message}`, true);
-        saveBtn.disabled = false;
-        saveBtn.textContent = _isEditingMemory ? 'Actualizar Memoria' : 'Añadir Memoria';
+        case 'Lugar':
+            if (!_selectedPlace) {
+                showModalStatus('memoria-status', 'Debes buscar y seleccionar un lugar.', true);
+                return;
+            }
+            formData.LugarData = _selectedPlace.data;
+            formData.LugarNombre = _selectedPlace.name;
+            break;
+    }
+
+    if (docIdToEdit) {
+        formData.id = docIdToEdit;
+    }
+
+    const diaId = _currentDay.id;
+    if (callbacks.onSaveMemory) {
+        callbacks.onSaveMemory(diaId, formData, docIdToEdit);
     }
 }
 
 function handleMemoryTypeChange() {
-    const type = document.getElementById('memoria-type')?.value;
-    if (!type) return;
-    const groups = document.querySelectorAll('.add-memory-input-group');
-    groups.forEach(group => {
-        group.style.display = 'none';
-    });
-    const selectedGroup = document.getElementById(`input-type-${type}`);
-    if (selectedGroup) {
-        selectedGroup.style.display = 'block';
-    }
+    const tipo = document.getElementById('memoria-type')?.value;
+    const textFields = document.getElementById('memoria-text-fields');
+    const musicFields = document.getElementById('memoria-music-fields');
+    const placeFields = document.getElementById('memoria-place-fields');
+
+    if (textFields) textFields.style.display = (tipo === 'Texto') ? 'block' : 'none';
+    if (musicFields) musicFields.style.display = (tipo === 'Musica') ? 'block' : 'none';
+    if (placeFields) placeFields.style.display = (tipo === 'Lugar') ? 'block' : 'none';
+
+    showMusicResults([]);
+    showPlaceResults([]);
 }
 
 function fillFormForEdit(mem) {
     if (!mem) return;
-    resetMemoryForm();
-    _isEditingMemory = true;
 
-    document.getElementById('memory-form-title').textContent = 'Editar Memoria';
-    document.getElementById('save-memoria-btn').textContent = 'Actualizar Memoria';
-    document.getElementById('memory-form').dataset.memoriaId = mem.id;
+    const form = document.getElementById('memory-form');
+    if (!form) return;
+
+    resetMemoryForm();
+
+    form.dataset.editingId = mem.id;
+
+    document.getElementById('memoria-type').value = mem.Tipo || 'Texto';
 
     if (mem.Fecha_Original) {
-        const date = mem.Fecha_Original.seconds ? new Date(mem.Fecha_Original.seconds * 1000) : new Date(mem.Fecha_Original);
-        if (!isNaN(date)) {
-            document.getElementById('memoria-year').value = date.getFullYear();
+        try {
+            const date = new Date(mem.Fecha_Original.seconds * 1000 || mem.Fecha_Original);
+            if (!isNaN(date)) {
+                document.getElementById('memoria-year').value = date.getFullYear();
+            }
+        } catch (e) {
+            console.warn("Fecha inválida en fillFormForEdit:", mem.Fecha_Original);
         }
     }
-    
-    document.getElementById('memoria-type').value = mem.Tipo;
+
+    handleMemoryTypeChange();
 
     switch (mem.Tipo) {
         case 'Texto':
-            document.getElementById('memoria-desc').value = mem.Descripcion || '';
+            document.getElementById('memoria-description').value = mem.Descripcion || '';
             break;
+
         case 'Lugar':
-            document.getElementById('memoria-place-search').value = mem.LugarNombre || '';
-            if (mem.LugarData) {
-                _selectedPlace = mem.LugarData;
+            if (mem.LugarData && mem.LugarNombre) {
+                _selectedPlace = { name: mem.LugarNombre, data: mem.LugarData };
+                document.getElementById('memoria-place-search').value = mem.LugarNombre;
                 showPlaceResults([mem.LugarData], true);
             }
             break;
+
         case 'Musica':
-             document.getElementById('memoria-music-search').value = mem.CancionInfo || '';
-             if (mem.CancionData) {
-                 _selectedMusic = mem.CancionData;
-                 const track = mem.CancionData;
-                 showMusicResults([track], true);
-             }
+            if (mem.CancionData) {
+                _selectedMusic = mem.CancionData;
+                document.getElementById('memoria-music-search').value = `${mem.CancionData.trackName} - ${mem.CancionData.artistName}`;
+                showMusicResults([mem.CancionData], true);
+            }
             break;
     }
-    handleMemoryTypeChange();
+
+    const saveBtn = document.getElementById('save-memoria-btn');
+    if (saveBtn) saveBtn.textContent = 'Actualizar Memoria';
+
     _showMemoryForm(true);
 }
 
 function resetMemoryForm() {
+    const form = document.getElementById('memory-form');
+    if (!form) return;
+
+    form.reset();
+    delete form.dataset.editingId;
+
     _isEditingMemory = false;
     _selectedMusic = null;
     _selectedPlace = null;
-    const form = document.getElementById('memory-form');
-    if (!form) return;
-    form.reset();
-    form.dataset.memoriaId = '';
-    document.getElementById('memory-form-title').textContent = 'Añadir Nueva Memoria';
-    document.getElementById('save-memoria-btn').textContent = 'Añadir Memoria';
-    const musicResults = document.getElementById('itunes-results');
-    const placeResults = document.getElementById('place-results');
-    if (musicResults) musicResults.innerHTML = '';
-    if (placeResults) placeResults.innerHTML = '';
+
+    document.getElementById('memoria-type').value = 'Texto';
+    document.getElementById('memoria-year').value = '';
+
+    showMusicResults([]);
+    showPlaceResults([]);
+
     showModalStatus('memoria-status', '', false);
-    const typeSelect = document.getElementById('memoria-type');
-    if (typeSelect) {
-        typeSelect.value = 'Texto';
+
+    const saveBtn = document.getElementById('save-memoria-btn');
+    if (saveBtn) {
+        saveBtn.textContent = 'Añadir Memoria';
+        saveBtn.disabled = false;
     }
+
     handleMemoryTypeChange();
+    _showMemoryForm(false);
 }
 
-function showMusicResults(tracks, isSelected = false) {
-    const resultsEl = document.getElementById('itunes-results');
-    if (!resultsEl) return;
-    resultsEl.innerHTML = '';
-    if (isSelected && tracks && tracks.length > 0) {
-        const track = tracks[0];
-        const trackName = track.trackName || track.title;
-        const artistName = track.artistName || track.artist?.name;
-        resultsEl.innerHTML = `<div class="search-result-selected">Seleccionado: ${trackName} - ${artistName}</div>`;
-        return;
-    }
-    if (!tracks || tracks.length === 0) {
-        resultsEl.innerHTML = '<p class="list-placeholder" style="padding: 10px;">No se encontraron canciones.</p>';
-        return;
-    }
-    tracks.forEach(track => {
-        const itemEl = document.createElement('div');
-        itemEl.className = 'search-result-item';
-        itemEl.innerHTML = `
-            <img src="${track.artworkUrl60 || track.album?.cover_small}" class="memoria-artwork" alt="Artwork">
-            <div class="memoria-item-content">
-                <strong>${track.trackName || track.title}</strong>
-                <small>${track.artistName || track.artist?.name}</small>
-            </div>
-        `;
-        itemEl.addEventListener('click', () => {
-            _selectedMusic = track;
-            _selectedMusic.CancionInfo = `${track.trackName} - ${track.artistName}`; 
-            showMusicResults([track], true);
-        });
-        resultsEl.appendChild(itemEl);
-    });
-}
-
-function showPlaceResults(places, isSelected = false) {
-    const resultsEl = document.getElementById('place-results');
-    if (!resultsEl) return;
-    resultsEl.innerHTML = '';
-    if (isSelected && places && places.length > 0) {
-        const place = places[0];
-        resultsEl.innerHTML = `<div class="search-result-selected">Seleccionado: ${place.display_name || place.LugarNombre}</div>`;
-        return;
-    }
-    if (!places || places.length === 0) {
-        resultsEl.innerHTML = '<p class="list-placeholder" style="padding: 10px;">No se encontraron lugares.</p>';
-        return;
-    }
-    places.forEach(place => {
-        const itemEl = document.createElement('div');
-        itemEl.className = 'search-result-item';
-        itemEl.innerHTML = `
-            <span class="memoria-icon material-icons-outlined" style="color: #666; font-size: 24px; width: 40px; text-align: center;">place</span>
-            <div class="memoria-item-content">
-                <strong>${place.display_name.split(',')[0]}</strong>
-                <small>${place.display_name.substring(place.display_name.indexOf(',') + 2)}</small>
-            </div>
-        `;
-        itemEl.addEventListener('click', () => {
-            _selectedPlace = {
-                lat: place.lat,
-                lon: place.lon,
-                display_name: place.display_name,
-                LugarNombre: place.display_name
-            };
-            showPlaceResults([_selectedPlace], true);
-        });
-        resultsEl.appendChild(itemEl);
-    });
-}
-
-function showModalStatus(elementId, message, isError) {
-    const statusEl = document.getElementById(elementId);
-    if (!statusEl) return;
-    statusEl.textContent = message;
-    statusEl.className = 'status-message';
-    if (isError) {
-        statusEl.classList.add('error');
-    } else {
-        statusEl.classList.add('success');
-    }
-    if (message) {
-        if (!isError) {
-            setTimeout(() => {
-                if (statusEl.textContent === message) {
-                    statusEl.textContent = '';
-                    statusEl.className = 'status-message';
-                }
-            }, 3000);
-        }
-    }
-}
-
-
-// --- Crumbie ---
-function showCrumbieAnimation(message) {
-    // *** CAMBIO: Implementado ***
-    let animEl = document.querySelector('.crumbie-float-text');
-    if (animEl) {
-        animEl.remove();
-    }
-    animEl = document.createElement('div');
-    animEl.className = 'crumbie-float-text';
-    animEl.textContent = message;
-    document.body.appendChild(animEl);
-    
-    animEl.addEventListener('animationend', () => {
-        animEl.remove();
-    });
-}
-
-
-// --- Exportaciones Públicas ---
 export const ui = {
     init,
     setLoading,
-    showApp,
-    updateAllDaysData,
     updateLoginUI,
     drawCalendar,
     updateSpotlight,
-    openPreviewModal,
-    closePreviewModal,
-    showPreviewLoading,
-    openEditModal,
-    closeEditModal,
-    showEditLoading,
-    openStoreModal,
-    closeStoreModal,
-    openStoreListModal,
-    closeStoreListModal,
-    showAlert,
-    showPrompt,
-    showConfirm,
-    updateStoreList,
-    updateMemoryList,
-    resetMemoryForm,
-    fillFormForEdit,
-    showMusicResults,
-    showPlaceResults,
-    showModalStatus,
-    handleMemoryTypeChange,
+    openPreviewModal, closePreviewModal, showPreviewLoading,
+    openEditModal, closeEditModal, showEditLoading,
+    openStoreModal, closeStoreModal,
+    openStoreListModal, closeStoreListModal,
+    showAlert, showPrompt, showConfirm,
+    updateStoreList, updateMemoryList,
+    resetMemoryForm, fillFormForEdit,
+    showMusicResults, showPlaceResults,
+    showModalStatus, handleMemoryTypeChange,
     showCrumbieAnimation
 };

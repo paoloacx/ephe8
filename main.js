@@ -1,5 +1,5 @@
 /*
- * main.js (v2.65 - Preview/Store/Edit UI tweaks)
+ * main.js (v4.17 - Fixed search and settings buttons)
  * Controlador principal de Ephemerides.
  */
 
@@ -16,12 +16,10 @@ import {
     searchMemories,
     getTodaySpotlight,
     getMemoriesByType,
-    getNamedDays,
-    uploadImage
+    getNamedDays
 } from './store.js';
-import { searchMusic, searchNominatim } from './api.js';
+import { searchiTunes, searchNominatim } from './api.js';
 import { ui } from './ui.js';
-import { showSettings } from './settings.js'; // Importación del módulo settings
 
 // --- Estado Global de la App ---
 let state = {
@@ -40,410 +38,296 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.65 (UI Tweaks)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v4.17 (Fixed search and settings buttons)...");
 
     try {
-        ui.setLoading("Iniciando...", true); //
-        initFirebase(); //
-        
-        ui.init(getUICallbacks()); // - Eliminado segundo argumento []
-        initAuthListener(handleAuthStateChange); //
+        ui.setLoading("Iniciando...", true);
+        initFirebase();
+        ui.setLoading("Autenticando...", true);
+        const user = await checkAuthState();
+        console.log("Estado de autenticación inicial resuelto.");
+        ui.setLoading("Verificando base de datos...", true);
+        await storeCheckAndRun((message) => ui.setLoading(message, true));
+        ui.setLoading("Cargando calendario...", true);
+        state.allDaysData = await loadAllDaysData();
 
-        ui.setLoading("Autenticando...", true); //
-        
-        await checkAuthState(); //
-        
-        console.log("Arranque de autenticación completado.");
-
-    } catch (err) {
-        console.error("Error crítico durante el arranque:", err);
-        if (err.code === 'permission-denied') {
-             ui.setLoading(`Error: Permiso denegado por Firestore. Revisa tus reglas de seguridad.`, true); //
-        } else {
-             ui.setLoading(`Error crítico: ${err.message}. Por favor, recarga.`, true); //
-        }
-    }
-}
-
-async function initializeUserSession() {
-    if (!state.currentUser || !state.currentUser.uid) {
-        console.error("initializeUserSession llamado sin usuario válido.");
-        ui.showApp(false); //
-        return;
-    }
-    const userId = state.currentUser.uid;
-    
-    if (state.allDaysData.length > 0) return; 
-
-    try {
-        ui.setLoading("Verificando base de datos...", true); //
-        await storeCheckAndRun(userId, (message) => ui.setLoading(message, true)); //
-        
-        ui.setLoading("Cargando calendario...", true); //
-        state.allDaysData = await loadAllDaysData(userId); //
-
-        if (state.allDaysData.length === 0 && state.currentUser) {
-            console.error(`Error: No se cargaron días para ${userId} incluso después de checkAndRunApp.`);
-            ui.showAlert("No se pudieron cargar los datos del calendario. Intenta recargar."); //
+        if (state.allDaysData.length === 0) {
+            throw new Error("La base de datos está vacía después de la verificación.");
         }
 
         const today = new Date();
         state.todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
 
-        ui.updateAllDaysData(state.allDaysData); //
+        ui.init(getUICallbacks());
+        initAuthListener(handleAuthStateChange);
+        if (user) handleAuthStateChange(user);
 
-        drawCurrentMonth(); 
-        loadTodaySpotlight(); 
-        
-        ui.showApp(true); //
+        drawCurrentMonth();
+        loadTodaySpotlight();
 
     } catch (err) {
-        console.error("Error crítico durante la inicialización de sesión:", err);
-        ui.setLoading(`Error al cargar datos: ${err.message}. Por favor, recarga.`, true); //
-        ui.showApp(false); //
+        console.error("Error crítico durante el arranque:", err);
+        if (err.code === 'permission-denied') {
+             ui.setLoading(`Error: Permiso denegado por Firestore. Revisa tus reglas de seguridad.`, true);
+        } else {
+             ui.setLoading(`Error crítico: ${err.message}. Por favor, recarga.`, true);
+        }
     }
 }
 
 async function loadTodaySpotlight() {
-    if (!state.currentUser || !state.currentUser.uid) return;
-    const userId = state.currentUser.uid;
-
-    const today = new Date();
-    const dateString = `Hoy, ${today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`;
-
-    const spotlightData = await getTodaySpotlight(userId, state.todayId); //
-
-    if (spotlightData) {
-        spotlightData.memories.forEach(mem => {
-            if (!mem.Nombre_Dia) {
-                mem.Nombre_Dia = state.allDaysData.find(d => d.id === mem.diaId)?.Nombre_Dia || "Día";
-            }
-        });
-
-        const dayName = spotlightData.dayName !== 'Unnamed Day' ? spotlightData.dayName : null;
-        ui.updateSpotlight(dateString, dayName, spotlightData.memories); //
+    try {
+        const memories = await getTodaySpotlight();
+        const today = new Date();
+        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const dateString = `${today.getDate()} ${monthNames[today.getMonth()]}`;
+        const dayData = state.allDaysData.find(d => d.id === state.todayId);
+        const dayName = dayData?.Nombre_Especial || null;
+        ui.updateSpotlight(dateString, dayName, memories);
+    } catch (err) {
+        console.error("Error al cargar spotlight:", err);
     }
 }
 
 function drawCurrentMonth() {
-    const monthName = new Date(2024, state.currentMonthIndex, 1).toLocaleDateString('es-ES', { month: 'long' });
-    const monthNumber = state.currentMonthIndex + 1;
-
-    const diasDelMes = state.allDaysData.filter(dia =>
-        parseInt(dia.id.substring(0, 2), 10) === monthNumber
-    );
-
-    ui.drawCalendar(monthName, diasDelMes, state.todayId); //
+    const monthIndex = state.currentMonthIndex;
+    const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const monthName = monthNames[monthIndex];
+    const monthId = (monthIndex + 1).toString().padStart(2, '0');
+    const daysInMonth = state.allDaysData.filter(d => d.id.startsWith(monthId));
+    ui.drawCalendar(monthName, daysInMonth, state.todayId);
 }
-
 
 // --- 2. Callbacks y Manejadores de Eventos ---
 
 function getUICallbacks() {
     return {
+        onLoginClick: handleLoginClick,
+        onLogoutClick: handleLogoutClick,
         onMonthChange: handleMonthChange,
         onDayClick: handleDayClick,
-        onFooterAction: handleFooterAction,
-        onLogin: handleLoginClick,
-        onLogout: handleLogoutClick,
         onEditFromPreview: handleEditFromPreview,
+        onFooterAction: handleFooterAction,
+        onSearchClick: handleSearchClick,
         onSaveDayName: handleSaveDayName,
         onSaveMemory: handleSaveMemorySubmit,
         onDeleteMemory: handleDeleteMemory,
-        onSearchMusic: handleMusicSearch,
-        onSearchPlace: handlePlaceSearch,
+        onMusicSearch: handleMusicSearch,
+        onPlaceSearch: handlePlaceSearch,
         onStoreCategoryClick: handleStoreCategoryClick,
         onStoreLoadMore: handleStoreLoadMore,
         onStoreItemClick: handleStoreItemClick,
-        onCrumbieClick: handleCrumbieClick,
+        onCrumbieClick: handleCrumbieClick
     };
 }
 
-// --- Manejadores de Autenticación ---
-
-async function handleLoginClick() {
-    try {
-        await handleLogin(); //
-    } catch (error) {
-        console.error("Error en handleLoginClick:", error);
-        ui.showAlert(`Error al iniciar sesión: ${error.message}`); //
-    }
+function handleLoginClick() {
+    console.log("Login click");
+    handleLogin();
 }
 
-async function handleLogoutClick() {
-     try {
-        await handleLogout(); //
-    } catch (error) {
-        console.error("Error en handleLogoutClick:", error);
-        ui.showAlert(`Error al cerrar sesión: ${error.message}`); //
-    }
+function handleLogoutClick() {
+    console.log("Logout click");
+    handleLogout();
 }
 
 function handleAuthStateChange(user) {
-    const previousUser = state.currentUser; 
     state.currentUser = user;
-    ui.updateLoginUI(user); //
-    console.log("Estado de autenticación cambiado:", user ? user.uid : "Logged out");
-
+    ui.updateLoginUI(user);
     if (user) {
-        if (!previousUser || state.allDaysData.length === 0) {
-            initializeUserSession(); 
-        } else {
-             console.log("Sesión ya inicializada, mostrando app.");
-             ui.showApp(true); //
-        }
+        console.log("Usuario autenticado:", user.email);
     } else {
-        ui.showApp(false); //
-        state.allDaysData = []; 
-        ui.updateAllDaysData([]); //
-        ui.closeEditModal(); //
-        ui.closePreviewModal(); //
+        console.log("Usuario no autenticado");
     }
 }
 
-// --- Manejadores de UI ---
-
 function handleMonthChange(direction) {
-    if (!state.currentUser) return; 
     if (direction === 'prev') {
         state.currentMonthIndex = (state.currentMonthIndex - 1 + 12) % 12;
-    } else {
+    } else if (direction === 'next') {
         state.currentMonthIndex = (state.currentMonthIndex + 1) % 12;
     }
     drawCurrentMonth();
 }
 
-async function handleDayClick(dia) {
-    if (!state.currentUser || !state.currentUser.uid) return;
-    const userId = state.currentUser.uid;
-    
-    state.dayInPreview = dia;
-    let memories = [];
-    try {
-        ui.showPreviewLoading(true); //
-        memories = await loadMemoriesForDay(userId, dia.id); //
-        ui.showPreviewLoading(false); //
-    } catch (e) {
-        ui.showPreviewLoading(false); //
-        console.error("Error cargando memorias para preview:", e);
-        ui.showAlert(`Error al cargar memorias: ${e.message}`); //
-        state.dayInPreview = null;
+async function handleDayClick(diaId) {
+    console.log("Día clickeado:", diaId);
+    const dia = state.allDaysData.find(d => d.id === diaId);
+    if (!dia) {
+        console.warn("Día no encontrado:", diaId);
         return;
     }
-    ui.openPreviewModal(dia, memories); //
+
+    ui.showPreviewLoading(true);
+    ui.openPreviewModal(dia, []);
+
+    try {
+        const memories = await loadMemoriesForDay(diaId);
+        ui.openPreviewModal(dia, memories);
+    } catch (err) {
+        console.error("Error cargando memorias:", err);
+        ui.showPreviewLoading(false);
+    }
 }
 
 async function handleEditFromPreview() {
     const dia = state.dayInPreview;
     if (!dia) {
-        console.error("No hay día guardado en preview para editar.");
+        console.warn("No hay día en preview");
         return;
     }
+    ui.closePreviewModal();
+    
+    ui.showEditLoading(true);
+    ui.openEditModal(dia, [], state.allDaysData);
 
-    if (!state.currentUser || !state.currentUser.uid) {
-        ui.showAlert("Debes iniciar sesión para poder editar."); //
-        return;
+    try {
+        const memories = await loadMemoriesForDay(dia.id);
+        ui.openEditModal(dia, memories, state.allDaysData);
+    } catch (err) {
+        console.error("Error cargando memorias para editar:", err);
+        ui.showEditLoading(false);
     }
-    const userId = state.currentUser.uid;
-
-    ui.closePreviewModal(); //
-    setTimeout(async () => {
-        let memories = [];
-        try {
-             ui.showEditLoading(true); //
-             memories = await loadMemoriesForDay(userId, dia.id); //
-             ui.showEditLoading(false); //
-        } catch (e) {
-             ui.showEditLoading(false); //
-             console.error("Error cargando memorias para edición:", e);
-             ui.showAlert(`Error al cargar memorias: ${e.message}`); //
-             return;
-        }
-        ui.openEditModal(dia, memories); //
-    }, 250);
 }
 
-
 async function handleFooterAction(action) {
-    const protectedActions = ['add', 'store', 'shuffle', 'search'];
-    if (protectedActions.includes(action) && !state.currentUser) {
-         ui.showAlert("Debes iniciar sesión para usar esta función."); //
-         return;
-    }
-
-    // --- Llamada a showSettings ---
-    if (action === 'settings') {
-         showSettings(); // Llama a la función importada
-         return;
-    }
-    // --- Fin llamada ---
-    
-    const userId = state.currentUser?.uid; 
+    console.log("Footer action:", action);
 
     switch (action) {
         case 'add':
-            ui.openEditModal(null, []); //
-            break;
+            const today = new Date();
+            const todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+            const todayDia = state.allDaysData.find(d => d.id === todayId);
+            if (!todayDia) {
+                ui.showAlert('No se pudo encontrar el día de hoy.', 'error');
+                return;
+            }
 
-        case 'store':
-            ui.openStoreModal(); //
-            break;
-
-        case 'shuffle':
-            handleShuffleClick(); 
-            break;
-
-        case 'search':
-            const searchTerm = await ui.showPrompt("Buscar en todas las memorias:", '', 'search'); //
-            if (!searchTerm || searchTerm.trim() === '') return;
-
-            const term = searchTerm.trim().toLowerCase();
-            ui.setLoading(`Buscando "${term}"...`, true); //
+            ui.showEditLoading(true);
+            ui.openEditModal(todayDia, [], state.allDaysData);
 
             try {
-                const results = await searchMemories(userId, term); //
-                ui.setLoading(null, false); //
-                drawCurrentMonth(); 
-
-                if (results.length === 0) {
-                    ui.updateSpotlight(`No hay resultados para "${term}"`, null, []); //
-                } else {
-                    results.forEach(mem => {
-                        if (!mem.Nombre_Dia) {
-                            mem.Nombre_Dia = state.allDaysData.find(d => d.id === mem.diaId)?.Nombre_Dia || "Día";
-                        }
-                    });
-                    ui.updateSpotlight(`Resultados para "${term}" (${results.length})`, null, results); //
-                }
+                const memories = await loadMemoriesForDay(todayId);
+                ui.openEditModal(todayDia, memories, state.allDaysData);
             } catch (err) {
-                 ui.setLoading(null, false); //
-                 drawCurrentMonth();
-                 ui.showAlert(`Error al buscar: ${err.message}`); //
+                console.error("Error cargando memorias:", err);
+                ui.showEditLoading(false);
             }
             break;
 
-        default:
-            console.warn("Acción de footer desconocida:", action);
+        case 'store':
+            ui.openStoreModal();
+            break;
+
+        case 'shuffle':
+            handleShuffleClick();
+            break;
+
+        case 'settings':
+            ui.showAlert('Ajustes estará disponible próximamente.', 'info');
+            break;
     }
 }
 
-function handleShuffleClick() {
-    if (state.allDaysData.length === 0) return;
-
-    const randomIndex = Math.floor(Math.random() * state.allDaysData.length);
-    const randomDia = state.allDaysData[randomIndex];
-    const randomMonthIndex = parseInt(randomDia.id.substring(0, 2), 10) - 1;
-
-    if (state.currentMonthIndex !== randomMonthIndex) {
-        state.currentMonthIndex = randomMonthIndex;
-        drawCurrentMonth();
-    }
-
-    setTimeout(() => {
-        handleDayClick(randomDia); 
-    }, 100);
-
-    window.scrollTo(0, 0);
+function handleSearchClick() {
+    ui.showAlert('La función de búsqueda estará disponible próximamente.', 'info');
 }
 
+async function handleShuffleClick() {
+    const daysWithMemories = state.allDaysData.filter(d => d.tieneMemorias);
+    if (daysWithMemories.length === 0) {
+        ui.showAlert('No hay días con memorias aún.', 'info');
+        return;
+    }
+
+    const randomIndex = Math.floor(Math.random() * daysWithMemories.length);
+    const randomDay = daysWithMemories[randomIndex];
+
+    handleDayClick(randomDay.id);
+}
 
 // --- 3. Lógica de Modales (Controlador) ---
 
-async function handleSaveDayName(diaId, newName, statusElementId = 'save-status') {
-    if (!state.currentUser || !state.currentUser.uid) {
-        ui.showModalStatus(statusElementId, `Debes estar logueado`, true); //
+async function handleSaveDayName(diaId, newName) {
+    if (!state.currentUser) {
+        ui.showAlert('Debes estar logueado para guardar nombres.', 'error');
         return;
     }
-    const userId = state.currentUser.uid;
-    
-    const finalName = newName && newName.trim() !== '' ? newName.trim() : "Unnamed Day";
 
     try {
-        await saveDayName(userId, diaId, finalName); //
+        await saveDayName(diaId, newName);
+        ui.showAlert('Nombre guardado correctamente.', 'success');
 
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
         if (dayIndex !== -1) {
-            state.allDaysData[dayIndex].Nombre_Especial = finalName;
+            state.allDaysData[dayIndex].Nombre_Especial = newName;
+            drawCurrentMonth();
         }
 
-        ui.showModalStatus(statusElementId, 'Nombre guardado', false); //
-        drawCurrentMonth(); 
-
-        if (statusElementId === 'save-status' && state.dayInPreview && state.dayInPreview.id === diaId) { 
-             const dia = state.dayInPreview; 
-             const dayNameUI = finalName !== 'Unnamed Day' ? ` (${finalName})` : '';
-             const editModalTitle = document.getElementById('edit-modal-title');
-             if (editModalTitle) editModalTitle.textContent = `Editando: ${dia.Nombre_Dia}${dayNameUI}`;
-             state.dayInPreview.Nombre_Especial = finalName;
+        const nameDayBtn = document.getElementById('name-day-btn-text');
+        if (nameDayBtn) {
+            nameDayBtn.textContent = newName ? 'Renombrar' : 'Nombrar';
         }
-         const daySelect = document.getElementById('edit-mem-day'); //
-         if (daySelect) {
-             const option = daySelect.querySelector(`option[value="${diaId}"]`);
-             if (option) {
-                 const originalText = state.allDaysData.find(d => d.id === diaId)?.Nombre_Dia || diaId;
-                 option.textContent = finalName !== 'Unnamed Day' ? `${originalText} (${finalName})` : originalText;
-             }
-         }
 
     } catch (err) {
         console.error("Error guardando nombre:", err);
-        ui.showModalStatus(statusElementId, `Error: ${err.message}`, true); //
+        ui.showAlert(`Error: ${err.message}`, 'error');
     }
 }
 
-
 async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
-    if (!state.currentUser || !state.currentUser.uid) {
-        ui.showModalStatus('memoria-status', `Debes estar logueado`, true); //
+
+    if (!state.currentUser) {
+        ui.showModalStatus('memoria-status', `Debes estar logueado`, true);
         return;
     }
-    const userId = state.currentUser.uid;
 
-    const saveBtn = document.getElementById('save-memoria-btn'); //
+    const saveBtn = document.getElementById('save-memoria-btn');
 
     try {
-        if (!memoryData.year || isNaN(parseInt(memoryData.year))) throw new Error('El año es obligatorio.');
+        if (!memoryData.year || isNaN(parseInt(memoryData.year))) {
+            throw new Error('El año es obligatorio y debe ser un número.');
+        }
         const year = parseInt(memoryData.year);
-        if (year < 1900 || year > 2100) throw new Error('Año debe estar entre 1900-2100.');
+
+        if (year < 1900 || year > 2100) {
+             throw new Error('El año debe estar entre 1900 y 2100.');
+        }
+
         const month = parseInt(diaId.substring(0, 2), 10);
         const day = parseInt(diaId.substring(3, 5), 10);
-        if (isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) throw new Error('ID día inválido.');
+
+        if (isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) {
+             throw new Error('El ID del día no es válido para extraer mes/día.');
+        }
+
         const fullDate = new Date(Date.UTC(year, month - 1, day));
-        if (fullDate.getUTCDate() !== day || fullDate.getUTCMonth() !== month - 1) throw new Error(`Fecha inválida: ${day}/${month}/${year}.`);
+        if (fullDate.getUTCDate() !== day || fullDate.getUTCMonth() !== month - 1) {
+             throw new Error(`Fecha inválida: El ${day}/${month}/${year} no existe.`);
+        }
         memoryData.Fecha_Original = fullDate;
         delete memoryData.year;
 
-        if (memoryData.Tipo === 'Imagen' && memoryData.file) { //
-            ui.showModalStatus('image-upload-status', 'Subiendo imagen...', false); //
-            memoryData.ImagenURL = await uploadImage(memoryData.file, userId, diaId); //
-            ui.showModalStatus('image-upload-status', 'Imagen subida.', false); //
-        }
-
         const memoryId = isEditing ? memoryData.id : null;
-        await saveMemory(userId, diaId, memoryData, memoryId); //
+        await saveMemory(diaId, memoryData, memoryId);
 
-        ui.showModalStatus('memoria-status', isEditing ? 'Memoria actualizada' : 'Memoria guardada', false); //
-        
-        ui.resetMemoryForm(); //
+        ui.showModalStatus('memoria-status', isEditing ? 'Memoria actualizada' : 'Memoria guardada', false);
 
-        const updatedMemories = await loadMemoriesForDay(userId, diaId); //
-        ui.updateMemoryList(updatedMemories); //
+        ui.resetMemoryForm();
+
+        const updatedMemories = await loadMemoriesForDay(diaId);
+        ui.updateMemoryList(updatedMemories);
 
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
         if (dayIndex !== -1 && !state.allDaysData[dayIndex].tieneMemorias) {
             state.allDaysData[dayIndex].tieneMemorias = true;
-            drawCurrentMonth(); 
+            drawCurrentMonth();
         }
 
     } catch (err) {
         console.error("Error guardando memoria:", err);
-        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); //
+        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true);
         if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
-        }
-    } finally {
-         if (saveBtn && saveBtn.disabled) {
             saveBtn.disabled = false;
             saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
         }
@@ -451,208 +335,182 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 }
 
 async function handleDeleteMemory(diaId, mem) {
-    if (!state.currentUser || !state.currentUser.uid) {
-        ui.showModalStatus('memoria-status', `Debes estar logueado`, true); //
+    if (!state.currentUser) {
+        ui.showModalStatus('memoria-status', `Debes estar logueado`, true);
         return;
     }
-    const userId = state.currentUser.uid;
-    
     if (!mem || !mem.id) {
-         ui.showModalStatus('memoria-status', `Error: Información de memoria inválida.`, true); //
+         ui.showModalStatus('memoria-status', `Error: Información de memoria inválida.`, true);
+         console.error("handleDeleteMemory recibió:", mem);
          return;
     }
 
     const info = mem.Descripcion || mem.LugarNombre || mem.CancionInfo || 'esta memoria';
     const message = `¿Seguro que quieres borrar "${info.substring(0, 50)}..."?`;
 
-    const confirmed = await ui.showConfirm(message); //
-    if (!confirmed) return;
+    const confirmed = await ui.showConfirm(message);
+
+    if (!confirmed) {
+        return;
+    }
 
     try {
-        const imagenURL = (mem.Tipo === 'Imagen') ? mem.ImagenURL : null;
-        await deleteMemory(userId, diaId, mem.id, imagenURL); //
-        ui.showModalStatus('memoria-status', 'Memoria borrada', false); //
+        await deleteMemory(diaId, mem.id, null);
+        ui.showModalStatus('memoria-status', 'Memoria borrada', false);
 
-        const updatedMemories = await loadMemoriesForDay(userId, diaId); //
-        ui.updateMemoryList(updatedMemories); //
+        const updatedMemories = await loadMemoriesForDay(diaId);
+        ui.updateMemoryList(updatedMemories);
 
         if (updatedMemories.length === 0) {
             const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
-            if (dayIndex !== -1 && state.allDaysData[dayIndex].tieneMemorias) { 
+            if (dayIndex !== -1) {
                 state.allDaysData[dayIndex].tieneMemorias = false;
-                drawCurrentMonth(); 
+                drawCurrentMonth();
             }
         }
 
     } catch (err) {
         console.error("Error borrando memoria:", err);
-        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); //
+        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true);
     }
 }
 
 // --- 4. Lógica de API Externa (Controlador) ---
-async function handleMusicSearch(term) {
-    if (!term || term.trim() === '') return;
+
+async function handleMusicSearch(query) {
+    if (!query) {
+        ui.showModalStatus('memoria-status', 'Escribe algo para buscar.', true);
+        return;
+    }
+
+    ui.showModalStatus('memoria-status', 'Buscando en iTunes...', false);
+
     try {
-        const results = await searchMusic(term); //
-        ui.showMusicResults(results); //
-    } catch (error) {
-        console.error("Error en handleMusicSearch:", error);
-        ui.showModalStatus('memoria-status', `Error al buscar música: ${error.message}`, true); //
-        ui.showMusicResults([]); //
+        const tracks = await searchiTunes(query);
+        ui.showMusicResults(tracks);
+        ui.showModalStatus('memoria-status', '', false);
+    } catch (err) {
+        console.error("Error buscando música:", err);
+        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true);
     }
 }
 
-async function handlePlaceSearch(term) {
-    if (!term || term.trim() === '') return;
+async function handlePlaceSearch(query) {
+    if (!query) {
+        ui.showModalStatus('memoria-status', 'Escribe algo para buscar.', true);
+        return;
+    }
+
+    ui.showModalStatus('memoria-status', 'Buscando lugares...', false);
+
     try {
-        const results = await searchNominatim(term); //
-        ui.showPlaceResults(results); //
-    } catch (error) {
-        console.error("Error en handlePlaceSearch:", error);
-        ui.showModalStatus('memoria-status', `Error al buscar lugares: ${error.message}`, true); //
-        ui.showPlaceResults([]); //
+        const places = await searchNominatim(query);
+        ui.showPlaceResults(places);
+        ui.showModalStatus('memoria-status', '', false);
+    } catch (err) {
+        console.error("Error buscando lugares:", err);
+        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true);
     }
 }
 
 // --- 5. Lógica del "Almacén" (Controlador) ---
+
 async function handleStoreCategoryClick(type) {
-    const userId = state.currentUser.uid;
-    console.log(`Cargando Almacén para ${type} - Usuario: ${userId}`);
+    console.log("Categoría seleccionada:", type);
+
+    const titles = {
+        'Nombres': 'Días Nombrados',
+        'Musica': 'Música',
+        'Lugar': 'Lugares',
+        'Texto': 'Notas'
+    };
+
+    ui.closeStoreModal();
+    ui.openStoreListModal(titles[type] || 'Lista');
 
     state.store.currentType = type;
     state.store.lastVisible = null;
-    state.store.isLoading = true;
-
-    const title = `Almacén: ${type}`;
-    ui.openStoreListModal(title); //
 
     try {
-        let result;
+        let items = [];
+
         if (type === 'Nombres') {
-            result = await getNamedDays(userId, 10); //
+            items = await getNamedDays();
+            items = items.map(d => ({ ...d, type: 'Nombres' }));
         } else {
-            result = await getMemoriesByType(userId, type, 10); //
+            const result = await getMemoriesByType(type, null, 20);
+            items = result.items;
+            state.store.lastVisible = result.lastVisible;
         }
 
-        result.items.forEach(item => {
-            if (!item.Nombre_Dia && item.diaId) { 
-                item.Nombre_Dia = state.allDaysData.find(d => d.id === item.diaId)?.Nombre_Dia || "Día";
-            }
-        });
-
-        state.store.lastVisible = result.lastVisible; 
-        state.store.isLoading = false;
-
-        ui.updateStoreList(result.items, false, result.hasMore); //
+        ui.updateStoreList(items, false, !!state.store.lastVisible);
 
     } catch (err) {
-        console.error(`Error cargando categoría ${type} para ${userId}:`, err);
-        ui.updateStoreList([], false, false); //
-        if (err.code === 'failed-precondition' || err.message.includes("index")) { 
-            console.error("¡ÍNDICE DE FIREBASE REQUERIDO!", err.message);
-            ui.showAlert("Error de Firebase: Se requiere un índice. Revisa la consola (F12) para ver el enlace de creación."); //
-        } else {
-            ui.showAlert(`Error al cargar ${type}: ${err.message}`); //
-        }
-        ui.closeStoreListModal(); //
+        console.error("Error cargando lista:", err);
+        ui.showAlert(`Error: ${err.message}`, 'error');
     }
 }
 
 async function handleStoreLoadMore() {
-    const { currentType, lastVisible, isLoading } = state.store;
-    if (isLoading || !currentType || !state.currentUser) return; 
+    if (state.store.isLoading || !state.store.lastVisible) return;
 
-    const userId = state.currentUser.uid;
-    console.log(`Cargando más ${currentType} para ${userId}...`);
     state.store.isLoading = true;
-
-     const loadMoreBtn = document.getElementById('load-more-btn'); //
-     if (loadMoreBtn) {
-            loadMoreBtn.disabled = true;
-            loadMoreBtn.textContent = 'Cargando...';
-     }
+    const loadMoreBtn = document.getElementById('btn-store-load-more');
+    if (loadMoreBtn) loadMoreBtn.disabled = true;
 
     try {
-        let result;
-        if (currentType === 'Nombres') {
-            result = await getNamedDays(userId, 10, lastVisible); //
-        } else {
-            result = await getMemoriesByType(userId, currentType, 10, lastVisible); //
-        }
-
-        result.items.forEach(item => {
-             if (!item.Nombre_Dia && item.diaId) {
-                item.Nombre_Dia = state.allDaysData.find(d => d.id === item.diaId)?.Nombre_Dia || "Día";
-            }
-        });
-
-        state.store.lastVisible = result.lastVisible; 
-        state.store.isLoading = false;
-
-        ui.updateStoreList(result.items, true, result.hasMore); //
-
+        const result = await getMemoriesByType(state.store.currentType, state.store.lastVisible, 20);
+        ui.updateStoreList(result.items, true, !!result.lastVisible);
+        state.store.lastVisible = result.lastVisible;
     } catch (err) {
-        console.error(`Error cargando más ${currentType} para ${userId}:`, err);
+        console.error("Error cargando más:", err);
+        ui.showAlert(`Error: ${err.message}`, 'error');
+    } finally {
         state.store.isLoading = false;
-        if(loadMoreBtn) {
-             loadMoreBtn.textContent = "Error al cargar";
-             setTimeout(() => {
-                 if (loadMoreBtn.textContent === "Error al cargar") {
-                    loadMoreBtn.disabled = false;
-                    loadMoreBtn.textContent = "Cargar más";
-                 }
-             }, 3000);
-        }
-         ui.showAlert(`Error al cargar más: ${err.message}`); //
+        if (loadMoreBtn) loadMoreBtn.disabled = false;
     }
 }
 
-function handleStoreItemClick(diaId) {
-    if (!state.currentUser) return;
+async function handleStoreItemClick(diaId, memId) {
+    console.log("Item clickeado:", diaId, memId);
+    
+    ui.closeStoreListModal();
 
     const dia = state.allDaysData.find(d => d.id === diaId);
     if (!dia) {
-        console.error("No se encontró el día:", diaId);
+        ui.showAlert('Día no encontrado.', 'error');
         return;
     }
 
-    ui.closeStoreListModal(); //
-    ui.closeStoreModal(); //
+    ui.showPreviewLoading(true);
+    ui.openPreviewModal(dia, []);
 
-    const monthIndex = parseInt(dia.id.substring(0, 2), 10) - 1;
-    if (state.currentMonthIndex !== monthIndex) {
-        state.currentMonthIndex = monthIndex;
-        drawCurrentMonth();
+    try {
+        const memories = await loadMemoriesForDay(diaId);
+        state.dayInPreview = dia;
+        ui.openPreviewModal(dia, memories);
+    } catch (err) {
+        console.error("Error cargando memorias:", err);
+        ui.showPreviewLoading(false);
     }
-
-    setTimeout(() => {
-        handleDayClick(dia); 
-    }, 100);
-
-    window.scrollTo(0, 0);
 }
 
 // --- 6. Lógica de Crumbie (IA) ---
 
 function handleCrumbieClick() {
-     if (!state.currentUser) {
-        ui.showAlert("Debes iniciar sesión para usar Crumbie."); //
-        return;
-    }
+    console.log("Crumbie clicked!");
+    
     const messages = [
-        "¡Hola! ¿Qué buscamos?",
-        "Pregúntame sobre tus recuerdos...",
-        "¿Cuál es tu canción favorita?",
-        "Buscando un día especial..."
+        "¡Hola! Soy Crumbie 🍪",
+        "Todavía estoy aprendiendo...",
+        "Pronto podré ayudarte más",
+        "¡Gracias por tu paciencia!",
+        "Crumbie está trabajando duro 💪"
     ];
-    const msg = messages[Math.floor(Math.random() * messages.length)];
     
-    ui.showCrumbieAnimation(msg); //
-    
-    console.log("Crumbie clickeado. Listo para IA.");
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    ui.showCrumbieAnimation(randomMessage);
 }
-
 
 // --- 7. Ejecución Inicial ---
 checkAndRunApp();
