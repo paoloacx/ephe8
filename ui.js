@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.23 - Corrección bugs Búsqueda y UI Modal)
+ * ui.js (v4.24 - Restaurar API (showApp, updateAllDays) para main.js v4.20)
  * Módulo de interfaz de usuario.
  */
 
@@ -28,10 +28,11 @@ let _activeMaps = [];
 
 // --- Funciones de Inicialización ---
 
-function init(mainCallbacks, allDays) { // ***** CAMBIO: Recibe allDays *****
-    console.log("UI Module init (v4.23 - Corrección bugs)");
+// ***** CAMBIO: init ya no recibe allDays (main.js v4.20 lo pasa por updateAllDaysData) *****
+function init(mainCallbacks) {
+    console.log("UI Module init (v4.24 - API v4.20 Restore)");
     callbacks = mainCallbacks;
-    _allDaysData = allDays || []; // ***** CAMBIO: Almacena allDays *****
+    // _allDaysData se llenará con updateAllDaysData
 
     _bindHeaderEvents();
     _bindNavEvents();
@@ -122,16 +123,60 @@ function _bindGlobalListeners() {
 }
 
 // --- Funciones de Renderizado Principal ---
+
+// ***** CAMBIO: setLoading sigue apuntando a 'app-content' (compatible con index.html) *****
 function setLoading(message, show) {
     const appContent = document.getElementById('app-content');
     if (!appContent) return;
     if (show) {
         appContent.innerHTML = `<p class="loading-message">${message}</p>`;
+        // Ocultar otras partes de la UI si estamos cargando
+        showApp(false);
     } else {
         const loading = appContent.querySelector('.loading-message');
         if (loading) loading.remove();
+        // No llamamos a showApp(true) aquí, main.js lo hará
     }
 }
+
+// ***** INICIO CAMBIO: Función showApp restaurada (compatible con index.html) *****
+/**
+ * Muestra u oculta los componentes principales de la aplicación.
+ * @param {boolean} show - True para mostrar, false para ocultar.
+ */
+function showApp(show) {
+    const display = show ? 'block' : 'none';
+    const nav = document.querySelector('.month-nav');
+    const spotlight = document.getElementById('spotlight-section');
+    const appContent = document.getElementById('app-content'); // El grid del calendario
+
+    if (nav) nav.style.display = show ? 'flex' : 'none';
+    if (spotlight) spotlight.style.display = display;
+    if (appContent) appContent.style.display = display;
+    
+    // Si mostramos la app, quitamos el mensaje de carga (si existe)
+    if (show) {
+         const loading = appContent?.querySelector('.loading-message');
+         if (loading) loading.remove();
+    }
+}
+// ***** FIN CAMBIO *****
+
+// ***** INICIO CAMBIO: Función updateAllDaysData restaurada *****
+/**
+ * Recibe y almacena los datos de todos los días.
+ * @param {Array} allDays - El array de objetos de días.
+ */
+function updateAllDaysData(allDays) {
+    if (allDays && allDays.length > 0) {
+        _allDaysData = allDays;
+        console.log("UI: allDaysData actualizado en UI:", _allDaysData.length);
+    } else {
+        console.warn("UI: updateAllDaysData recibió datos vacíos.");
+    }
+}
+// ***** FIN CAMBIO *****
+
 
 function updateLoginUI(user) {
     const loginBtnContainer = document.getElementById('login-btn-container');
@@ -227,7 +272,7 @@ function updateSpotlight(dateString, dayName, memories) {
         // FIN v17.6
 
         itemEl.addEventListener('click', () => {
-             // ***** CAMBIO: Usar _allDaysData del módulo *****
+             // ***** CAMBIO: Usar _allDaysData del módulo (ahora se llena con updateAllDaysData) *****
              const diaObj = _allDaysData.find(d => d.id === mem.diaId); 
              if (diaObj && callbacks.onDayClick) {
                  callbacks.onDayClick(diaObj);
@@ -569,7 +614,7 @@ function _showMemoryForm(show) {
 function openEditModal(dia, memories) { // ***** CAMBIO: Ya no necesita allDays *****
     _currentDay = dia; // Puede ser null si es Añadir
     _currentMemories = memories || [];
-    // _allDaysData ya está disponible en el módulo
+    // _allDaysData ya está disponible en el módulo (via updateAllDaysData)
 
     const daySelection = document.getElementById('day-selection-section');
     const dayNameSection = document.getElementById('day-name-section');
@@ -1181,6 +1226,10 @@ function showCrumbieAnimation(message) { /* ... (Sin cambios) */ }
 export const ui = {
     init,
     setLoading,
+    // ***** CAMBIO: Funciones restauradas para main.js v4.20 *****
+    showApp,
+    updateAllDaysData,
+    // ***** FIN CAMBIO *****
     updateLoginUI,
     drawCalendar,
     updateSpotlight,
