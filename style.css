@@ -1,4 +1,4 @@
-/* style.css - v2.65 - Striped Background, Preview & Store UI tweaks */
+/* style.css - v2.67 - Vertical Blue Stripes, Map ID Fix attempt */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -545,29 +545,32 @@ main {
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
 }
 
-/* Fondo Rayado */
-.striped-background {
-    background-color: #f0f0f0;
+/* --- ***** INICIO CAMBIO v2.67: Fondo Rayado Vertical Azul ***** --- */
+.striped-background-vertical-blue {
+    background-color: #ffffff; /* Fondo blanco */
     background-image: repeating-linear-gradient(
-        -45deg,
-        rgba(0, 0, 0, 0.03),
-        rgba(0, 0, 0, 0.03) 10px,
-        transparent 10px,
-        transparent 20px
+        to right, /* Rayas verticales */
+        #ffffff 0px, /* Blanco */
+        #ffffff 15px, /* Ancho de la banda blanca */
+        #eaf2ff 15px, /* Azul claro muy pálido */
+        #eaf2ff 30px /* Ancho total del patrón (blanco + azul) */
     );
 }
+/* Aplicar fondo a los scrollables de los modales Edit, Store, Store List */
 .modal-edit .modal-content-scrollable,
 .modal-store .modal-content-scrollable,
 .modal-store-list .modal-content-scrollable {
-    background-color: #f0f0f0; /* Fallback */
+    background-color: #ffffff; /* Fallback */
     background-image: repeating-linear-gradient(
-        -45deg,
-        rgba(0, 0, 0, 0.03),
-        rgba(0, 0, 0, 0.03) 10px,
-        transparent 10px,
-        transparent 20px
+        to right,
+        #ffffff 0px,
+        #ffffff 15px,
+        #eaf2ff 15px,
+        #eaf2ff 30px
     );
 }
+/* --- ***** FIN CAMBIO v2.67 ***** --- */
+
 
 /* Scrollable dentro del modal (Genérico) */
 .modal-content-scrollable {
@@ -580,7 +583,7 @@ main {
 .modal-section {
     padding: 10px 15px 15px 15px;
     border-bottom: 1px solid #ccc;
-    background: transparent;
+    background: transparent; /* Transparente para ver fondo rayado */
     color: #333;
     text-shadow: none;
     border-radius: 0;
