@@ -1,4 +1,4 @@
-/* style.css - v17.8 - iOS Deep Blue Modals & Notebook Fixes */
+/* style.css - v17.9 - Fixes: Spotlight z-index, Notebook holes, Store layout */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -231,6 +231,9 @@ main {
     padding: 0 10px;
     max-width: 960px;
     margin: 0 auto;
+    /* ***** CAMBIO: Añadido para fix de z-index del mapa ***** */
+    position: relative;
+    z-index: 1;
 }
 #spotlight-date-header {
     font-size: 19px;
@@ -714,17 +717,15 @@ main {
     width: 25px; /* Ancho para anillas y línea */
     /* CAMBIO: Línea roja a la derecha de este pseudo-elemento */
     border-right: 2px solid rgba(255, 100, 100, 0.5);
-    /* ***** CAMBIO: Agujeros de anillado con SOMBRA interior ***** */
+    /* ***** CAMBIO: Agujeros de anillado (simplificado) ***** */
     background-image: repeating-radial-gradient(
         circle at center,
-        #fdf5e6 0, /* Color del papel */
-        #fdf5e6 4px, /* Papel hasta 4px */
-        rgba(0,0,0,0.15) 4px, /* Sombra/borde del agujero */
-        rgba(0,0,0,0.15) 5px, /* 1px de borde */
-        rgba(0,0,0,0.05) 5px, /* Sombra interior simulada */
-        rgba(0,0,0,0.05) 8px, /* Agujero sombreado de 3px (5px a 8px) */
-        transparent 8px, /* Transparente hasta el siguiente */
-        transparent 24px /* Espaciado (igual que line-height) */
+        #f0e9db 0, /* Sombra interior (agujero) */
+        #f0e9db 4px, /* Sombra hasta 4px */
+        rgba(0,0,0,0.15) 4px, /* Borde oscuro */
+        rgba(0,0,0,0.15) 5px, /* Borde oscuro 1px */
+        #fdf5e6 5px, /* Color del papel */
+        #fdf5e6 24px /* Papel hasta el siguiente */
     );
     background-position: 5px 22px; /* Posición de los agujeros */
 }
@@ -1047,12 +1048,14 @@ main {
     font-size: 24px;
 }
 .store-category-button span:nth-of-type(1) { /* El texto */
-    flex-grow: 1;
+    /* ***** CAMBIO: Eliminado flex-grow: 1 ***** */
     font-weight: bold;
 }
 .store-category-button .material-icons-outlined:last-child { /* El chevron */
     color: #aaa;
     font-size: 24px;
+    /* ***** CAMBIO: Añadido margin-left: auto ***** */
+    margin-left: auto;
 }
 /* --- FIN v17.2 --- */
 
