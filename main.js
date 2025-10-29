@@ -1,5 +1,5 @@
 /*
- * main.js (v2.69 - Search Modal Integration)
+ * main.js (v2.70 - Manejo de Errores de UI)
  * Controlador principal de Ephemerides.
  */
 
@@ -40,7 +40,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.69 (Search Modal Integration)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v2.70 (Manejo de Errores de UI)..."); // Versión actualizada
 
     try {
         ui.setLoading("Iniciando...", true); //
@@ -57,10 +57,17 @@ async function checkAndRunApp() {
 
     } catch (err) {
         console.error("Error crítico durante el arranque:", err);
+        // *** CAMBIO: Usar la nueva alerta de error para fallos críticos ***
         if (err.code === 'permission-denied') {
-             ui.setLoading(`Error: Permiso denegado por Firestore. Revisa tus reglas de seguridad.`, true); //
+            ui.showErrorAlert(
+                `Error: Permiso denegado por Firestore. Revisa tus reglas de seguridad.`,
+                'Error Crítico'
+            );
         } else {
-             ui.setLoading(`Error crítico: ${err.message}. Por favor, recarga.`, true); //
+            ui.showErrorAlert(
+                `Error crítico: ${err.message}. Por favor, recarga la aplicación.`,
+                'Error Crítico'
+            );
         }
     }
 }
@@ -84,7 +91,8 @@ async function initializeUserSession() {
 
         if (state.allDaysData.length === 0 && state.currentUser) {
             console.error(`Error: No se cargaron días para ${userId} incluso después de checkAndRunApp.`);
-            ui.showAlert("No se pudieron cargar los datos del calendario. Intenta recargar."); //
+            // *** CAMBIO: Usar la nueva alerta de error ***
+            ui.showErrorAlert("No se pudieron cargar los datos del calendario. Intenta recargar la página.");
         }
 
         const today = new Date();
@@ -99,7 +107,11 @@ async function initializeUserSession() {
 
     } catch (err) {
         console.error("Error crítico durante la inicialización de sesión:", err);
-        ui.setLoading(`Error al cargar datos: ${err.message}. Por favor, recarga.`, true); //
+        // *** CAMBIO: Usar la nueva alerta de error ***
+        ui.showErrorAlert(
+            `Error al cargar datos: ${err.message}. Por favor, recarga la página.`,
+            'Error de Carga'
+        );
         ui.showApp(false); //
     }
 }
@@ -167,7 +179,8 @@ async function handleLoginClick() {
         await handleLogin(); //
     } catch (error) {
         console.error("Error en handleLoginClick:", error);
-        ui.showAlert(`Error al iniciar sesión: ${error.message}`); //
+        // *** CAMBIO: Usar la nueva alerta de error ***
+        ui.showErrorAlert(`Error al iniciar sesión: ${error.message}`, 'Error de Inicio de Sesión');
     }
 }
 
@@ -176,7 +189,8 @@ async function handleLogoutClick() {
         await handleLogout(); //
     } catch (error) {
         console.error("Error en handleLogoutClick:", error);
-        ui.showAlert(`Error al cerrar sesión: ${error.message}`); //
+        // *** CAMBIO: Usar la nueva alerta de error ***
+        ui.showErrorAlert(`Error al cerrar sesión: ${error.message}`, 'Error al Cerrar Sesión');
     }
 }
 
@@ -227,7 +241,8 @@ async function handleDayClick(dia) {
     } catch (e) {
         ui.showPreviewLoading(false); //
         console.error("Error cargando memorias para preview:", e);
-        ui.showAlert(`Error al cargar memorias: ${e.message}`); //
+        // *** CAMBIO: Usar la nueva alerta de error ***
+        ui.showErrorAlert(`Error al cargar memorias: ${e.message}`, 'Error de Carga');
         state.dayInPreview = null;
         return;
     }
@@ -242,6 +257,7 @@ async function handleEditFromPreview() {
     }
 
     if (!state.currentUser || !state.currentUser.uid) {
+        // Esta alerta está bien como está, es una notificación, no un error del sistema.
         ui.showAlert("Debes iniciar sesión para poder editar."); //
         return;
     }
@@ -257,7 +273,8 @@ async function handleEditFromPreview() {
         } catch (e) {
              ui.showEditLoading(false); //
              console.error("Error cargando memorias para edición:", e);
-             ui.showAlert(`Error al cargar memorias: ${e.message}`); //
+             // *** CAMBIO: Usar la nueva alerta de error ***
+             ui.showErrorAlert(`Error al cargar memorias: ${e.message}`, 'Error de Carga');
              return;
         }
         ui.openEditModal(dia, memories); //
@@ -266,6 +283,7 @@ async function handleEditFromPreview() {
 
 async function handleHeaderAction(action) {
     if (!state.currentUser) {
+        // Esto es una notificación, no un error. ui.showAlert (la azul) es correcta aquí.
         ui.showAlert("Debes iniciar sesión para usar esta función."); //
         return;
     }
@@ -295,7 +313,8 @@ async function handleHeaderAction(action) {
         } catch (err) {
              ui.setLoading(null, false); //
              drawCurrentMonth();
-             ui.showAlert(`Error al buscar: ${err.message}`); //
+             // *** CAMBIO: Usar la nueva alerta de error ***
+             ui.showErrorAlert(`Error al buscar: ${err.message}`, 'Error de Búsqueda');
         }
     }
 }
@@ -303,6 +322,7 @@ async function handleHeaderAction(action) {
 async function handleFooterAction(action) {
     const protectedActions = ['add', 'store', 'shuffle'];
     if (protectedActions.includes(action) && !state.currentUser) {
+         // Notificación, no error. ui.showAlert (azul) es correcta.
          ui.showAlert("Debes iniciar sesión para usar esta función."); //
          return;
     }
@@ -394,6 +414,7 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
 
     } catch (err) {
         console.error("Error guardando nombre:", err);
+        // showModalStatus es correcto aquí, ya que el error ocurre dentro del modal.
         ui.showModalStatus(statusElementId, `Error: ${err.message}`, true); //
     }
 }
@@ -444,6 +465,7 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 
     } catch (err) {
         console.error("Error guardando memoria:", err);
+        // showModalStatus es correcto, el error es en el contexto del modal.
         ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); //
         if (saveBtn) {
             saveBtn.disabled = false;
@@ -493,6 +515,7 @@ async function handleDeleteMemory(diaId, mem) {
 
     } catch (err) {
         console.error("Error borrando memoria:", err);
+        // showModalStatus es correcto, el error es en el contexto del modal.
         ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); //
     }
 }
@@ -502,9 +525,16 @@ async function handleMusicSearch(term) {
     if (!term || term.trim() === '') return;
     try {
         const results = await searchMusic(term); //
+        
+        // *** CAMBIO: Comprobar si api.js devolvió null (error de red) ***
+        if (results === null) {
+            throw new Error('No se pudo conectar al servicio de música. Revisa tu conexión.');
+        }
+        
         ui.showMusicResults(results); //
     } catch (error) {
         console.error("Error en handleMusicSearch:", error);
+        // showModalStatus es correcto, el error es en el contexto del modal.
         ui.showModalStatus('memoria-status', `Error al buscar música: ${error.message}`, true); //
         ui.showMusicResults([]); //
     }
@@ -514,9 +544,16 @@ async function handlePlaceSearch(term) {
     if (!term || term.trim() === '') return;
     try {
         const results = await searchNominatim(term); //
+
+        // *** CAMBIO: Comprobar si api.js devolvió null (error de red) ***
+        if (results === null) {
+            throw new Error('No se pudo conectar al servicio de mapas. Revisa tu conexión.');
+        }
+
         ui.showPlaceResults(results); //
     } catch (error) {
         console.error("Error en handlePlaceSearch:", error);
+        // showModalStatus es correcto, el error es en el contexto del modal.
         ui.showModalStatus('memoria-status', `Error al buscar lugares: ${error.message}`, true); //
         ui.showPlaceResults([]); //
     }
@@ -558,9 +595,14 @@ async function handleStoreCategoryClick(type) {
         ui.updateStoreList([], false, false); //
         if (err.code === 'failed-precondition' || err.message.includes("index")) { 
             console.error("¡ÍNDICE DE FIREBASE REQUERIDO!", err.message);
-            ui.showAlert("Error de Firebase: Se requiere un índice. Revisa la consola (F12) para ver el enlace de creación."); //
+            // *** CAMBIO: Usar la nueva alerta de error ***
+            ui.showErrorAlert(
+                "Error de Firebase: Se requiere un índice. Revisa la consola (F12) para ver el enlace de creación.",
+                "Error de Base de Datos"
+            );
         } else {
-            ui.showAlert(`Error al cargar ${type}: ${err.message}`); //
+            // *** CAMBIO: Usar la nueva alerta de error ***
+            ui.showErrorAlert(`Error al cargar ${type}: ${err.message}`, 'Error de Almacén');
         }
         ui.closeStoreListModal(); //
     }
@@ -576,8 +618,8 @@ async function handleStoreLoadMore() {
 
      const loadMoreBtn = document.getElementById('load-more-btn'); //
      if (loadMoreBtn) {
-            loadMoreBtn.disabled = true;
-            loadMoreBtn.textContent = 'Cargando...';
+           loadMoreBtn.disabled = true;
+           loadMoreBtn.textContent = 'Cargando...';
      }
 
     try {
@@ -590,7 +632,7 @@ async function handleStoreLoadMore() {
 
         result.items.forEach(item => {
              if (!item.Nombre_Dia && item.diaId) {
-                item.Nombre_Dia = state.allDaysData.find(d => d.id === item.diaId)?.Nombre_Dia || "Día";
+                 item.Nombre_Dia = state.allDaysData.find(d => d.id === item.diaId)?.Nombre_Dia || "Día";
             }
         });
 
@@ -600,18 +642,19 @@ async function handleStoreLoadMore() {
         ui.updateStoreList(result.items, true, result.hasMore); //
 
     } catch (err) {
-        console.error(`Error cargando más ${currentType} para ${userId}:`, err);
+        console.error(`Error cargando más ${type} para ${userId}:`, err);
         state.store.isLoading = false;
         if(loadMoreBtn) {
              loadMoreBtn.textContent = "Error al cargar";
              setTimeout(() => {
                  if (loadMoreBtn.textContent === "Error al cargar") {
-                    loadMoreBtn.disabled = false;
-                    loadMoreBtn.textContent = "Cargar más";
+                     loadMoreBtn.disabled = false;
+                     loadMoreBtn.textContent = "Cargar más";
                  }
              }, 3000);
         }
-         ui.showAlert(`Error al cargar más: ${err.message}`); //
+         // *** CAMBIO: Usar la nueva alerta de error ***
+         ui.showErrorAlert(`Error al cargar más: ${err.message}`, 'Error de Almacén');
     }
 }
 
@@ -644,8 +687,9 @@ function handleStoreItemClick(diaId) {
 
 function handleCrumbieClick() {
      if (!state.currentUser) {
-        ui.showAlert("Debes iniciar sesión para usar Crumbie."); //
-        return;
+         // Notificación, no error. ui.showAlert (azul) es correcta.
+         ui.showAlert("Debes iniciar sesión para usar Crumbie."); //
+         return;
     }
     const messages = [
         "¡Hola! ¿Qué buscamos?",
