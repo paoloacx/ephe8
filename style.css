@@ -1,4 +1,4 @@
-/* style.css - v2.66 - Modal Height Fix */
+/* style.css - v2.70 - Smooth Animations */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -63,6 +63,7 @@ header h1 {
     opacity: 0.8;
     line-height: 0;
     text-shadow: 0 -1px 0 rgba(0,0,0,0.5);
+    transition: opacity 0.3s ease;
 }
 #header-search-btn:hover {
     opacity: 1;
@@ -88,7 +89,7 @@ header h1 {
     cursor: pointer;
     padding: 5px;
     border-radius: 5px;
-    transition: background-color 0.2s;
+    transition: background-color 0.3s ease;
 }
 #user-info:hover {
     background-color: rgba(0,0,0,0.1);
@@ -122,6 +123,7 @@ header h1 {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: opacity 0.3s ease;
 }
 .header-login-btn:hover { opacity: 1; }
 .header-login-btn .material-icons-outlined {
@@ -169,7 +171,7 @@ header h1 {
     box-shadow: 0 2px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1) !important;
     text-shadow: 0 -1px 0 rgba(0,0,0,0.3) !important;
     min-width: 40px;
-    transition: all 0.1s ease-in-out;
+    transition: all 0.2s ease;
     margin: 5px;
     line-height: normal !important;
     -webkit-appearance: none;
@@ -275,6 +277,7 @@ main {
     flex-direction: column;
     gap: 8px;
     cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 #spotlight-memories-container .spotlight-memory-item:last-child {
     border-bottom: none;
@@ -361,7 +364,11 @@ main {
     align-items: center;
     position: relative;
     overflow: hidden;
-    transition: background-color 0.1s, transform 0.1s;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.dia-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 .dia-btn:active {
     background-color: #eee;
@@ -413,13 +420,13 @@ main {
 
 
 /* --- Modales --- */
-.modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-alert-prompt, .modal-confirm {
+.modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-search-results, .modal-alert-prompt, .modal-confirm {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0,0,0,0);
     display: none;
     justify-content: center;
     align-items: flex-start;
@@ -427,17 +434,19 @@ main {
     padding-top: 5vh;
     box-sizing: border-box;
     opacity: 0;
-    transition: opacity 0.2s ease-out;
+    transition: opacity 0.3s ease, background-color 0.3s ease;
     z-index: 1000;
 }
 .modal-preview.visible,
 .modal-edit.visible,
 .modal-store.visible,
 .modal-store-list.visible,
+.modal-search-results.visible,
 .modal-alert-prompt.visible,
 .modal-confirm.visible {
     display: flex;
     opacity: 1;
+    background-color: rgba(0,0,0,0.5);
 }
 
 /* Contenido del Modal */
@@ -449,12 +458,24 @@ main {
     max-width: 500px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     border: 1px solid #888;
-    /* *** CAMBIO: Altura reducida *** */
-    max-height: 80vh; /* Reducido de 85vh para mejor ajuste */
+    max-height: 80vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     color: #333;
+    transform: scale(0.9) translateY(-20px);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+.modal-preview.visible .modal-preview-content,
+.modal-edit.visible .modal-content,
+.modal-store.visible .modal-content,
+.modal-store-list.visible .modal-content,
+.modal-search-results.visible .modal-content,
+.modal-alert-prompt.visible .modal-alert-content,
+.modal-confirm.visible .modal-alert-content {
+    transform: scale(1) translateY(0);
+    opacity: 1;
 }
 .modal-preview-content {
     max-height: 75vh;
@@ -506,6 +527,11 @@ main {
     box-sizing: border-box;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
     font-size: 15px;
+    transition: border-color 0.3s ease;
+}
+.modal-alert-content.search-alert input:focus {
+    outline: none;
+    border-color: #4a8fb7;
 }
 /* Botones Deep Blue */
 .modal-alert-content.settings-alert .modal-main-buttons,
@@ -530,6 +556,7 @@ main {
     margin: 0;
     border-radius: 0;
     width: 50%;
+    transition: background 0.2s ease;
 }
 .modal-alert-content.settings-alert .modal-main-buttons button:first-child,
 .modal-alert-content.search-alert .modal-main-buttons button:first-child {
@@ -539,6 +566,10 @@ main {
 .modal-alert-content.settings-alert .modal-main-buttons button:last-child,
 .modal-alert-content.search-alert .modal-main-buttons button:last-child {
     border-bottom-right-radius: 8px;
+}
+.modal-alert-content.settings-alert .modal-main-buttons button:hover,
+.modal-alert-content.search-alert .modal-main-buttons button:hover {
+    background: linear-gradient(to bottom, #6a7a90 0%, #48586c 100%);
 }
 .modal-alert-content.settings-alert .modal-main-buttons button:active,
 .modal-alert-content.search-alert .modal-main-buttons button:active {
@@ -560,7 +591,8 @@ main {
 }
 .modal-edit .modal-content-scrollable,
 .modal-store .modal-content-scrollable,
-.modal-store-list .modal-content-scrollable {
+.modal-store-list .modal-content-scrollable,
+.modal-search-results .modal-content-scrollable {
     /* Hereda de .striped-background */
     background-color: #f7f9fc; /* Fondo casi blanco */
     background-image: repeating-linear-gradient(
@@ -646,6 +678,14 @@ main {
     background-color: #fff;
     -webkit-appearance: none;
     appearance: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.modal-section input:focus,
+.modal-section select:focus,
+.modal-section textarea:focus {
+    outline: none;
+    border-color: #4a8fb7;
+    box-shadow: 0 0 0 3px rgba(74, 143, 183, 0.1);
 }
 .modal-section textarea {
     min-height: 80px;
@@ -850,6 +890,10 @@ main {
     -webkit-appearance: none;
     appearance: none;
     width: 40%;
+    transition: all 0.2s ease;
+}
+.modal-alert-content .modal-main-buttons button:hover {
+    background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 50%, #d8d8d8 51%, #e8e8e8 100%) !important;
 }
 .modal-alert-content .modal-main-buttons button:active {
     background: linear-gradient(to top, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e0e0e0 100%) !important;
@@ -886,6 +930,11 @@ main {
     border-radius: 5px;
     padding: 8px;
     border: 1px solid #888;
+    transition: border-color 0.3s ease;
+}
+.modal-alert-content input:focus {
+    outline: none;
+    border-color: #4a8fb7;
 }
 
 /* Estilos .memoria-item en Modal Edición */
@@ -898,6 +947,10 @@ main {
     font-size: 14px;
     border-left: 1px solid #ddd;
     border-right: 1px solid #ddd;
+    transition: background-color 0.2s ease;
+}
+#edit-memorias-list .memoria-item:hover {
+    background-color: #f9f9f9;
 }
 #edit-memorias-list .memoria-item:first-child {
     border-top: 1px solid #ddd;
@@ -956,6 +1009,11 @@ main {
     cursor: pointer;
     padding: 5px;
     line-height: 0;
+    transition: transform 0.2s ease;
+}
+#edit-memorias-list .edit-btn:hover,
+#edit-memorias-list .delete-btn:hover {
+    transform: scale(1.1);
 }
 #edit-memorias-list .edit-btn .material-icons-outlined {
     color: #007aff;
@@ -998,13 +1056,18 @@ main {
     color: #333;
     text-shadow: 0 1px 0 rgba(255,255,255,0.6);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s ease, transform 0.1s ease;
     width: 100%;
     box-sizing: border-box;
     text-align: left;
 }
-.store-category-button:hover { background: #f8f8f8; }
-.store-category-button:active { background: #e0e0e0; }
+.store-category-button:hover { 
+    background: #f8f8f8; 
+    transform: translateX(3px);
+}
+.store-category-button:active { 
+    background: #e0e0e0; 
+}
 .store-category-button .material-icons-outlined:first-child {
     margin-right: 15px;
     color: #555;
@@ -1017,6 +1080,10 @@ main {
     color: #aaa;
     font-size: 24px;
     margin-left: auto;
+    transition: transform 0.2s ease;
+}
+.store-category-button:hover .material-icons-outlined:last-child {
+    transform: translateX(3px);
 }
 
 /* Estilos Lista Almacén (Store List) */
@@ -1027,6 +1094,7 @@ main {
     border-bottom: 1px solid #ddd;
     cursor: pointer;
     background-color: #fff;
+    transition: background-color 0.2s ease;
 }
 .store-list-item:hover {
     background-color: #f5f5f5;
@@ -1058,6 +1126,34 @@ main {
     margin-top: 2px;
 }
 
+/* Modal Search Results (NUEVO) */
+.search-result-memory-item {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+    background-color: #fff;
+    transition: background-color 0.2s ease;
+}
+.search-result-memory-item:hover {
+    background-color: #f5f5f5;
+}
+.search-result-memory-item:last-child {
+    border-bottom: none;
+}
+.search-result-day-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+.search-result-day-label .material-icons-outlined {
+    font-size: 16px;
+    color: #999;
+}
+
 /* Resultados Búsqueda Música/Lugar */
 .search-results {
     margin-top: 10px;
@@ -1073,6 +1169,7 @@ main {
     padding: 8px;
     border-bottom: 1px solid #eee;
     cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 .search-result-item:last-child { border-bottom: none; }
 .search-result-item:hover { background-color: #f0f0f0; }
@@ -1139,14 +1236,14 @@ main {
     flex-direction: column;
     align-items: center;
     opacity: 0.9;
-    transition: opacity 0.2s, transform 0.1s;
+    transition: opacity 0.3s ease, transform 0.2s ease;
     flex-basis: 0;
     flex-grow: 1;
     max-width: 25%;
 }
 .dock-button:hover, .dock-button:active {
     opacity: 1;
-    transform: scale(1.05);
+    transform: scale(1.08);
 }
 .dock-button .material-icons-outlined {
     margin-bottom: 5px;
@@ -1159,8 +1256,15 @@ main {
 }
 
 /* --- Utilidades --- */
-a { color: #007aff; text-decoration: none; }
-a:hover { text-decoration: underline; }
+a { 
+    color: #007aff; 
+    text-decoration: none; 
+    transition: color 0.2s ease;
+}
+a:hover { 
+    text-decoration: underline; 
+    color: #005bb5;
+}
 .error { color: #d15047 !important; }
 .success { color: #2e7d32 !important; }
 .loading-message {
@@ -1174,12 +1278,17 @@ a:hover { text-decoration: underline; }
     font-size: 13px;
     text-align: center;
     min-height: 1.2em;
+    transition: opacity 0.3s ease;
 }
 
 /* --- Scrollbars --- */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
-::-webkit-scrollbar-thumb { background: #bbb; border-radius: 3px;}
+::-webkit-scrollbar-thumb { 
+    background: #bbb; 
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
 ::-webkit-scrollbar-thumb:hover { background: #999; }
 
 /* --- Botón Crumbie --- */
@@ -1199,12 +1308,15 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
   z-index: 999;
 }
 .crumbie-btn:hover {
-  transform: scale(1.1);
+  transform: scale(1.12);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+.crumbie-btn:active {
+  transform: scale(1.05);
 }
 
 /* --- Animación Crumbie --- */
