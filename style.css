@@ -1,4 +1,4 @@
-/* style.css - v17.9 - Fixes: Spotlight z-index, Notebook holes, Store layout */
+/* style.css - v17.10 - Fix: Simplified notebook holes */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -717,15 +717,15 @@ main {
     width: 25px; /* Ancho para anillas y línea */
     /* CAMBIO: Línea roja a la derecha de este pseudo-elemento */
     border-right: 2px solid rgba(255, 100, 100, 0.5);
-    /* ***** CAMBIO: Agujeros de anillado (simplificado) ***** */
+    
+    /* ***** CAMBIO v17.10: Agujeros SIMPLIFICADOS (Fix) ***** */
+    /* Basado en la imagen de ejemplo (10.21.24.png) */
     background-image: repeating-radial-gradient(
         circle at center,
-        #f0e9db 0, /* Sombra interior (agujero) */
-        #f0e9db 4px, /* Sombra hasta 4px */
-        rgba(0,0,0,0.15) 4px, /* Borde oscuro */
-        rgba(0,0,0,0.15) 5px, /* Borde oscuro 1px */
-        #fdf5e6 5px, /* Color del papel */
-        #fdf5e6 24px /* Papel hasta el siguiente */
+        rgba(0,0,0,0.2) 0, /* Color del agujero (gris) */
+        rgba(0,0,0,0.2) 5px, /* Radio del agujero (5px) */
+        transparent 5px, /* Resto transparente */
+        transparent 24px /* Espaciado hasta el siguiente (line-height) */
     );
     background-position: 5px 22px; /* Posición de los agujeros */
 }
