@@ -1,57 +1,121 @@
 /*
- * settings.js (v1.0 - Módulo inicial)
+ * settings.js (v2.0 - Modal real y conmutador)
  * Gestiona la lógica de la pantalla/modal de Ajustes.
  */
 
-import { ui } from './ui.js';
-// Importaremos store.js aquí cuando añadamos import/export
+// Importar los utils de localStorage
+import { saveSetting, loadSetting } from './utils.js';
+
+// --- Variables del Módulo ---
+let _settingsModal = null;
+let _callbacks = {}; // Para callbacks de main.js
+
+/**
+ * Inicializa el módulo de Ajustes (lo llama main.js).
+ * @param {object} mainCallbacks - Objeto con los callbacks de main.js
+ */
+export function initSettings(mainCallbacks) {
+    _callbacks = mainCallbacks;
+}
 
 /**
  * Función principal para mostrar los ajustes.
- * Por ahora, solo muestra una alerta con la versión.
+ * Reemplaza la simple alerta por un modal real.
  */
 export function showSettings() {
-    console.log("Mostrando Ajustes..."); // Para depuración
+    console.log("Mostrando Modal de Ajustes...");
 
-    // Obtenemos la versión (podríamos tenerla definida en otro sitio más adelante)
-    const appVersion = "2.62 (Estable)"; // Asegúrate que coincida
+    // Crear el modal si no existe
+    if (!_settingsModal) {
+        _createSettingsModal();
+    }
 
-    // Mostramos la alerta usando la función de ui.js
-    ui.showAlert(
-        `Settings\n\nApp Version: ${appVersion}\nImport/Export coming soon!`,
-        'settings' // Usamos el estilo 'settings' (Deep Blue)
-    );
+    // Cargar el estado actual de la vista
+    const currentViewMode = loadSetting('viewMode', 'calendar'); // 'calendar' es el default
+    const toggle = document.getElementById('view-mode-toggle');
+    if (toggle) {
+        toggle.checked = (currentViewMode === 'timeline');
+    }
 
-    // --- Futuro: Aquí se abriría un modal de ajustes ---
-    // ui.openSettingsModal();
+    // Mostrar el modal
+    _settingsModal.style.display = 'flex';
+    setTimeout(() => {
+        _settingsModal.classList.add('visible');
+    }, 10);
 }
 
 /**
- * --- Futuro: Lógica para Exportar Datos ---
- * Se llamaría desde un botón en el modal de ajustes.
+ * Crea el HTML del modal de Ajustes y lo añade al DOM.
  */
-/*
-export async function handleExportData() {
-    console.log("Exportando datos...");
-    // 1. Obtener todos los datos del usuario desde store.js
-    // 2. Formatear los datos (ej. a CSV o JSON)
-    // 3. Usar alguna técnica para descargar el archivo (ej. crear un enlace <a> temporal)
-    // 4. Mostrar mensaje de éxito/error en UI
+function _createSettingsModal() {
+    if (_settingsModal) return;
+
+    _settingsModal = document.createElement('div');
+    _settingsModal.id = 'settings-modal';
+    _settingsModal.className = 'modal-settings'; // Usa el estilo 'Deep Blue'
+
+    _settingsModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-preview-header">
+                <h3 id="settings-title">Ajustes</h3>
+            </div>
+            
+            <div class="modal-content-scrollable">
+                <div class="settings-list-group">
+                    <div class="settings-list-item">
+                        <label class="settings-list-item-label" for="view-mode-toggle">Vista Timeline</label>
+                        <label class="ios-toggle">
+                            <input type="checkbox" id="view-mode-toggle">
+                            <span class="ios-toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <p class="settings-list-group-footer">
+                    Activa esta opción para ver tus memorias en una lista cronológica en lugar del calendario.
+                </p>
+
+                <!-- Aquí irían futuros grupos (Import/Export, etc.) -->
+
+            </div>
+            
+            <div class="modal-main-buttons">
+                <button id="close-settings-btn">Cerrar</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(_settingsModal);
+
+    // Binds de eventos
+    document.getElementById('close-settings-btn')?.addEventListener('click', _closeSettingsModal);
+    document.getElementById('view-mode-toggle')?.addEventListener('change', _handleToggleChange);
 }
-*/
 
 /**
- * --- Futuro: Lógica para Importar Datos ---
- * Se llamaría desde un input type="file" en el modal de ajustes.
+ * Cierra el modal de Ajustes.
  */
-/*
-export async function handleImportData(file) {
-    console.log("Importando datos desde archivo:", file.name);
-    // 1. Leer el archivo (xlsx, csv) usando una librería (ej. SheetJS/xlsx)
-    // 2. Validar la estructura y los datos
-    // 3. Mapear los datos al formato de Firestore (días, memorias)
-    // 4. (Opcional: Confirmación del usuario "¿Borrar datos existentes?")
-    // 5. Enviar los datos a store.js para guardarlos (posiblemente borrando los anteriores)
-    // 6. Mostrar mensaje de éxito/error y refrescar la app
+function _closeSettingsModal() {
+    if (!_settingsModal) return;
+    _settingsModal.classList.remove('visible');
+    setTimeout(() => {
+        _settingsModal.style.display = 'none';
+    }, 300);
 }
-*/
+
+/**
+ * Se activa cuando el usuario pulsa el conmutador.
+ */
+function _handleToggleChange(e) {
+    const isTimelineView = e.target.checked;
+    const newViewMode = isTimelineView ? 'timeline' : 'calendar';
+
+    console.log("Cambiando vista a:", newViewMode);
+
+    // 1. Guardar la preferencia
+    saveSetting('viewMode', newViewMode);
+
+    // 2. Notificar a main.js para que cambie la vista AHORA
+    if (_callbacks.onViewModeChange) {
+        _callbacks.onViewModeChange(newViewMode);
+    }
+}
