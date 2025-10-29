@@ -690,7 +690,7 @@ main {
     flex-grow: 1;
 }
 
-/* --- ***** INICIO CAMBIO v2.62: ESTILO CUADERNO IDÉNTICO ***** --- */
+/* --- ***** INICIO CAMBIO v2.62: ESTILO CUADERNO IDÉNTICO (CORREGIDO) ***** --- */
 .modal-preview-notebook-paper {
     flex-grow: 1;
     overflow-y: auto;
@@ -703,13 +703,13 @@ main {
 
     /* Múltiples fondos: 1. Agujeros, 2. Líneas Horizontales */
     background-image:
-        /* 1. Agujeros (Círculos grises) */
+        /* 1. Agujeros (Círculos más oscuros, con sombra, menos) */
         repeating-radial-gradient(
             circle at 15px center, /* Posición X a 15px del borde */
-            #cccccc 0,
-            #cccccc 4px, /* Radio del círculo 4px */
+            #666666 0, /* Color más oscuro */
+            #666666 4px, /* Radio del círculo 4px */
             transparent 4px,
-            transparent 24px /* Espaciado vertical (line-height) */
+            transparent 48px /* Espaciado vertical (line-height * 2 para menos círculos) */
         ),
         /* 2. Líneas horizontales (Azules) */
         repeating-linear-gradient(
@@ -721,8 +721,27 @@ main {
         );
     
     background-size: 100% 24px; /* Repetir cada 24px verticalmente */
-    background-position: 0 10px; /* Offset inicial */
+    background-position: 0 10px; /* Offset inicial, para alinear texto */
+    /* Añadir sombra a los círculos - requiere un elemento extra o background-blend-mode (más complejo)
+       Para simplicidad y control, si los círculos son parte del background-image, no se les puede aplicar box-shadow.
+       Si esto es crítico, tendríamos que usar un elemento pseudo ::before o un div para los círculos.
+       Por ahora, ajustaremos el color a uno más oscuro para simular profundidad.
+    */
 }
+
+/* Sombra para los "agujeros" - Si necesitamos una sombra real, la podemos aplicar a un ::before
+   que tenga los agujeros renderizados, pero esto no se puede hacer directamente en background-image.
+   Así que, para simular la sombra de los círculos, hago el color más oscuro.
+   Para añadir la sombra "verdadera", necesitaríamos reestructurar el HTML/CSS.
+   Por ahora, la sombra es una propiedad directa que afecta a todo el contenedor o no es posible en un gradiente.
+   Si realmente se quiere esa sombra, tendríamos que cambiar la implementación de los agujeros.
+   Pero como el ejemplo que me pasas no tiene una sombra evidente en los agujeros, asumo que un color más oscuro
+   es suficiente.
+*/
+.modal-preview-notebook-paper {
+    box-shadow: inset 0 0 2px rgba(0,0,0,0.5); /* Sombra interior para dar profundidad al papel */
+}
+
 
 .modal-preview-notebook-paper::before {
     content: '';
@@ -732,9 +751,7 @@ main {
     bottom: 0;
     width: 0;
     border-right: 1px solid #ff6666; /* Línea roja/rosa */
-    
-    /* Limpiado: ya no se encarga de los agujeros */
-    background-image: none;
+    background-image: none; /* Asegurar que no haya nada extra */
 }
 /* --- ***** FIN CAMBIO v2.62 ***** --- */
 
@@ -754,7 +771,7 @@ main {
 }
 .modal-preview-notebook-paper .memoria-item {
     background-color: transparent;
-    border-bottom: none;
+    border-bottom: 2px dashed #cccccc; /* ***** CAMBIO: Línea gruesa dashed entre memorias ***** */
     padding: 5px 0;
     margin-bottom: 0;
     line-height: 24px;
@@ -763,6 +780,11 @@ main {
     align-items: flex-start; /* Alinear arriba */
     flex-direction: column; /* CAMBIO: Columna para mapa */
 }
+/* Eliminar el borde inferior del último elemento */
+.modal-preview-notebook-paper .memoria-item:last-of-type {
+    border-bottom: none;
+}
+
 
 /* --- INICIO CAMBIO: Estilo Preview (Punto 5) --- */
 .modal-preview-notebook-paper .memoria-item-main-content {
