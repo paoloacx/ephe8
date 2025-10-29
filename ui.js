@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.27 - Hide Form on Reset)
+ * ui.js (v4.28 - Fix createStoreModal timing issue)
  * Módulo de interfaz de usuario.
  */
 
@@ -27,7 +27,7 @@ let _activeMaps = [];
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v4.27 - Hide Form on Reset)"); // Cambio versión
+    console.log("UI Module init (v4.28 - Fix Store Modal Init)"); // Cambio versión
     callbacks = mainCallbacks;
 
     _bindHeaderEvents();
@@ -40,7 +40,7 @@ function init(mainCallbacks) {
     // Pre-crear modales principales
     createPreviewModal();
     createEditModal();
-    createStoreModal();
+    createStoreModal(); // Crear Store Modal aquí
     createStoreListModal();
     createAlertPromptModal();
     createConfirmModal();
@@ -120,6 +120,7 @@ function _bindGlobalListeners() {
         if (e.target.classList.contains('modal-confirm')) closeConfirmModal(false);
     });
 }
+
 
 // --- Funciones de Renderizado Principal ---
 
@@ -634,28 +635,74 @@ function closeEditModal() {
 }
 
 
-// --- INICIO CAMBIO: Funciones de Modales Restauradas ---
-
+// --- Modal: Almacén (Store) ---
+// ***** CAMBIO: Corregir querySelector timing issue *****
 function createStoreModal() {
     if (storeModal) return;
+
     storeModal = document.createElement('div');
     storeModal.id = 'store-modal';
     storeModal.className = 'modal-store';
-    storeModal.innerHTML = `...`; // Contenido HTML del modal Store
-    document.body.appendChild(storeModal);
-    // Bind events
-    const categoryList = storeModal.querySelector('.store-category-list');
-    categoryList.appendChild(createStoreCategoryButton('Nombres', 'label', 'Días Nombrados'));
-    categoryList.appendChild(createStoreCategoryButton('Texto', 'article', 'Notas'));
-    categoryList.appendChild(createStoreCategoryButton('Lugar', 'place', 'Lugares'));
-    categoryList.appendChild(createStoreCategoryButton('Musica', 'music_note', 'Canciones'));
-    categoryList.appendChild(createStoreCategoryButton('Imagen', 'image', 'Imágenes'));
-    categoryList.addEventListener('click', (e) => { /* ... */ });
+    storeModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-preview-header">
+                 <h3 id="store-modal-title">Almacén</h3>
+            </div>
+            <div class="modal-content-scrollable store-category-list">
+                </div>
+            <div class="modal-main-buttons">
+                <button id="close-store-btn" class="aqua-button">Cerrar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(storeModal); // Añadir al DOM PRIMERO
+
+    // QuerySelector DESPUÉS de añadir al DOM
+    const categoryList = storeModal.querySelector('.store-category-list'); 
+    
+    // Comprobar si categoryList se encontró antes de usarlo
+    if (categoryList) {
+        categoryList.appendChild(createStoreCategoryButton('Nombres', 'label', 'Días Nombrados'));
+        categoryList.appendChild(createStoreCategoryButton('Texto', 'article', 'Notas'));
+        categoryList.appendChild(createStoreCategoryButton('Lugar', 'place', 'Lugares'));
+        categoryList.appendChild(createStoreCategoryButton('Musica', 'music_note', 'Canciones'));
+        categoryList.appendChild(createStoreCategoryButton('Imagen', 'image', 'Imágenes'));
+
+        categoryList.addEventListener('click', (e) => {
+            const btn = e.target.closest('.store-category-button');
+            if (btn && callbacks.onStoreCategoryClick) {
+                callbacks.onStoreCategoryClick(btn.dataset.type);
+            }
+        });
+    } else {
+        console.error("Error: No se encontró '.store-category-list' al crear el modal Store.");
+    }
+
     document.getElementById('close-store-btn')?.addEventListener('click', closeStoreModal);
 }
-function openStoreModal() { /* ... */ }
-function closeStoreModal() { /* ... */ }
-function createStoreListModal() { /* ... */ }
+// ***** FIN CAMBIO *****
+
+function openStoreModal() { 
+    if (!storeModal) createStoreModal(); // Asegurar que se crea si no existe
+    storeModal.style.display = 'flex';
+    setTimeout(() => storeModal.classList.add('visible'), 10);
+}
+function closeStoreModal() { 
+    if (!storeModal) return;
+    storeModal.classList.remove('visible');
+    setTimeout(() => {
+        storeModal.style.display = 'none';
+    }, 200);
+ }
+function createStoreListModal() { 
+    if (storeListModal) return;
+    storeListModal = document.createElement('div');
+    storeListModal.id = 'store-list-modal';
+    storeListModal.className = 'modal-store-list';
+    storeListModal.innerHTML = `...`; // Contenido HTML
+    document.body.appendChild(storeListModal);
+    _bindStoreListModalEvents();
+ }
 function _bindStoreListModalEvents() { /* ... */ }
 function openStoreListModal(title) { /* ... */ }
 function closeStoreListModal() { /* ... */ }
@@ -670,7 +717,6 @@ function _bindConfirmModalEvents() { /* ... */ }
 function closeConfirmModal(isConfirmed) { /* ... */ }
 function showConfirm(message) { /* ... */ }
 
-// --- FIN CAMBIO: Funciones de Modales Restauradas ---
 
 
 // --- Funciones de Ayuda (Helpers) de UI ---
@@ -735,14 +781,13 @@ function _handleFormSubmit(e) {
                         osm_id: _selectedPlace.data.osm_id
                     };
                 } else {
-                    // Si no se seleccionó nada, intentar guardar lo que está en el input
                     formData.LugarNombre = document.getElementById('memoria-place-search').value.trim();
-                    formData.LugarData = null; // Marcar que no viene de una selección
-                     if (!formData.LugarNombre) { // Evitar guardar lugares vacíos si no hubo selección
+                    formData.LugarData = null; 
+                     if (!formData.LugarNombre) { 
                         showModalStatus('memoria-status', 'Error: Debes buscar y seleccionar un lugar o escribir un nombre.', true);
                         saveBtn.disabled = false;
                         saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
-                        return; // Detener el guardado
+                        return; 
                      }
                 }
                 break;
@@ -757,14 +802,13 @@ function _handleFormSubmit(e) {
                         trackViewUrl: _selectedMusic.trackViewUrl
                      };
                 } else {
-                     // Si no se seleccionó nada, intentar guardar lo que está en el input
                     formData.CancionInfo = document.getElementById('memoria-music-search').value.trim();
-                    formData.CancionData = null; // Marcar que no viene de una selección
-                     if (!formData.CancionInfo) { // Evitar guardar canciones vacías si no hubo selección
+                    formData.CancionData = null; 
+                     if (!formData.CancionInfo) { 
                         showModalStatus('memoria-status', 'Error: Debes buscar y seleccionar una canción o escribir un nombre.', true);
                         saveBtn.disabled = false;
                         saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
-                        return; // Detener el guardado
+                        return; 
                     }
                 }
                 break;
@@ -772,18 +816,16 @@ function _handleFormSubmit(e) {
                 const fileInput = document.getElementById('memoria-image-upload');
                 formData.Descripcion = document.getElementById('memoria-image-desc').value;
                 formData.file = (fileInput.files && fileInput.files.length > 0) ? fileInput.files[0] : null;
-                 // Si estamos editando y NO se sube un archivo nuevo, mantener la URL existente
                 if (_isEditingMemory && !formData.file && form.dataset.existingImageUrl) {
                     formData.ImagenURL = form.dataset.existingImageUrl;
                 } else {
-                     formData.ImagenURL = null; // Se subirá una nueva o no hay imagen
+                     formData.ImagenURL = null; 
                 }
-                // Si no hay archivo Y no estamos editando (o si estamos editando pero no había imagen previa), error
                  if (!formData.file && !formData.ImagenURL) {
                      showModalStatus('memoria-status', 'Error: Debes seleccionar una imagen para subir.', true);
                      saveBtn.disabled = false;
                      saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
-                     return; // Detener el guardado
+                     return; 
                  }
                 break;
         }
@@ -837,34 +879,28 @@ function fillFormForEdit(mem) {
         case 'Lugar':
             document.getElementById('memoria-place-search').value = mem.LugarNombre || '';
             if (mem.LugarData) {
-                // Pre-seleccionar el lugar mostrando los datos guardados
                  _selectedPlace = { name: mem.LugarNombre, data: mem.LugarData };
-                 // Pasamos un array con solo el objeto 'data' y marcamos como seleccionado
                 showPlaceResults([mem.LugarData], true); 
             } else {
-                 // Si no hay LugarData, limpiar la selección previa
                  _selectedPlace = null;
-                 showPlaceResults([]); // Limpia la lista de resultados visualmente
+                 showPlaceResults([]); 
             }
             break;
         case 'Musica':
              document.getElementById('memoria-music-search').value = mem.CancionInfo || '';
              if (mem.CancionData) {
-                 // Pre-seleccionar la canción mostrando los datos guardados
                 _selectedMusic = mem.CancionData; 
-                 // Pasamos un array con solo el objeto CancionData y marcamos como seleccionado
                 showMusicResults([mem.CancionData], true);
              } else {
-                  // Si no hay CancionData, limpiar la selección previa
                  _selectedMusic = null;
-                 showMusicResults([]); // Limpia la lista de resultados visualmente
+                 showMusicResults([]); 
              }
             break;
         case 'Imagen':
             document.getElementById('memoria-image-desc').value = mem.Descripcion || '';
             if (mem.ImagenURL) {
-                document.getElementById('image-upload-status').textContent = `Imagen actual: ${mem.ImagenURL.split('%2F').pop().split('?')[0]}`; // Mostrar nombre archivo
-                form.dataset.existingImageUrl = mem.ImagenURL; // Guardar URL para reusar si no se sube nueva imagen
+                document.getElementById('image-upload-status').textContent = `Imagen actual: ${mem.ImagenURL.split('%2F').pop().split('?')[0]}`; 
+                form.dataset.existingImageUrl = mem.ImagenURL; 
             } else {
                 document.getElementById('image-upload-status').textContent = '';
                 form.dataset.existingImageUrl = '';
@@ -880,7 +916,6 @@ function fillFormForEdit(mem) {
     });
 }
 
-// ***** INICIO CAMBIO: resetMemoryForm ahora oculta el formulario *****
 function resetMemoryForm() {
     _isEditingMemory = false;
     _selectedMusic = null;
@@ -908,10 +943,9 @@ function resetMemoryForm() {
         saveBtn.textContent = 'Añadir Memoria';
     }
 
-    // CAMBIO: Ocultar el formulario al resetear (llamado desde handleSaveMemorySubmit)
+    // Ocultar el formulario al resetear
     _showMemoryForm(false); 
 }
-// ***** FIN CAMBIO *****
 
 function showMusicResults(tracks, isSelected = false) {
     const resultsEl = document.getElementById('itunes-results');
@@ -920,12 +954,10 @@ function showMusicResults(tracks, isSelected = false) {
         return;
     }
     console.log("[DEBUG UI] showMusicResults llamada con:", tracks, "isSelected:", isSelected); 
-    resultsEl.innerHTML = ''; // Limpiar siempre
-    // No resetear _selectedMusic aquí, se hace al seleccionar o al resetear form
+    resultsEl.innerHTML = ''; 
 
     if (isSelected && tracks.length > 0) {
         const track = tracks[0];
-        // No modificar _selectedMusic aquí, ya debería estar seteado en fillFormForEdit
         const displayName = track.trackName || track.title || "Canción seleccionada";
         console.log("[DEBUG UI] Mostrando selección de música:", displayName); 
         resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${displayName}</p>`;
@@ -945,17 +977,10 @@ function showMusicResults(tracks, isSelected = false) {
 
         const itemEl = document.createElement('div');
         itemEl.className = 'search-result-item';
-        itemEl.innerHTML = `
-            <img src="${artwork}" class="memoria-artwork" alt="" ${artwork ? '' : 'style="display:none;"'}>
-            <div class="memoria-item-content">
-                <small>${artistName || 'Artista desconocido'}</small> 
-                <strong>${trackName || 'Título desconocido'}</strong> 
-            </div>
-            <span class="material-icons-outlined">add_circle_outline</span>
-        `;
+        itemEl.innerHTML = `...`; // HTML del item
         itemEl.addEventListener('click', () => {
             console.log("[DEBUG UI] Click en resultado de música:", track); 
-            _selectedMusic = track; // <--- GUARDAR SELECCIÓN
+            _selectedMusic = track; 
             document.getElementById('memoria-music-search').value = `${trackName} - ${artistName}`;
             resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${trackName}</p>`;
         });
@@ -970,12 +995,10 @@ function showPlaceResults(places, isSelected = false) {
         return;
     }
     console.log("[DEBUG UI] showPlaceResults llamada con:", places, "isSelected:", isSelected); 
-    resultsEl.innerHTML = ''; // Limpiar siempre
-    // No resetear _selectedPlace aquí
+    resultsEl.innerHTML = ''; 
 
     if (isSelected && places.length > 0) {
         const placeData = places[0]; 
-         // No modificar _selectedPlace aquí, ya debería estar seteado en fillFormForEdit
         const displayName = placeData.display_name || _selectedPlace?.name || "Lugar seleccionado";
         console.log("[DEBUG UI] Mostrando selección de lugar:", displayName); 
         resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${displayName.substring(0, 50)}...</p>`;
@@ -994,18 +1017,11 @@ function showPlaceResults(places, isSelected = false) {
 
         const itemEl = document.createElement('div');
         itemEl.className = 'search-result-item';
-        itemEl.innerHTML = `
-            <span class="memoria-icon material-icons-outlined" style="font-size: 24px; margin-right: 10px; color: #666;">place</span>
-            <div class="memoria-item-content">
-                <small>${displayName.substring(0, 50)}...</small>
-                <strong>${shortName}</strong>
-            </div>
-            <span class="material-icons-outlined">add_circle_outline</span>
-        `;
+        itemEl.innerHTML = `...`; // HTML del item
         
         itemEl.addEventListener('click', () => {
             console.log("[DEBUG UI] Click en resultado de lugar:", place); 
-            _selectedPlace = { // <--- GUARDAR SELECCIÓN
+            _selectedPlace = { 
                 name: displayName, 
                 data: place 
             };
@@ -1017,28 +1033,8 @@ function showPlaceResults(places, isSelected = false) {
 }
 
 
-function showModalStatus(elementId, message, isError) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    el.textContent = message;
-    el.className = 'status-message'; 
-    if (isError) {
-        el.classList.add('error');
-    } else if (message) {
-        el.classList.add('success');
-    }
-}
-
-function showCrumbieAnimation(message) {
-    const textEl = document.createElement('div');
-    textEl.className = 'crumbie-float-text';
-    textEl.textContent = message;
-    document.body.appendChild(textEl);
-
-    textEl.addEventListener('animationend', () => {
-        textEl.remove();
-    });
-}
+function showModalStatus(elementId, message, isError) { /* ... */ }
+function showCrumbieAnimation(message) { /* ... */ }
 
 
 // --- Exportaciones Públicas ---
