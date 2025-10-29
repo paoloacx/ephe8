@@ -1,5 +1,5 @@
 /*
- * main.js (v2.70 - Manejo de Errores de UI)
+ * main.js (v2.72 - Adaptado a ui-forms.js)
  * Controlador principal de Ephemerides.
  */
 
@@ -40,24 +40,23 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.70 (Manejo de Errores de UI)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v2.72 (Adaptado a ui-forms)..."); // Versión actualizada
 
     try {
-        ui.setLoading("Iniciando...", true); //
-        initFirebase(); //
+        ui.setLoading("Iniciando...", true); 
+        initFirebase(); 
         
-        ui.init(getUICallbacks()); // - Eliminado segundo argumento []
-        initAuthListener(handleAuthStateChange); //
+        ui.init(getUICallbacks()); 
+        initAuthListener(handleAuthStateChange); 
 
-        ui.setLoading("Autenticando...", true); //
+        ui.setLoading("Autenticando...", true); 
         
-        await checkAuthState(); //
+        await checkAuthState(); 
         
         console.log("Arranque de autenticación completado.");
 
     } catch (err) {
         console.error("Error crítico durante el arranque:", err);
-        // *** CAMBIO: Usar la nueva alerta de error para fallos críticos ***
         if (err.code === 'permission-denied') {
             ui.showErrorAlert(
                 `Error: Permiso denegado por Firestore. Revisa tus reglas de seguridad.`,
@@ -75,7 +74,7 @@ async function checkAndRunApp() {
 async function initializeUserSession() {
     if (!state.currentUser || !state.currentUser.uid) {
         console.error("initializeUserSession llamado sin usuario válido.");
-        ui.showApp(false); //
+        ui.showApp(false); 
         return;
     }
     const userId = state.currentUser.uid;
@@ -83,36 +82,34 @@ async function initializeUserSession() {
     if (state.allDaysData.length > 0) return; 
 
     try {
-        ui.setLoading("Verificando base de datos...", true); //
-        await storeCheckAndRun(userId, (message) => ui.setLoading(message, true)); //
+        ui.setLoading("Verificando base de datos...", true); 
+        await storeCheckAndRun(userId, (message) => ui.setLoading(message, true)); 
         
-        ui.setLoading("Cargando calendario...", true); //
-        state.allDaysData = await loadAllDaysData(userId); //
+        ui.setLoading("Cargando calendario...", true); 
+        state.allDaysData = await loadAllDaysData(userId); 
 
         if (state.allDaysData.length === 0 && state.currentUser) {
             console.error(`Error: No se cargaron días para ${userId} incluso después de checkAndRunApp.`);
-            // *** CAMBIO: Usar la nueva alerta de error ***
             ui.showErrorAlert("No se pudieron cargar los datos del calendario. Intenta recargar la página.");
         }
 
         const today = new Date();
         state.todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
 
-        ui.updateAllDaysData(state.allDaysData); //
+        ui.updateAllDaysData(state.allDaysData); 
 
         drawCurrentMonth(); 
         loadTodaySpotlight(); 
         
-        ui.showApp(true); //
+        ui.showApp(true); 
 
     } catch (err) {
         console.error("Error crítico durante la inicialización de sesión:", err);
-        // *** CAMBIO: Usar la nueva alerta de error ***
         ui.showErrorAlert(
             `Error al cargar datos: ${err.message}. Por favor, recarga la página.`,
             'Error de Carga'
         );
-        ui.showApp(false); //
+        ui.showApp(false); 
     }
 }
 
@@ -123,7 +120,7 @@ async function loadTodaySpotlight() {
     const today = new Date();
     const dateString = `Hoy, ${today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`;
 
-    const spotlightData = await getTodaySpotlight(userId, state.todayId); //
+    const spotlightData = await getTodaySpotlight(userId, state.todayId); 
 
     if (spotlightData) {
         spotlightData.memories.forEach(mem => {
@@ -133,7 +130,7 @@ async function loadTodaySpotlight() {
         });
 
         const dayName = spotlightData.dayName !== 'Unnamed Day' ? spotlightData.dayName : null;
-        ui.updateSpotlight(dateString, dayName, spotlightData.memories); //
+        ui.updateSpotlight(dateString, dayName, spotlightData.memories); 
     }
 }
 
@@ -145,7 +142,7 @@ function drawCurrentMonth() {
         parseInt(dia.id.substring(0, 2), 10) === monthNumber
     );
 
-    ui.drawCalendar(monthName, diasDelMes, state.todayId); //
+    ui.drawCalendar(monthName, diasDelMes, state.todayId); 
 }
 
 
@@ -176,20 +173,18 @@ function getUICallbacks() {
 
 async function handleLoginClick() {
     try {
-        await handleLogin(); //
+        await handleLogin(); 
     } catch (error) {
         console.error("Error en handleLoginClick:", error);
-        // *** CAMBIO: Usar la nueva alerta de error ***
         ui.showErrorAlert(`Error al iniciar sesión: ${error.message}`, 'Error de Inicio de Sesión');
     }
 }
 
 async function handleLogoutClick() {
      try {
-        await handleLogout(); //
+        await handleLogout(); 
     } catch (error) {
         console.error("Error en handleLogoutClick:", error);
-        // *** CAMBIO: Usar la nueva alerta de error ***
         ui.showErrorAlert(`Error al cerrar sesión: ${error.message}`, 'Error al Cerrar Sesión');
     }
 }
@@ -197,7 +192,7 @@ async function handleLogoutClick() {
 function handleAuthStateChange(user) {
     const previousUser = state.currentUser; 
     state.currentUser = user;
-    ui.updateLoginUI(user); //
+    ui.updateLoginUI(user); 
     console.log("Estado de autenticación cambiado:", user ? user.uid : "Logged out");
 
     if (user) {
@@ -205,14 +200,14 @@ function handleAuthStateChange(user) {
             initializeUserSession(); 
         } else {
              console.log("Sesión ya inicializada, mostrando app.");
-             ui.showApp(true); //
+             ui.showApp(true); 
         }
     } else {
-        ui.showApp(false); //
+        ui.showApp(false); 
         state.allDaysData = []; 
-        ui.updateAllDaysData([]); //
-        ui.closeEditModal(); //
-        ui.closePreviewModal(); //
+        ui.updateAllDaysData([]); 
+        ui.closeEditModal(); 
+        ui.closePreviewModal(); 
     }
 }
 
@@ -235,18 +230,17 @@ async function handleDayClick(dia) {
     state.dayInPreview = dia;
     let memories = [];
     try {
-        ui.showPreviewLoading(true); //
-        memories = await loadMemoriesForDay(userId, dia.id); //
-        ui.showPreviewLoading(false); //
+        ui.showPreviewLoading(true); 
+        memories = await loadMemoriesForDay(userId, dia.id); 
+        ui.showPreviewLoading(false); 
     } catch (e) {
-        ui.showPreviewLoading(false); //
+        ui.showPreviewLoading(false); 
         console.error("Error cargando memorias para preview:", e);
-        // *** CAMBIO: Usar la nueva alerta de error ***
         ui.showErrorAlert(`Error al cargar memorias: ${e.message}`, 'Error de Carga');
         state.dayInPreview = null;
         return;
     }
-    ui.openPreviewModal(dia, memories); //
+    ui.openPreviewModal(dia, memories); 
 }
 
 async function handleEditFromPreview() {
@@ -257,49 +251,46 @@ async function handleEditFromPreview() {
     }
 
     if (!state.currentUser || !state.currentUser.uid) {
-        // Esta alerta está bien como está, es una notificación, no un error del sistema.
-        ui.showAlert("Debes iniciar sesión para poder editar."); //
+        ui.showAlert("Debes iniciar sesión para poder editar."); 
         return;
     }
     const userId = state.currentUser.uid;
 
-    ui.closePreviewModal(); //
+    ui.closePreviewModal(); 
     setTimeout(async () => {
         let memories = [];
         try {
-             ui.showEditLoading(true); //
-             memories = await loadMemoriesForDay(userId, dia.id); //
-             ui.showEditLoading(false); //
+             ui.showEditLoading(true); 
+             memories = await loadMemoriesForDay(userId, dia.id); 
+             ui.showEditLoading(false); 
         } catch (e) {
-             ui.showEditLoading(false); //
+             ui.showEditLoading(false); 
              console.error("Error cargando memorias para edición:", e);
-             // *** CAMBIO: Usar la nueva alerta de error ***
              ui.showErrorAlert(`Error al cargar memorias: ${e.message}`, 'Error de Carga');
              return;
         }
-        ui.openEditModal(dia, memories); //
+        ui.openEditModal(dia, memories); 
     }, 250);
 }
 
 async function handleHeaderAction(action) {
     if (!state.currentUser) {
-        // Esto es una notificación, no un error. ui.showAlert (la azul) es correcta aquí.
-        ui.showAlert("Debes iniciar sesión para usar esta función."); //
+        ui.showAlert("Debes iniciar sesión para usar esta función."); 
         return;
     }
 
     const userId = state.currentUser.uid;
 
     if (action === 'search') {
-        const searchTerm = await ui.showPrompt("Buscar en todas las memorias:", '', 'search'); //
+        const searchTerm = await ui.showPrompt("Buscar en todas las memorias:", '', 'search'); 
         if (!searchTerm || searchTerm.trim() === '') return;
 
         const term = searchTerm.trim().toLowerCase();
-        ui.setLoading(`Buscando "${term}"...`, true); //
+        ui.setLoading(`Buscando "${term}"...`, true); 
 
         try {
-            const results = await searchMemories(userId, term); //
-            ui.setLoading(null, false); //
+            const results = await searchMemories(userId, term); 
+            ui.setLoading(null, false); 
             drawCurrentMonth(); 
 
             results.forEach(mem => {
@@ -308,12 +299,11 @@ async function handleHeaderAction(action) {
                 }
             });
 
-            ui.openSearchResultsModal(term, results); //
+            ui.openSearchResultsModal(term, results); 
 
         } catch (err) {
-             ui.setLoading(null, false); //
+             ui.setLoading(null, false); 
              drawCurrentMonth();
-             // *** CAMBIO: Usar la nueva alerta de error ***
              ui.showErrorAlert(`Error al buscar: ${err.message}`, 'Error de Búsqueda');
         }
     }
@@ -322,27 +312,24 @@ async function handleHeaderAction(action) {
 async function handleFooterAction(action) {
     const protectedActions = ['add', 'store', 'shuffle'];
     if (protectedActions.includes(action) && !state.currentUser) {
-         // Notificación, no error. ui.showAlert (azul) es correcta.
-         ui.showAlert("Debes iniciar sesión para usar esta función."); //
+         ui.showAlert("Debes iniciar sesión para usar esta función."); 
          return;
     }
 
-    // --- Llamada a showSettings ---
     if (action === 'settings') {
-         showSettings(); // Llama a la función importada
+         showSettings(); 
          return;
     }
-    // --- Fin llamada ---
     
     const userId = state.currentUser?.uid; 
 
     switch (action) {
         case 'add':
-            ui.openEditModal(null, []); //
+            ui.openEditModal(null, []); 
             break;
 
         case 'store':
-            ui.openStoreModal(); //
+            ui.openStoreModal(); 
             break;
 
         case 'shuffle':
@@ -378,7 +365,7 @@ function handleShuffleClick() {
 
 async function handleSaveDayName(diaId, newName, statusElementId = 'save-status') {
     if (!state.currentUser || !state.currentUser.uid) {
-        ui.showModalStatus(statusElementId, `Debes estar logueado`, true); //
+        ui.showModalStatus(statusElementId, `Debes estar logueado`, true); 
         return;
     }
     const userId = state.currentUser.uid;
@@ -386,14 +373,14 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
     const finalName = newName && newName.trim() !== '' ? newName.trim() : "Unnamed Day";
 
     try {
-        await saveDayName(userId, diaId, finalName); //
+        await saveDayName(userId, diaId, finalName); 
 
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
         if (dayIndex !== -1) {
             state.allDaysData[dayIndex].Nombre_Especial = finalName;
         }
 
-        ui.showModalStatus(statusElementId, 'Nombre guardado', false); //
+        ui.showModalStatus(statusElementId, 'Nombre guardado', false); 
         drawCurrentMonth(); 
 
         if (statusElementId === 'save-status' && state.dayInPreview && state.dayInPreview.id === diaId) { 
@@ -403,7 +390,7 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
              if (editModalTitle) editModalTitle.textContent = `Editando: ${dia.Nombre_Dia}${dayNameUI}`;
              state.dayInPreview.Nombre_Especial = finalName;
         }
-         const daySelect = document.getElementById('edit-mem-day'); //
+         const daySelect = document.getElementById('edit-mem-day'); 
          if (daySelect) {
              const option = daySelect.querySelector(`option[value="${diaId}"]`);
              if (option) {
@@ -414,20 +401,19 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
 
     } catch (err) {
         console.error("Error guardando nombre:", err);
-        // showModalStatus es correcto aquí, ya que el error ocurre dentro del modal.
-        ui.showModalStatus(statusElementId, `Error: ${err.message}`, true); //
+        ui.showModalStatus(statusElementId, `Error: ${err.message}`, true); 
     }
 }
 
 
 async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
     if (!state.currentUser || !state.currentUser.uid) {
-        ui.showModalStatus('memoria-status', `Debes estar logueado`, true); //
+        ui.showModalStatus('memoria-status', `Debes estar logueado`, true); 
         return;
     }
     const userId = state.currentUser.uid;
 
-    const saveBtn = document.getElementById('save-memoria-btn'); //
+    const saveBtn = document.getElementById('save-memoria-btn'); 
 
     try {
         if (!memoryData.year || isNaN(parseInt(memoryData.year))) throw new Error('El año es obligatorio.');
@@ -441,21 +427,21 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
         memoryData.Fecha_Original = fullDate;
         delete memoryData.year;
 
-        if (memoryData.Tipo === 'Imagen' && memoryData.file) { //
-            ui.showModalStatus('image-upload-status', 'Subiendo imagen...', false); //
-            memoryData.ImagenURL = await uploadImage(memoryData.file, userId, diaId); //
-            ui.showModalStatus('image-upload-status', 'Imagen subida.', false); //
+        if (memoryData.Tipo === 'Imagen' && memoryData.file) { 
+            ui.showModalStatus('image-upload-status', 'Subiendo imagen...', false); 
+            memoryData.ImagenURL = await uploadImage(memoryData.file, userId, diaId); 
+            ui.showModalStatus('image-upload-status', 'Imagen subida.', false); 
         }
 
         const memoryId = isEditing ? memoryData.id : null;
-        await saveMemory(userId, diaId, memoryData, memoryId); //
+        await saveMemory(userId, diaId, memoryData, memoryId); 
 
-        ui.showModalStatus('memoria-status', isEditing ? 'Memoria actualizada' : 'Memoria guardada', false); //
+        ui.showModalStatus('memoria-status', isEditing ? 'Memoria actualizada' : 'Memoria guardada', false); 
         
-        ui.resetMemoryForm(); //
+        ui.resetMemoryForm(); 
 
-        const updatedMemories = await loadMemoriesForDay(userId, diaId); //
-        ui.updateMemoryList(updatedMemories); //
+        const updatedMemories = await loadMemoriesForDay(userId, diaId); 
+        ui.updateMemoryList(updatedMemories); 
 
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
         if (dayIndex !== -1 && !state.allDaysData[dayIndex].tieneMemorias) {
@@ -465,8 +451,7 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 
     } catch (err) {
         console.error("Error guardando memoria:", err);
-        // showModalStatus es correcto, el error es en el contexto del modal.
-        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); //
+        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); 
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
@@ -481,29 +466,29 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 
 async function handleDeleteMemory(diaId, mem) {
     if (!state.currentUser || !state.currentUser.uid) {
-        ui.showModalStatus('memoria-status', `Debes estar logueado`, true); //
+        ui.showModalStatus('memoria-status', `Debes estar logueado`, true); 
         return;
     }
     const userId = state.currentUser.uid;
     
     if (!mem || !mem.id) {
-         ui.showModalStatus('memoria-status', `Error: Información de memoria inválida.`, true); //
+         ui.showModalStatus('memoria-status', `Error: Información de memoria inválida.`, true); 
          return;
     }
 
     const info = mem.Descripcion || mem.LugarNombre || mem.CancionInfo || 'esta memoria';
     const message = `¿Seguro que quieres borrar "${info.substring(0, 50)}..."?`;
 
-    const confirmed = await ui.showConfirm(message); //
+    const confirmed = await ui.showConfirm(message); 
     if (!confirmed) return;
 
     try {
         const imagenURL = (mem.Tipo === 'Imagen') ? mem.ImagenURL : null;
-        await deleteMemory(userId, diaId, mem.id, imagenURL); //
-        ui.showModalStatus('memoria-status', 'Memoria borrada', false); //
+        await deleteMemory(userId, diaId, mem.id, imagenURL); 
+        ui.showModalStatus('memoria-status', 'Memoria borrada', false); 
 
-        const updatedMemories = await loadMemoriesForDay(userId, diaId); //
-        ui.updateMemoryList(updatedMemories); //
+        const updatedMemories = await loadMemoriesForDay(userId, diaId); 
+        ui.updateMemoryList(updatedMemories); 
 
         if (updatedMemories.length === 0) {
             const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
@@ -515,47 +500,63 @@ async function handleDeleteMemory(diaId, mem) {
 
     } catch (err) {
         console.error("Error borrando memoria:", err);
-        // showModalStatus es correcto, el error es en el contexto del modal.
-        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); //
+        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); 
     }
 }
 
 // --- 4. Lógica de API Externa (Controlador) ---
-async function handleMusicSearch(term) {
+
+// *** CAMBIO: Aceptar el 'resultsCallback' que pasa ui.js ***
+async function handleMusicSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
+    
+    // *** CAMBIO: Comprobar que el callback es una función ***
+    if (typeof resultsCallback !== 'function') {
+        console.error("handleMusicSearch: resultsCallback no es una función.");
+        return;
+    }
+
     try {
-        const results = await searchMusic(term); //
+        const results = await searchMusic(term); 
         
-        // *** CAMBIO: Comprobar si api.js devolvió null (error de red) ***
         if (results === null) {
             throw new Error('No se pudo conectar al servicio de música. Revisa tu conexión.');
         }
         
-        ui.showMusicResults(results); //
+        // *** CAMBIO: Usar el callback en lugar de ui.showMusicResults ***
+        resultsCallback(results); 
     } catch (error) {
         console.error("Error en handleMusicSearch:", error);
-        // showModalStatus es correcto, el error es en el contexto del modal.
-        ui.showModalStatus('memoria-status', `Error al buscar música: ${error.message}`, true); //
-        ui.showMusicResults([]); //
+        ui.showModalStatus('memoria-status', `Error al buscar música: ${error.message}`, true); 
+        // *** CAMBIO: Usar el callback en lugar de ui.showMusicResults ***
+        resultsCallback([]); 
     }
 }
 
-async function handlePlaceSearch(term) {
+// *** CAMBIO: Aceptar el 'resultsCallback' que pasa ui.js ***
+async function handlePlaceSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
-    try {
-        const results = await searchNominatim(term); //
 
-        // *** CAMBIO: Comprobar si api.js devolvió null (error de red) ***
+    // *** CAMBIO: Comprobar que el callback es una función ***
+    if (typeof resultsCallback !== 'function') {
+        console.error("handlePlaceSearch: resultsCallback no es una función.");
+        return;
+    }
+
+    try {
+        const results = await searchNominatim(term); 
+
         if (results === null) {
             throw new Error('No se pudo conectar al servicio de mapas. Revisa tu conexión.');
         }
 
-        ui.showPlaceResults(results); //
+        // *** CAMBIO: Usar el callback en lugar de ui.showPlaceResults ***
+        resultsCallback(results); 
     } catch (error) {
         console.error("Error en handlePlaceSearch:", error);
-        // showModalStatus es correcto, el error es en el contexto del modal.
-        ui.showModalStatus('memoria-status', `Error al buscar lugares: ${error.message}`, true); //
-        ui.showPlaceResults([]); //
+        ui.showModalStatus('memoria-status', `Error al buscar lugares: ${error.message}`, true); 
+        // *** CAMBIO: Usar el callback en lugar de ui.showPlaceResults ***
+        resultsCallback([]); 
     }
 }
 
@@ -569,14 +570,14 @@ async function handleStoreCategoryClick(type) {
     state.store.isLoading = true;
 
     const title = `Almacén: ${type}`;
-    ui.openStoreListModal(title); //
+    ui.openStoreListModal(title); 
 
     try {
         let result;
         if (type === 'Nombres') {
-            result = await getNamedDays(userId, 10); //
+            result = await getNamedDays(userId, 10); 
         } else {
-            result = await getMemoriesByType(userId, type, 10); //
+            result = await getMemoriesByType(userId, type, 10); 
         }
 
         result.items.forEach(item => {
@@ -588,23 +589,21 @@ async function handleStoreCategoryClick(type) {
         state.store.lastVisible = result.lastVisible; 
         state.store.isLoading = false;
 
-        ui.updateStoreList(result.items, false, result.hasMore); //
+        ui.updateStoreList(result.items, false, result.hasMore); 
 
     } catch (err) {
         console.error(`Error cargando categoría ${type} para ${userId}:`, err);
-        ui.updateStoreList([], false, false); //
+        ui.updateStoreList([], false, false); 
         if (err.code === 'failed-precondition' || err.message.includes("index")) { 
             console.error("¡ÍNDICE DE FIREBASE REQUERIDO!", err.message);
-            // *** CAMBIO: Usar la nueva alerta de error ***
             ui.showErrorAlert(
                 "Error de Firebase: Se requiere un índice. Revisa la consola (F12) para ver el enlace de creación.",
                 "Error de Base de Datos"
             );
         } else {
-            // *** CAMBIO: Usar la nueva alerta de error ***
             ui.showErrorAlert(`Error al cargar ${type}: ${err.message}`, 'Error de Almacén');
         }
-        ui.closeStoreListModal(); //
+        ui.closeStoreListModal(); 
     }
 }
 
@@ -616,7 +615,7 @@ async function handleStoreLoadMore() {
     console.log(`Cargando más ${currentType} para ${userId}...`);
     state.store.isLoading = true;
 
-     const loadMoreBtn = document.getElementById('load-more-btn'); //
+     const loadMoreBtn = document.getElementById('load-more-btn'); 
      if (loadMoreBtn) {
            loadMoreBtn.disabled = true;
            loadMoreBtn.textContent = 'Cargando...';
@@ -625,9 +624,9 @@ async function handleStoreLoadMore() {
     try {
         let result;
         if (currentType === 'Nombres') {
-            result = await getNamedDays(userId, 10, lastVisible); //
+            result = await getNamedDays(userId, 10, lastVisible); 
         } else {
-            result = await getMemoriesByType(userId, currentType, 10, lastVisible); //
+            result = await getMemoriesByType(userId, currentType, 10, lastVisible); 
         }
 
         result.items.forEach(item => {
@@ -639,7 +638,7 @@ async function handleStoreLoadMore() {
         state.store.lastVisible = result.lastVisible; 
         state.store.isLoading = false;
 
-        ui.updateStoreList(result.items, true, result.hasMore); //
+        ui.updateStoreList(result.items, true, result.hasMore); 
 
     } catch (err) {
         console.error(`Error cargando más ${type} para ${userId}:`, err);
@@ -653,7 +652,6 @@ async function handleStoreLoadMore() {
                  }
              }, 3000);
         }
-         // *** CAMBIO: Usar la nueva alerta de error ***
          ui.showErrorAlert(`Error al cargar más: ${err.message}`, 'Error de Almacén');
     }
 }
@@ -667,8 +665,8 @@ function handleStoreItemClick(diaId) {
         return;
     }
 
-    ui.closeStoreListModal(); //
-    ui.closeStoreModal(); //
+    ui.closeStoreListModal(); 
+    ui.closeStoreModal(); 
 
     const monthIndex = parseInt(dia.id.substring(0, 2), 10) - 1;
     if (state.currentMonthIndex !== monthIndex) {
@@ -687,8 +685,7 @@ function handleStoreItemClick(diaId) {
 
 function handleCrumbieClick() {
      if (!state.currentUser) {
-         // Notificación, no error. ui.showAlert (azul) es correcta.
-         ui.showAlert("Debes iniciar sesión para usar Crumbie."); //
+         ui.showAlert("Debes iniciar sesión para usar Crumbie."); 
          return;
     }
     const messages = [
@@ -699,7 +696,7 @@ function handleCrumbieClick() {
     ];
     const msg = messages[Math.floor(Math.random() * messages.length)];
     
-    ui.showCrumbieAnimation(msg); //
+    ui.showCrumbieAnimation(msg); 
     
     console.log("Crumbie clickeado. Listo para IA.");
 }
