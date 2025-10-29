@@ -1,4 +1,4 @@
-/* style.css - v2.62 - Notebook paper fix (IDÉNTICO) */
+/* style.css - v2.62 - Notebook paper FINAL FIX (Identical) & Dashed Separator */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -231,7 +231,6 @@ main {
     padding: 0 10px;
     max-width: 960px;
     margin: 0 auto;
-    /* ***** CAMBIO: Añadido para fix de z-index del mapa ***** */
     position: relative;
     z-index: 1;
 }
@@ -281,7 +280,7 @@ main {
     margin-bottom: 0; /* Sin margen */
     border-radius: 0; /* Sin radius en la celda */
     display: flex;
-    flex-direction: column; /* CAMBIO: Columna para poner mapa debajo */
+    flex-direction: column; /* Columna para poner mapa debajo */
     gap: 8px;
     cursor: pointer;
 }
@@ -341,20 +340,18 @@ main {
     line-height: 1.4;
 }
 
-/* --- INICIO v17.6: Estilos Mapa Spotlight --- */
+/* Estilos Mapa Spotlight */
 .spotlight-map-container {
-    height: 120px; /* Altura fija para el minimapa */
+    height: 120px;
     width: 100%;
     border-radius: 5px;
     border: 1px solid rgba(0,0,0,0.2);
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-    background-color: #eee; /* Fondo mientras carga */
-    margin-top: 5px; /* Espacio superior */
+    background-color: #eee;
+    margin-top: 5px;
 }
-/* --- FIN v17.6 --- */
 
-
-/* --- Grid del Calendario (Estilo Original Restaurado v15.6) --- */
+/* --- Grid del Calendario --- */
 .calendario-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -376,8 +373,8 @@ main {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    position: relative; /* CAMBIO: Añadido para ::before */
-    overflow: hidden; /* CAMBIO: Añadido para ::before */
+    position: relative;
+    overflow: hidden;
     transition: background-color 0.1s, transform 0.1s;
 }
 .dia-btn:active {
@@ -390,30 +387,27 @@ main {
     font-weight: bold;
     color: #444;
     line-height: 1;
-    margin-top: 10px; /* CAMBIO: Movido aquí */
+    margin-top: 10px;
     z-index: 2;
     position: relative;
 }
 .dia-btn .nombre-especial { display: none; }
 
-/* CAMBIO v17.4: Barra roja para TODOS los días */
 .dia-btn::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 10px; /* Banda roja sutil */
+    height: 10px;
     background-color: #e57373;
     border-bottom: 1px solid #c62828;
-    border-radius: 8px 8px 0 0; /* Borde redondeado arriba */
+    border-radius: 8px 8px 0 0;
 }
-/* El día de HOY solo cambia el color del texto */
 .dia-btn-today .dia-numero {
-    color: #c62828; /* Rojo */
+    color: #c62828;
 }
 
-/* Esquina doblada (Dog-ear) - ABAJO DERECHA (v15.6 RESTAURADO) */
 .dia-btn.tiene-memorias::after {
     content: '';
     position: absolute;
@@ -422,17 +416,15 @@ main {
     width: 0;
     height: 0;
     border-style: solid;
-    border-width: 0 0 12px 12px; /* Triángulo inferior derecho */
-    border-color: transparent transparent #bbb transparent; /* Color del pliegue (gris) */
+    border-width: 0 0 12px 12px;
+    border-color: transparent transparent #bbb transparent;
     z-index: 3;
     filter: drop-shadow(-1px 1px 1px rgba(0,0,0,0.15));
-    /* Fondo blanco para simular la hoja doblada */
     background: linear-gradient(-135deg, transparent 50%, white 50%);
 }
-/* Ajuste para hoy */
 .dia-btn-today.tiene-memorias::after {
-    border-color: transparent transparent #ff9e9e transparent; /* Color del pliegie (rojo claro) */
-    background: linear-gradient(-135deg, transparent 50%, #d9534f 50%); /* Fondo rojo */
+    border-color: transparent transparent #ff9e9e transparent;
+    background: linear-gradient(-135deg, transparent 50%, #d9534f 50%);
 }
 
 
@@ -446,10 +438,9 @@ main {
     background-color: rgba(0,0,0,0.5);
     display: none;
     justify-content: center;
-    /* CAMBIO v17.0: Alinear al TOPO para arreglar bug de scroll */
     align-items: flex-start;
     padding: 15px;
-    padding-top: 5vh; /* Margen superior */
+    padding-top: 5vh;
     box-sizing: border-box;
     opacity: 0;
     transition: opacity 0.2s ease-out;
@@ -467,7 +458,6 @@ main {
 
 /* Contenido del Modal */
 .modal-content, .modal-preview-content, .modal-alert-content {
-    /* CAMBIO v17.0: Revertido a fondo claro */
     background: #f0f0f0;
     padding: 0;
     border-radius: 10px;
@@ -475,7 +465,6 @@ main {
     max-width: 500px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     border: 1px solid #888;
-    /* CAMBIO v17.0: Altura máxima agresiva */
     max-height: 85vh;
     display: flex;
     flex-direction: column;
@@ -483,13 +472,11 @@ main {
     color: #333;
 }
 
-/* --- INICIO CAMBIO: Estilo iOS Deep Blue (Puntos 1 y 2) --- */
-
-/* Modal de Alerta/Confirmación (Base) */
+/* Modal Alerta/Confirmación Base */
 .modal-alert-content {
     max-width: 300px;
-    max-height: 90vh; /* Alertas pueden ser más simples */
-    border-radius: 8px; /* Bordes más suaves iOS */
+    max-height: 90vh;
+    border-radius: 8px;
 }
 
 /* Estilo Deep Blue (Settings y Search) */
@@ -504,15 +491,14 @@ main {
 .modal-alert-content.settings-alert p,
 .modal-alert-content.search-alert p {
     padding: 20px 20px 10px 20px;
-    color: white; /* Texto blanco para párrafo */
+    color: white;
     text-shadow: 0 1px 0 rgba(0,0,0,0.6);
     font-weight: bold;
     font-size: 16px;
-    white-space: pre-wrap; /* Respetar saltos de línea */
+    white-space: pre-wrap;
     margin: 0;
     text-align: center;
 }
-/* Párrafo secundario (si existe) */
 .modal-alert-content.settings-alert p small,
 .modal-alert-content.search-alert p small {
     display: block;
@@ -521,7 +507,6 @@ main {
     margin-top: 8px;
     color: #ccc;
 }
-
 .modal-alert-content.search-alert input {
     background-color: #fff;
     border: 1px solid #202834;
@@ -534,7 +519,6 @@ main {
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
     font-size: 15px;
 }
-
 /* Botones Deep Blue */
 .modal-alert-content.settings-alert .modal-main-buttons,
 .modal-alert-content.search-alert .modal-main-buttons {
@@ -561,7 +545,7 @@ main {
 }
 .modal-alert-content.settings-alert .modal-main-buttons button:first-child,
 .modal-alert-content.search-alert .modal-main-buttons button:first-child {
-    border-left: none; /* El botón de Cancelar */
+    border-left: none;
     border-bottom-left-radius: 8px;
 }
 .modal-alert-content.settings-alert .modal-main-buttons button:last-child,
@@ -574,21 +558,18 @@ main {
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
 }
 
-/* --- FIN CAMBIO: Estilo iOS Deep Blue --- */
-
-
 /* Scrollable dentro del modal */
 .modal-content-scrollable {
     overflow-y: auto;
     flex-grow: 1;
     padding: 0;
-    background-color: #f0f0f0; /* Fondo claro */
+    background-color: #f0f0f0;
 }
-/* CAMBIO v17.0: Secciones con más padding */
+/* Secciones del modal */
 .modal-section {
     padding: 10px 15px 15px 15px;
     border-bottom: 1px solid #ccc;
-    background: #f0f0f0; /* Fondo claro */
+    background: #f0f0f0;
     color: #333;
     text-shadow: none;
     border-radius: 0;
@@ -606,7 +587,7 @@ main {
     color: #555;
     font-weight: bold;
     font-size: 15px;
-    display: block; /* Asegurar que la etiqueta esté en su propia línea */
+    display: block;
     margin-bottom: 2px;
 }
 .memorias-section {
@@ -617,30 +598,25 @@ main {
     border-bottom: none;
     padding-bottom: 20px;
 }
-/* Contenedor para Select y Botón Nombrar */
+/* Controles de selección de día */
 .day-selection-controls {
     display: flex;
     align-items: center;
-    gap: 10px; /* Espacio entre select y botón */
-    margin-bottom: 10px; /* Espacio debajo */
-    /* INICIO v17.6: Fix bug visual de overflow */
-    min-width: 0; /* Permite que el flex-item se encoja */
-    /* FIN v17.6 */
+    gap: 10px;
+    margin-bottom: 10px;
+    min-width: 0;
 }
 #edit-mem-day {
-    flex-grow: 1; /* El select ocupa el espacio sobrante */
-    /* INICIO v17.6: Fix bug visual de overflow */
-    min-width: 0; /* Asegura que el select pueda encogerse */
-    overflow: hidden; /* Opcional, ayuda a truncar texto si es necesario */
-    text-overflow: ellipsis; /* Trunca el texto largo en la opción */
-    /* FIN v17.6 */
+    flex-grow: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 #btn-name-selected-day {
-    flex-shrink: 0; /* El botón no se encoge */
+    flex-shrink: 0;
 }
 
-
-/* --- INICIO v17.1: Estilos de Formulario (iOS-like) --- */
+/* Estilos de Formulario (iOS-like) */
 .modal-section input[type="text"],
 .modal-section input[type="number"],
 .modal-section input[type="file"],
@@ -650,28 +626,23 @@ main {
     padding: 10px;
     margin: 5px 0 15px 0;
     border: 1px solid #ccc;
-    border-radius: 8px; /* Esquinas redondeadas iOS */
-    box-sizing: border-box; /* Importante para que padding no rompa el width */
+    border-radius: 8px;
+    box-sizing: border-box;
     font-size: 16px;
     background-color: #fff;
-    -webkit-appearance: none; /* Quitar estilos nativos */
+    -webkit-appearance: none;
     appearance: none;
 }
-
 .modal-section textarea {
     min-height: 80px;
     resize: vertical;
 }
-
-/* Override para select y botón en la misma línea */
 .day-selection-controls select,
 .day-selection-controls input {
-    width: auto; /* Dejar que flexbox maneje el ancho */
+    width: auto;
 }
-/* --- FIN v17.1 --- */
 
-
-/* Cabecera Modal Preview (y ahora también Edit, Store) */
+/* Cabecera Modal Preview */
 .modal-preview-header {
     display: flex;
     justify-content: space-between;
@@ -694,21 +665,21 @@ main {
 .modal-preview-notebook-paper {
     flex-grow: 1;
     overflow-y: auto;
-    background-color: #ffffff; /* Fondo blanco */
-    padding: 20px 20px 20px 50px; /* Padding izquierdo para línea/agujeros */
+    background-color: #ffffff; /* Fondo blanco explícito */
+    padding: 20px 20px 20px 50px; /* Padding izquierdo aumentado */
     position: relative;
-    line-height: 24px; /* Altura de línea para el texto */
+    line-height: 24px;
     font-family: 'Courier New', Courier, monospace;
     color: #333;
 
-    /* Múltiples fondos: 1. Agujeros, 2. Líneas Horizontales */
+    /* Múltiples fondos: 1. Agujeros grises, 2. Líneas Horizontales azules */
     background-image:
-        /* 1. Agujeros (Círculos más oscuros, con sombra, menos) */
+        /* 1. Agujeros (Círculos grises, menos, más oscuros) */
         repeating-radial-gradient(
             circle at 15px center, /* Posición X a 15px del borde */
             #666666 0, /* Color más oscuro */
             #666666 4px, /* Radio del círculo 4px */
-            transparent 4px,
+            transparent 4.5px, /* Pequeño borde */
             transparent 48px /* Espaciado vertical (line-height * 2 para menos círculos) */
         ),
         /* 2. Líneas horizontales (Azules) */
@@ -719,39 +690,24 @@ main {
             #aaccff 23px, /* Línea azul de 1px */
             #aaccff 24px
         );
-    
-    background-size: 100% 24px; /* Repetir cada 24px verticalmente */
-    background-position: 0 10px; /* Offset inicial, para alinear texto */
-    /* Añadir sombra a los círculos - requiere un elemento extra o background-blend-mode (más complejo)
-       Para simplicidad y control, si los círculos son parte del background-image, no se les puede aplicar box-shadow.
-       Si esto es crítico, tendríamos que usar un elemento pseudo ::before o un div para los círculos.
-       Por ahora, ajustaremos el color a uno más oscuro para simular profundidad.
-    */
-}
 
-/* Sombra para los "agujeros" - Si necesitamos una sombra real, la podemos aplicar a un ::before
-   que tenga los agujeros renderizados, pero esto no se puede hacer directamente en background-image.
-   Así que, para simular la sombra de los círculos, hago el color más oscuro.
-   Para añadir la sombra "verdadera", necesitaríamos reestructurar el HTML/CSS.
-   Por ahora, la sombra es una propiedad directa que afecta a todo el contenedor o no es posible en un gradiente.
-   Si realmente se quiere esa sombra, tendríamos que cambiar la implementación de los agujeros.
-   Pero como el ejemplo que me pasas no tiene una sombra evidente en los agujeros, asumo que un color más oscuro
-   es suficiente.
-*/
-.modal-preview-notebook-paper {
-    box-shadow: inset 0 0 2px rgba(0,0,0,0.5); /* Sombra interior para dar profundidad al papel */
-}
+    /* Propiedades explícitas para cada fondo */
+    background-repeat: repeat-y, repeat; /* Agujeros solo vertical, líneas por defecto */
+    background-position: 0 22px, 0 10px; /* Posición X=0 Y=22px para agujeros, X=0 Y=10px para líneas */
+    background-size: auto, 100% 24px; /* Tamaño automático para agujeros, específico para líneas */
 
+    box-shadow: inset 0 0 2px rgba(0,0,0,0.5); /* Sombra interior papel */
+}
 
 .modal-preview-notebook-paper::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 40px; /* Posición de la línea roja (a la derecha de los agujeros) */
+    left: 40px; /* Posición de la línea roja */
     bottom: 0;
     width: 0;
     border-right: 1px solid #ff6666; /* Línea roja/rosa */
-    background-image: none; /* Asegurar que no haya nada extra */
+    background-image: none; /* Asegurar que ::before solo dibuje la línea roja */
 }
 /* --- ***** FIN CAMBIO v2.62 ***** --- */
 
@@ -771,60 +727,59 @@ main {
 }
 .modal-preview-notebook-paper .memoria-item {
     background-color: transparent;
-    border-bottom: 2px dashed #cccccc; /* ***** CAMBIO: Línea gruesa dashed entre memorias ***** */
-    padding: 5px 0;
-    margin-bottom: 0;
+    /* ***** CAMBIO: Separador dashed entre memorias ***** */
+    border-bottom: 2px dashed #cccccc;
+    padding: 10px 0; /* Aumentar padding vertical */
+    margin-bottom: 10px; /* Aumentar margen inferior */
     line-height: 24px;
     min-height: 24px;
-    display: flex; /* Flex para alinear mejor año y contenido */
-    align-items: flex-start; /* Alinear arriba */
-    flex-direction: column; /* CAMBIO: Columna para mapa */
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
 }
-/* Eliminar el borde inferior del último elemento */
+/* Eliminar el borde/margen/padding inferior del último elemento */
 .modal-preview-notebook-paper .memoria-item:last-of-type {
     border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 5px; /* Restaurar un poco de padding */
 }
 
-
-/* --- INICIO CAMBIO: Estilo Preview (Punto 5) --- */
+/* Estilo contenido memoria en Preview */
 .modal-preview-notebook-paper .memoria-item-main-content {
     display: flex;
-    align-items: center; /* CAMBIO: Alinear al centro (como spotlight) */
-    gap: 8px; /* CAMBIO: Añadido gap (como spotlight) */
+    align-items: center;
+    gap: 8px;
 }
 .modal-preview-notebook-paper .memoria-item small { /* Año */
-    color: #777; /* CAMBIO: (como spotlight) */
-    margin-bottom: 3px; /* CAMBIO: (como spotlight) */
-    margin-right: 0; /* CAMBIO: (quitado) */
-    display: block; /* CAMBIO: (como spotlight) */
-    font-size: 11px; /* CAMBIO: (como spotlight) */
-    min-width: 0; /* CAMBIO: (quitado) */
-    text-align: left; /* CAMBIO: (quitado text-align: right) */
-    flex-shrink: 1; /* CAMBIO: (quitado flex-shrink: 0) */
-    font-weight: bold; /* CAMBIO: (como spotlight) */
+    color: #777;
+    margin-bottom: 3px;
+    display: block;
+    font-size: 11px;
+    min-width: 0;
+    text-align: left;
+    flex-shrink: 1;
+    font-weight: bold;
 }
 .modal-preview-notebook-paper .memoria-item-content {
-    display: block; /* CAMBIO: (quitado display: inline) */
-    flex-grow: 1; /* Ocupa espacio restante */
-    word-break: break-word; /* Romper palabras largas */
+    display: block;
+    flex-grow: 1;
+    word-break: break-word;
 }
 .modal-preview-notebook-paper .memoria-artwork {
-    width: 30px; /* CAMBIO: Más grande (como spotlight) */
-    height: 30px; /* CAMBIO: Más grande (como spotlight) */
+    width: 30px;
+    height: 30px;
     vertical-align: middle;
-    margin-right: 0; /* CAMBIO: (quitado, ahora usa gap) */
+    margin-right: 0;
     flex-shrink: 0;
     border-radius: 3px;
 }
 .modal-preview-notebook-paper .memoria-icon {
-    font-size: 20px; /* CAMBIO: Más grande (como spotlight) */
+    font-size: 20px;
     vertical-align: middle;
-    margin-right: 0; /* CAMBIO: (quitado, ahora usa gap) */
+    margin-right: 0;
     flex-shrink: 0;
     color: #666;
 }
-/* --- FIN CAMBIO: Estilo Preview --- */
-
 .modal-preview-notebook-paper .artist-name {
     color: #555;
     font-size: 0.9em;
@@ -834,21 +789,21 @@ main {
      font-style: italic;
      padding: 10px 0;
 }
-/* --- INICIO v17.6: Estilos Mapa Preview --- */
+/* Estilos Mapa Preview */
 .memoria-map-container {
-    height: 150px; /* Un poco más grande para el preview */
+    height: 150px;
     width: 100%;
     border-radius: 5px;
     border: 1px solid rgba(0,0,0,0.2);
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    background-color: #eee; /* Fondo mientras carga */
-    margin-top: 10px; /* Espacio superior */
+    background-color: #eee;
+    margin-top: 10px;
     margin-bottom: 5px;
-    z-index: 1; /* Asegurar que esté sobre las líneas */
+    z-index: 1;
     position: relative;
 }
-/* --- FIN v17.6 --- */
 
+/* Footer Modal Preview */
 .modal-preview-footer {
     display: flex;
     justify-content: space-around;
@@ -863,7 +818,7 @@ main {
     max-width: 45%;
 }
 
-/* Footer de Modales Claros (Edit, Store) */
+/* Footer Modales Claros (Edit, Store) */
 .modal-main-buttons {
     display: flex;
     justify-content: space-around;
@@ -875,20 +830,19 @@ main {
 .modal-main-buttons .aqua-button {
     margin: 5px;
     flex-grow: 1;
-    max-width: 100%; /* Botón único ocupa todo */
+    max-width: 100%;
 }
 
 
-/* --- CAMBIO: Footer para Alert/Confirm (Estilo Aqua) --- */
+/* Footer Alert/Confirm (Estilo Aqua) */
 .modal-alert-content .modal-main-buttons {
      background: rgba(0,0,0,0.03);
-     border-top: 1px solid #ccc; /* Borde claro */
+     border-top: 1px solid #ccc;
      padding: 10px;
      display: flex;
      justify-content: space-around;
 }
 .modal-alert-content .modal-main-buttons button {
-    /* Estilo base (Cancelar - Gris Brillante) */
     background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e0e0e0 100%) !important;
     color: #333 !important;
     border: 1px solid #999 !important;
@@ -910,22 +864,18 @@ main {
     background: linear-gradient(to top, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e0e0e0 100%) !important;
     box-shadow: inset 0 2px 3px rgba(0,0,0,0.2) !important;
 }
-/* Botón OK (Confirmar - Azul Brillante) */
 .modal-alert-content .modal-main-buttons button#confirm-ok {
      background: linear-gradient(to bottom, #a7d1ef 0%, #76b6e4 50%, #58a5d9 51%, #4aa2d8 100%) !important;
      border: 1px solid #3c82b1 !important;
      color: #fff !important;
      text-shadow: 0 -1px 0 rgba(0,0,0,0.3) !important;
 }
-/* Botón de BORRADO (Rojo Brillante) */
 .delete-confirm {
     background: linear-gradient(to bottom, #f48a84 0%, #e55c56 50%, #d94c45 51%, #d9534f 100%) !important;
     border: 1px solid #b83e39 !important;
     color: #fff !important;
     text-shadow: 0 -1px 0 rgba(0,0,0,0.3) !important;
 }
-/* --- FIN CAMBIO: Estilo Botones Alerta --- */
-
 
 /* Texto y inputs de Alerta/Confirmación */
 .modal-alert-content p {
@@ -935,8 +885,8 @@ main {
      font-size: 15px;
      line-height: 1.4;
      white-space: pre-wrap;
-     color: #333; /* Color de texto normal */
-     text-shadow: none; /* Sin sombra */
+     color: #333;
+     text-shadow: none;
 }
 .modal-alert-content input {
     margin: 0 20px 15px 20px;
@@ -947,14 +897,13 @@ main {
     border: 1px solid #888;
 }
 
-/* --- ESTILOS para .memoria-item en Modal Edición --- */
-/* (Combinados v17.0 y v17.5) */
+/* Estilos .memoria-item en Modal Edición */
 #edit-memorias-list .memoria-item {
     display: flex;
     align-items: center;
     padding: 8px 5px;
     border-bottom: 1px solid #ddd;
-    background-color: #fff; /* Fondo blanco para la celda */
+    background-color: #fff;
     font-size: 14px;
     border-left: 1px solid #ddd;
     border-right: 1px solid #ddd;
@@ -965,7 +914,7 @@ main {
 }
 #edit-memorias-list .memoria-item:last-child {
     border-radius: 0 0 8px 8px;
-    border-bottom: none; /* Quitar borde inferior del último */
+    border-bottom: none;
 }
 #edit-memorias-list .memoria-item small { /* Año */
     color: #555;
@@ -1003,7 +952,7 @@ main {
     font-size: 0.9em;
 }
 
-/* --- INICIO BLOQUE FALTANTE (v17.5) --- */
+/* Acciones Editar/Borrar memoria */
 #edit-memorias-list .memoria-actions {
     display: flex;
     flex-shrink: 0;
@@ -1018,14 +967,13 @@ main {
     line-height: 0;
 }
 #edit-memorias-list .edit-btn .material-icons-outlined {
-    color: #007aff; /* Azul */
+    color: #007aff;
     font-size: 22px;
 }
 #edit-memorias-list .delete-btn .material-icons-outlined {
-    color: #d15047; /* Rojo */
+    color: #d15047;
     font-size: 22px;
 }
-/* --- FIN BLOQUE FALTANTE (v17.5) --- */
 
 #edit-memorias-list .list-placeholder {
     padding: 20px;
@@ -1035,19 +983,18 @@ main {
     border: 1px solid #ddd;
     border-radius: 8px;
 }
-/* Botón "Añadir Nueva Memoria" */
 #btn-show-add-form {
     margin-top: 15px;
     width: 100%;
     box-sizing: border-box;
 }
 
-/* --- INICIO v17.2: Estilos para Modal Almacén --- */
+/* Modal Almacén */
 .store-category-list {
     display: flex;
-    flex-direction: column; /* Apilar botones verticalmente */
+    flex-direction: column;
     padding: 10px;
-    gap: 8px; /* Espacio entre botones */
+    gap: 8px;
 }
 .store-category-button {
     display: flex;
@@ -1065,35 +1012,28 @@ main {
     box-sizing: border-box;
     text-align: left;
 }
-.store-category-button:hover {
-    background: #f8f8f8;
-}
-.store-category-button:active {
-    background: #e0e0e0;
-}
+.store-category-button:hover { background: #f8f8f8; }
+.store-category-button:active { background: #e0e0e0; }
 .store-category-button .material-icons-outlined:first-child {
     margin-right: 15px;
     color: #555;
     font-size: 24px;
 }
-.store-category-button span:nth-of-type(1) { /* El texto */
-    /* ***** CAMBIO: Eliminado flex-grow: 1 ***** */
+.store-category-button span:nth-of-type(1) { /* Texto */
     font-weight: bold;
 }
-.store-category-button .material-icons-outlined:last-child { /* El chevron */
+.store-category-button .material-icons-outlined:last-child { /* Chevron */
     color: #aaa;
     font-size: 24px;
-    /* ***** CAMBIO: Añadido margin-left: auto ***** */
     margin-left: auto;
 }
-/* --- FIN v17.2 --- */
 
-/* --- INICIO v17.7: Estilos para Resultados de Búsqueda de Música --- */
+/* Resultados Búsqueda Música/Lugar */
 .search-results {
     margin-top: 10px;
     border: 1px solid #ccc;
     border-radius: 8px;
-    max-height: 200px; /* Limitar altura */
+    max-height: 200px;
     overflow-y: auto;
     background-color: #fff;
 }
@@ -1104,34 +1044,30 @@ main {
     border-bottom: 1px solid #eee;
     cursor: pointer;
 }
-.search-result-item:last-child {
-    border-bottom: none;
-}
-.search-result-item:hover {
-    background-color: #f0f0f0;
-}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background-color: #f0f0f0; }
 .search-result-item .memoria-artwork {
-    width: 40px; /* Imagen un poco más grande */
+    width: 40px;
     height: 40px;
     flex-shrink: 0;
     border-radius: 4px;
     margin-right: 10px;
 }
 .search-result-item .memoria-item-content {
-    flex-grow: 1; /* Ocupa el espacio */
+    flex-grow: 1;
     line-height: 1.3;
     font-size: 14px;
-    min-width: 0; /* Para que el texto se ajuste */
+    min-width: 0;
 }
 .search-result-item .memoria-item-content small {
     font-size: 12px;
     color: #555;
-    display: block; /* Asegura línea separada */
+    display: block;
 }
 .search-result-item .material-icons-outlined {
     font-size: 24px;
-    color: #007aff; /* Azul */
-    margin-left: 10px; /* Espacio a la izquierda */
+    color: #007aff;
+    margin-left: 10px;
     flex-shrink: 0;
 }
 .search-result-selected {
@@ -1143,7 +1079,6 @@ main {
     border-radius: 8px;
     margin-top: 10px;
 }
-/* --- FIN v17.7 --- */
 
 /* Footer Dock */
 .footer-dock {
@@ -1157,7 +1092,7 @@ main {
     border-top: 1px solid #777;
     box-shadow: 0 -1px 3px rgba(0,0,0,0.2);
     display: flex;
-    justify-content: space-around; /* Distribuir botones */
+    justify-content: space-around;
     align-items: center;
     padding: 5px 10px;
     z-index: 20;
@@ -1177,7 +1112,7 @@ main {
     transition: opacity 0.2s, transform 0.1s;
     flex-basis: 0;
     flex-grow: 1;
-    max-width: 25%; /* Asegura que quepan todos */
+    max-width: 25%;
 }
 .dock-button:hover, .dock-button:active {
     opacity: 1;
@@ -1208,7 +1143,7 @@ a:hover { text-decoration: underline; }
     margin-top: 10px;
     font-size: 13px;
     text-align: center;
-    min-height: 1.2em; /* Para evitar saltos de layout */
+    min-height: 1.2em;
 }
 
 /* --- Scrollbars --- */
@@ -1217,15 +1152,15 @@ a:hover { text-decoration: underline; }
 ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 3px;}
 ::-webkit-scrollbar-thumb:hover { background: #999; }
 
-/* --- Botón flotante redondo Crumbie --- */
+/* --- Botón Crumbie --- */
 .crumbie-btn {
   position: fixed;
   bottom: 100px;
   right: 24px;
-  width: 50px; /* CAMBIO: Reducido */
-  height: 50px; /* CAMBIO: Reducido */
+  width: 50px;
+  height: 50px;
   border: none;
-  border-radius: 50%; /* 🔵 botón completamente redondo */
+  border-radius: 50%;
   background-image: url('crumbie1.png');
   background-size: cover;
   background-position: center;
@@ -1237,17 +1172,15 @@ a:hover { text-decoration: underline; }
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   z-index: 999;
 }
-
-/* Hover: efecto flotante */
 .crumbie-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
-/* --- Animación de texto flotante de Crumbie --- */
+/* --- Animación Crumbie --- */
 .crumbie-float-text {
     position: fixed;
-    bottom: 160px; /* CAMBIO: Ajustado a 100px + 50px + 10px padding */
+    bottom: 160px;
     right: 24px;
     padding: 5px 10px;
     background: rgba(0,0,0,0.7);
@@ -1264,16 +1197,7 @@ a:hover { text-decoration: underline; }
 }
 
 @keyframes crumbie-float {
-    0% {
-        transform: translateY(0);
-        opacity: 1;
-    }
-    80% {
-        transform: translateY(-40px);
-        opacity: 1;
-    }
-    100% {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
+    0% { transform: translateY(0); opacity: 1; }
+    80% { transform: translateY(-40px); opacity: 1; }
+    100% { transform: translateY(-50px); opacity: 0; }
 }
