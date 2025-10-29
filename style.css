@@ -1,4 +1,4 @@
-/* style.css - v17.10 - Fix: Simplified notebook holes */
+/* style.css - v17.11 - Fix: Simplified notebook holes (again) */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -718,14 +718,13 @@ main {
     /* CAMBIO: Línea roja a la derecha de este pseudo-elemento */
     border-right: 2px solid rgba(255, 100, 100, 0.5);
     
-    /* ***** CAMBIO v17.10: Agujeros SIMPLIFICADOS (Fix) ***** */
-    /* Basado en la imagen de ejemplo (10.21.24.png) */
+    /* ***** CAMBIO v17.11: Agujeros SIMPLIFICADOS (Fix) ***** */
     background-image: repeating-radial-gradient(
         circle at center,
-        rgba(0,0,0,0.2) 0, /* Color del agujero (gris) */
-        rgba(0,0,0,0.2) 5px, /* Radio del agujero (5px) */
-        transparent 5px, /* Resto transparente */
-        transparent 24px /* Espaciado hasta el siguiente (line-height) */
+        #cccccc 0,  /* Círculo gris simple */
+        #cccccc 4px, /* Radio de 4px */
+        transparent 4.5px, /* Pequeño borde transparente */
+        transparent 24px /* Espaciado (igual que line-height) */
     );
     background-position: 5px 22px; /* Posición de los agujeros */
 }
