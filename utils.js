@@ -530,3 +530,39 @@ export async function retry(fn, options = {}) {
     
     throw lastError;
 }
+
+// --- NUEVAS FUNCIONES AÑADIDAS ---
+
+/**
+ * Guarda una configuración en localStorage.
+ * @param {string} key - La clave para la configuración (ej. 'viewMode')
+ * @param {string|boolean|object} value - El valor a guardar.
+ */
+export function saveSetting(key, value) {
+    try {
+        const stringValue = JSON.stringify(value);
+        localStorage.setItem(`ephem_${key}`, stringValue);
+    } catch (e) {
+        console.error("Error al guardar en localStorage:", e);
+    }
+}
+
+/**
+ * Carga una configuración desde localStorage.
+ * @param {string} key - La clave de la configuración.
+ * @param {*} defaultValue - El valor a devolver si no se encuentra nada.
+ * @returns {*} El valor parseado o el valor por defecto.
+ */
+export function loadSetting(key, defaultValue) {
+    try {
+        const stringValue = localStorage.getItem(`ephem_${key}`);
+        if (stringValue === null) {
+            return defaultValue;
+        }
+        return JSON.parse(stringValue);
+    } catch (e) {
+        console.error("Error al cargar desde localStorage:", e);
+        return defaultValue;
+    }
+}
+
