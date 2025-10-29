@@ -483,7 +483,7 @@ main {
 
 
 /* --- Modales --- */
-.modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-search-results, .modal-alert-prompt, .modal-confirm {
+.modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-search-results, .modal-alert-prompt, .modal-confirm, .modal-settings {
     position: fixed;
     top: 0;
     left: 0;
@@ -506,7 +506,8 @@ main {
 .modal-store-list.visible,
 .modal-search-results.visible,
 .modal-alert-prompt.visible,
-.modal-confirm.visible {
+.modal-confirm.visible,
+.modal-settings.visible {
     display: flex;
     opacity: 1;
     background-color: rgba(0,0,0,0.5);
@@ -624,7 +625,8 @@ main {
 .modal-store-list.visible .modal-content,
 .modal-search-results.visible .modal-content,
 .modal-alert-prompt.visible .modal-alert-content,
-.modal-confirm.visible .modal-alert-content {
+.modal-confirm.visible .modal-alert-content,
+.modal-settings.visible .modal-content {
     transform: scale(1) translateY(0);
     opacity: 1;
 }
@@ -728,6 +730,141 @@ main {
     background: linear-gradient(to top, #5a6a80 0%, #38485c 100%);
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
 }
+
+/* --- NUEVO: Modal de Ajustes (Settings) y Conmutador iOS --- */
+
+/* El modal de Ajustes usará el genérico .modal-content, pero le daremos 
+   el fondo "Deep Blue" y contenido blanco */
+.modal-settings .modal-content {
+    background: linear-gradient(to bottom, #4c5c70 0%, #303d4f 100%);
+    border: 1px solid #202834;
+    color: white;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    max-width: 320px; /* Ancho estándar para ajustes */
+}
+
+/* Asegura que el footer de botones tenga el estilo azul */
+.modal-settings .modal-main-buttons {
+    background: none;
+    border-top: 1px solid #202834;
+    padding: 0;
+    display: flex;
+}
+.modal-settings .modal-main-buttons button {
+    color: white;
+    border: none;
+    border-left: 1px solid #202834;
+    font-weight: bold;
+    background: linear-gradient(to bottom, #5a6a80 0%, #38485c 100%);
+    padding: 12px;
+    font-size: 16px;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    flex-grow: 1;
+    cursor: pointer;
+    margin: 0;
+    border-radius: 0;
+    width: 100%; /* Botón "Cerrar" único */
+    transition: background 0.2s ease;
+    border-bottom-left-radius: 10px; /* Ajustar a .modal-content */
+    border-bottom-right-radius: 10px; /* Ajustar a .modal-content */
+}
+.modal-settings .modal-main-buttons button:first-child {
+    border-left: none;
+}
+.modal-settings .modal-main-buttons button:hover {
+    background: linear-gradient(to bottom, #6a7a90 0%, #48586c 100%);
+}
+.modal-settings .modal-main-buttons button:active {
+    background: linear-gradient(to top, #5a6a80 0%, #38485c 100%);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Contenedor para las opciones (lista agrupada) */
+.settings-list-group {
+    background-color: #3e4a5c; /* Color de fondo de la tabla agrupada oscura */
+    border: 1px solid #2a3443;
+    border-radius: 10px;
+    margin: 15px;
+    overflow: hidden;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.settings-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid #303d4f;
+    text-decoration: none;
+    color: #fff;
+    background: linear-gradient(to bottom, #4c5c70 0%, #425061 100%);
+}
+.settings-list-item:last-child {
+    border-bottom: none;
+}
+.settings-list-item-label {
+    font-size: 16px;
+    font-weight: bold;
+}
+.settings-list-group-footer {
+    font-size: 13px;
+    color: #aaa;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    padding: 10px 15px 0 15px;
+    text-align: left;
+    margin: 0;
+}
+
+
+/* Conmutador (Toggle Switch) Estilo iOS */
+.ios-toggle {
+    position: relative;
+    display: inline-block;
+    width: 51px;
+    height: 31px;
+    cursor: pointer;
+}
+.ios-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+/* El fondo del conmutador */
+.ios-toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #39393D; /* Gris oscuro "off" */
+    border: 1px solid #2a2a2c;
+    border-radius: 34px;
+    transition: .4s;
+    box-shadow: inset 0 0 3px rgba(0,0,0,0.3);
+}
+/* El círculo/perilla */
+.ios-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 27px;
+    width: 27px;
+    left: 1px;
+    bottom: 1px;
+    background-color: white;
+    border-radius: 50%;
+    transition: .4s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+/* Estilo "On" (Activado) */
+.ios-toggle input:checked + .ios-toggle-slider {
+    background: linear-gradient(to bottom, #a7d1ef 0%, #4aa2d8 100%); /* Azul Aqua */
+    border: 1px solid #3c82b1;
+}
+.ios-toggle input:checked + .ios-toggle-slider:before {
+    transform: translateX(20px); /* Mover la perilla */
+}
+/* --- FIN Modal de Ajustes --- */
+
 
 /* --- Fondo Rayado Vertical --- */
 .striped-background {
