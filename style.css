@@ -1,4 +1,4 @@
-/* style.css - v17.9 - Fix Notebook holes and Preview Year */
+/* style.css - v17.11 - Fix Notebook holes, Preview Year & Dashed Separator */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -692,7 +692,8 @@ main {
     flex-grow: 1;
     overflow-y: auto;
     background-color: #fdf5e6;
-    padding: 20px 20px 20px 50px; 
+    /* CAMBIO: Padding izquierdo ajustado */
+    padding: 20px 20px 20px 45px; 
     position: relative;
     /* Líneas horizontales */
     background-image:
@@ -703,25 +704,36 @@ main {
     font-family: 'Courier New', Courier, monospace;
     color: #333;
 }
+/* Margen Izquierdo con Agujeros */
 .modal-preview-notebook-paper::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 15px; 
+    left: 10px; /* Posición más a la izquierda */
     bottom: 0;
-    width: 25px; /* Ancho para anillas y línea */
-    border-right: 2px solid rgba(255, 100, 100, 0.5); /* Línea roja */
+    width: 10px; /* Ancho solo para los agujeros */
     
-    /* CAMBIO: Agujeros de anillado (Punto 2) */
+    /* CAMBIO: Agujeros (círculos oscuros sólidos) */
     background-image: repeating-radial-gradient(
         circle at center,
-        rgba(0,0,0,0.2) 0, 
-        rgba(0,0,0,0.2) 5px, /* 5px de radio */
-        transparent 5px
+        #333 0, /* Color oscuro del agujero */
+        #333 4px, /* Radio del agujero (4px) */
+        transparent 4px /* Resto transparente */
     );
     background-repeat: repeat-y;
-    background-size: 100% 48px; /* Espaciado de ~50px (2 líneas) */
-    background-position: center 22px; /* Centrado horizontal, 22px desde arriba */
+    background-size: 100% 48px; /* Espaciado vertical (2 líneas) */
+    background-position: center 22px; /* Centrado horizontal, offset vertical */
+    border: none; /* Asegurar que no haya borde */
+}
+/* Línea Roja Vertical (Separada) */
+.modal-preview-notebook-paper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 30px; /* Posición de la línea roja (después de los agujeros) */
+    bottom: 0;
+    width: 1px; /* Ancho fino */
+    background-color: rgba(255, 100, 100, 0.6); /* Color de la línea */
 }
 /* --- FIN CAMBIO: ESTILO CUADERNO PREVIEW --- */
 
@@ -741,14 +753,21 @@ main {
 }
 .modal-preview-notebook-paper .memoria-item {
     background-color: transparent;
-    border-bottom: none;
-    padding: 5px 0;
-    margin-bottom: 0;
+    padding: 5px 0 10px 0; /* CAMBIO: Añadido padding inferior */
+    margin-bottom: 10px; /* CAMBIO: Añadido margen inferior */
     line-height: 24px;
     min-height: 24px;
-    display: flex; /* Flex para alinear mejor año y contenido */
-    align-items: flex-start; /* Alinear arriba */
-    flex-direction: column; /* CAMBIO: Columna para mapa */
+    display: flex; 
+    align-items: flex-start; 
+    flex-direction: column; 
+    /* CAMBIO (Punto 3): Línea separadora */
+    border-bottom: 1px dashed #aaa; /* Gris oscuro */
+}
+/* CAMBIO (Punto 3): Quitar borde al último item */
+.modal-preview-notebook-paper .memoria-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 5px;
 }
 
 /* --- INICIO CAMBIO: Estilo Preview (Punto 1) --- */
@@ -1087,6 +1106,9 @@ main {
     max-height: 200px; /* Limitar altura */
     overflow-y: auto;
     background-color: #fff;
+    /* Asegurar que sea visible */
+    display: block !important; 
+    visibility: visible !important;
 }
 .search-result-item {
     display: flex;
