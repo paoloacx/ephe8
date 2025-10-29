@@ -1,4 +1,4 @@
-/* style.css - v17.11 - Fix Notebook holes, Preview Year & Dashed Separator */
+/* style.css - v17.8 - iOS Deep Blue Modals & Notebook Fixes */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -687,15 +687,15 @@ main {
     flex-grow: 1;
 }
 
-/* --- INICIO CAMBIO: ESTILO CUADERNO PREVIEW (Punto 2) --- */
+/* --- INICIO CAMBIO: ESTILO CUADERNO PREVIEW (Punto 4) --- */
 .modal-preview-notebook-paper {
     flex-grow: 1;
     overflow-y: auto;
     background-color: #fdf5e6;
-    /* CAMBIO: Padding izquierdo ajustado */
-    padding: 20px 20px 20px 45px; 
+    /* CAMBIO: Padding izquierdo más grande para anillas y línea */
+    padding: 20px 20px 20px 50px;
     position: relative;
-    /* Líneas horizontales */
+    /* CAMBIO: Líneas horizontales (negras) y quitada línea vertical de aquí */
     background-image:
         repeating-linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 24px);
     background-size: 100% 24px;
@@ -704,36 +704,29 @@ main {
     font-family: 'Courier New', Courier, monospace;
     color: #333;
 }
-/* Margen Izquierdo con Agujeros */
 .modal-preview-notebook-paper::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 10px; /* Posición más a la izquierda */
+    /* CAMBIO: Movido a la izquierda para hacer espacio a las anillas */
+    left: 15px;
     bottom: 0;
-    width: 10px; /* Ancho solo para los agujeros */
-    
-    /* CAMBIO: Agujeros (círculos oscuros sólidos) */
+    width: 25px; /* Ancho para anillas y línea */
+    /* CAMBIO: Línea roja a la derecha de este pseudo-elemento */
+    border-right: 2px solid rgba(255, 100, 100, 0.5);
+    /* ***** CAMBIO: Agujeros de anillado con SOMBRA interior ***** */
     background-image: repeating-radial-gradient(
         circle at center,
-        #333 0, /* Color oscuro del agujero */
-        #333 4px, /* Radio del agujero (4px) */
-        transparent 4px /* Resto transparente */
+        #fdf5e6 0, /* Color del papel */
+        #fdf5e6 4px, /* Papel hasta 4px */
+        rgba(0,0,0,0.15) 4px, /* Sombra/borde del agujero */
+        rgba(0,0,0,0.15) 5px, /* 1px de borde */
+        rgba(0,0,0,0.05) 5px, /* Sombra interior simulada */
+        rgba(0,0,0,0.05) 8px, /* Agujero sombreado de 3px (5px a 8px) */
+        transparent 8px, /* Transparente hasta el siguiente */
+        transparent 24px /* Espaciado (igual que line-height) */
     );
-    background-repeat: repeat-y;
-    background-size: 100% 48px; /* Espaciado vertical (2 líneas) */
-    background-position: center 22px; /* Centrado horizontal, offset vertical */
-    border: none; /* Asegurar que no haya borde */
-}
-/* Línea Roja Vertical (Separada) */
-.modal-preview-notebook-paper::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 30px; /* Posición de la línea roja (después de los agujeros) */
-    bottom: 0;
-    width: 1px; /* Ancho fino */
-    background-color: rgba(255, 100, 100, 0.6); /* Color de la línea */
+    background-position: 5px 22px; /* Posición de los agujeros */
 }
 /* --- FIN CAMBIO: ESTILO CUADERNO PREVIEW --- */
 
@@ -753,59 +746,50 @@ main {
 }
 .modal-preview-notebook-paper .memoria-item {
     background-color: transparent;
-    padding: 5px 0 10px 0; /* CAMBIO: Añadido padding inferior */
-    margin-bottom: 10px; /* CAMBIO: Añadido margen inferior */
+    border-bottom: none;
+    padding: 5px 0;
+    margin-bottom: 0;
     line-height: 24px;
     min-height: 24px;
-    display: flex; 
-    align-items: flex-start; 
-    flex-direction: column; 
-    /* CAMBIO (Punto 3): Línea separadora */
-    border-bottom: 1px dashed #aaa; /* Gris oscuro */
-}
-/* CAMBIO (Punto 3): Quitar borde al último item */
-.modal-preview-notebook-paper .memoria-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 5px;
+    display: flex; /* Flex para alinear mejor año y contenido */
+    align-items: flex-start; /* Alinear arriba */
+    flex-direction: column; /* CAMBIO: Columna para mapa */
 }
 
-/* --- INICIO CAMBIO: Estilo Preview (Punto 1) --- */
+/* --- INICIO CAMBIO: Estilo Preview (Punto 5) --- */
 .modal-preview-notebook-paper .memoria-item-main-content {
     display: flex;
-    align-items: center; 
-    gap: 8px; 
+    align-items: center; /* CAMBIO: Alinear al centro (como spotlight) */
+    gap: 8px; /* CAMBIO: Añadido gap (como spotlight) */
 }
 .modal-preview-notebook-paper .memoria-item small { /* Año */
-    /* CAMBIO (Punto 1): Negro y negrita */
-    color: #000;
-    font-weight: bold; 
-    
-    margin-bottom: 3px; 
-    margin-right: 0; 
-    display: block; 
-    font-size: 11px; 
-    min-width: 0; 
-    text-align: left; 
-    flex-shrink: 1; 
+    color: #777; /* CAMBIO: (como spotlight) */
+    margin-bottom: 3px; /* CAMBIO: (como spotlight) */
+    margin-right: 0; /* CAMBIO: (quitado) */
+    display: block; /* CAMBIO: (como spotlight) */
+    font-size: 11px; /* CAMBIO: (como spotlight) */
+    min-width: 0; /* CAMBIO: (quitado) */
+    text-align: left; /* CAMBIO: (quitado text-align: right) */
+    flex-shrink: 1; /* CAMBIO: (quitado flex-shrink: 0) */
+    font-weight: bold; /* CAMBIO: (como spotlight) */
 }
 .modal-preview-notebook-paper .memoria-item-content {
-    display: block; 
-    flex-grow: 1; 
-    word-break: break-word; 
+    display: block; /* CAMBIO: (quitado display: inline) */
+    flex-grow: 1; /* Ocupa espacio restante */
+    word-break: break-word; /* Romper palabras largas */
 }
 .modal-preview-notebook-paper .memoria-artwork {
-    width: 30px; 
-    height: 30px; 
+    width: 30px; /* CAMBIO: Más grande (como spotlight) */
+    height: 30px; /* CAMBIO: Más grande (como spotlight) */
     vertical-align: middle;
-    margin-right: 0; 
+    margin-right: 0; /* CAMBIO: (quitado, ahora usa gap) */
     flex-shrink: 0;
     border-radius: 3px;
 }
 .modal-preview-notebook-paper .memoria-icon {
-    font-size: 20px; 
+    font-size: 20px; /* CAMBIO: Más grande (como spotlight) */
     vertical-align: middle;
-    margin-right: 0; 
+    margin-right: 0; /* CAMBIO: (quitado, ahora usa gap) */
     flex-shrink: 0;
     color: #666;
 }
@@ -865,33 +849,53 @@ main {
 }
 
 
-/* Footer para Alert/Confirm (Claro) */
+/* --- CAMBIO: Footer para Alert/Confirm (Estilo Aqua) --- */
 .modal-alert-content .modal-main-buttons {
-     background: none;
+     background: rgba(0,0,0,0.03);
      border-top: 1px solid #ccc; /* Borde claro */
-     padding: 0;
+     padding: 10px;
+     display: flex;
+     justify-content: space-around;
 }
 .modal-alert-content .modal-main-buttons button {
-     border-left: 1px solid #ccc; /* Borde claro */
-     border-radius: 0;
-     margin: 0;
-     padding: 12px;
-     font-size: 16px;
-     background: none;
-     color: #007aff; /* Color de botón de alerta iOS */
-     font-weight: normal;
-     text-shadow: none; /* Sin sombra en texto de alerta */
-}
-.modal-alert-content .modal-main-buttons button:first-child {
-     border-left: none;
+    /* Estilo base (Cancelar - Gris Brillante) */
+    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e0e0e0 100%) !important;
+    color: #333 !important;
+    border: 1px solid #999 !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6) !important;
+    border-radius: 8px !important;
+    padding: 10px 15px !important;
+    font-size: 15px !important;
+    font-weight: bold !important;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.4) !important;
+    margin: 5px !important;
+    flex-grow: 1;
+    line-height: normal !important;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 40%;
 }
 .modal-alert-content .modal-main-buttons button:active {
-    background-color: rgba(0,0,0,0.1);
+    background: linear-gradient(to top, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e0e0e0 100%) !important;
+    box-shadow: inset 0 2px 3px rgba(0,0,0,0.2) !important;
 }
+/* Botón OK (Confirmar - Azul Brillante) */
+.modal-alert-content .modal-main-buttons button#confirm-ok {
+     background: linear-gradient(to bottom, #a7d1ef 0%, #76b6e4 50%, #58a5d9 51%, #4aa2d8 100%) !important;
+     border: 1px solid #3c82b1 !important;
+     color: #fff !important;
+     text-shadow: 0 -1px 0 rgba(0,0,0,0.3) !important;
+}
+/* Botón de BORRADO (Rojo Brillante) */
 .delete-confirm {
-    color: #d15047 !important; /* Rojo */
-    font-weight: bold;
+    background: linear-gradient(to bottom, #f48a84 0%, #e55c56 50%, #d94c45 51%, #d9534f 100%) !important;
+    border: 1px solid #b83e39 !important;
+    color: #fff !important;
+    text-shadow: 0 -1px 0 rgba(0,0,0,0.3) !important;
 }
+/* --- FIN CAMBIO: Estilo Botones Alerta --- */
+
 
 /* Texto y inputs de Alerta/Confirmación */
 .modal-alert-content p {
@@ -1050,53 +1054,7 @@ main {
     color: #aaa;
     font-size: 24px;
 }
-
-/* --- Estilos Modal Almacén Lista --- */
-.store-list-container {
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.store-list-item {
-    display: flex;
-    align-items: center;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 10px 15px;
-    font-size: 14px;
-    color: #333;
-    cursor: pointer;
-}
-.store-list-item:hover {
-    background: #f8f8f8;
-}
-.store-list-item .memoria-icon {
-    margin-right: 15px;
-    color: #555;
-    font-size: 24px;
-}
-.store-list-item .memoria-item-content {
-    flex-grow: 1;
-    line-height: 1.4;
-}
-.store-list-item .memoria-item-content strong {
-    display: block;
-    font-size: 15px;
-    color: #000;
-}
-.store-list-item .memoria-item-content small {
-    font-size: 12px;
-    color: #555;
-}
-.store-list-item .material-icons-outlined:last-child { /* El chevron */
-    color: #aaa;
-    font-size: 24px;
-}
-
 /* --- FIN v17.2 --- */
-
 
 /* --- INICIO v17.7: Estilos para Resultados de Búsqueda de Música --- */
 .search-results {
@@ -1106,9 +1064,6 @@ main {
     max-height: 200px; /* Limitar altura */
     overflow-y: auto;
     background-color: #fff;
-    /* Asegurar que sea visible */
-    display: block !important; 
-    visibility: visible !important;
 }
 .search-result-item {
     display: flex;
