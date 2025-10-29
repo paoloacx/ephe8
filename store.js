@@ -1,5 +1,5 @@
 /*
- * store.js (v4.11 - Datos por Usuario)
+ * store.js (v4.12 - Añadida la función de Timeline)
  * Módulo de Lógica de Firestore y Storage.
  */
 
@@ -18,7 +18,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
 // --- Constantes ---
-const USERS_COLLECTION = "Users"; // NUEVO
+const USERS_COLLECTION = "Users"; 
 const DIAS_COLLECTION = "Dias";
 const MEMORIAS_COLLECTION = "Memorias";
 const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -42,26 +42,24 @@ function getUserMemoryRef(userId, diaId, memId) {
 
 // --- 1. Lógica de Inicialización (Check/Repair) ---
 
-// CAMBIO: Ahora necesita userId
 async function checkAndRunApp(userId, onProgress) {
     if (!userId) throw new Error("checkAndRunApp requiere un userId.");
     console.log(`Store: Verificando base de datos para usuario ${userId}...`);
-    const userDiasRef = getUserDaysRef(userId); // CAMBIO
+    const userDiasRef = getUserDaysRef(userId); 
 
     try {
-        // CAMBIO: Usar referencia de usuario
         const checkDoc = await getDoc(getUserDayRef(userId, "01-01"));
 
         if (!checkDoc.exists()) {
              console.warn(`Store: El día 01-01 no existe para ${userId}. Regenerando BD del usuario...`);
-             await _generateCleanDatabase(userId, onProgress); // CAMBIO: Pasar userId
+             await _generateCleanDatabase(userId, onProgress); 
         } else {
              console.log(`Store: Base de datos verificada para ${userId} (01-01 existe).`);
         }
     } catch (e) {
          console.error("Error al verificar la base de datos (puede ser por permisos o doc no existe):", e);
          try {
-            await _generateCleanDatabase(userId, onProgress); // CAMBIO: Pasar userId
+            await _generateCleanDatabase(userId, onProgress); 
          } catch (genError) {
             console.error("Store: Fallo crítico al regenerar la base de datos del usuario.", genError);
             throw genError;
@@ -69,15 +67,10 @@ async function checkAndRunApp(userId, onProgress) {
     }
 }
 
-// CAMBIO: Ahora necesita userId
 async function _generateCleanDatabase(userId, onProgress) {
     if (!userId) throw new Error("_generateCleanDatabase requiere un userId.");
-    const userDiasRef = getUserDaysRef(userId); // CAMBIO
+    const userDiasRef = getUserDaysRef(userId); 
 
-    // CAMBIO: Ya no borramos la colección entera, solo la del usuario.
-    // Esto es MÁS SEGURO. Si un usuario tiene problemas, no afecta a otros.
-    // Y es menos propenso a fallar por reglas de seguridad si las reglas permiten
-    // al usuario borrar sus propios datos pero no los de la raíz.
     console.log(`Store: Generando 366 días limpios para ${userId}...`);
     onProgress("Generando 366 días limpios...");
 
@@ -86,11 +79,6 @@ async function _generateCleanDatabase(userId, onProgress) {
     let created = 0;
 
     try {
-        // Primero, verificamos si ya existen días (por si acaso) y los borramos si es necesario.
-        // Esto es opcional, pero puede ayudar si la generación falló a medias antes.
-        // Podríamos decidir NO borrar y simplemente sobreescribir con set() más abajo.
-        // Por simplicidad y seguridad, vamos a sobreescribir/crear.
-
         for (let m = 0; m < 12; m++) {
             const monthNum = m + 1;
             const monthStr = monthNum.toString().padStart(2, '0');
@@ -107,9 +95,8 @@ async function _generateCleanDatabase(userId, onProgress) {
                     tieneMemorias: false
                 };
 
-                // CAMBIO: Usar referencia de usuario
                 const docRef = getUserDayRef(userId, diaId);
-                genBatch.set(docRef, diaData); // Usamos set() para crear o sobreescribir
+                genBatch.set(docRef, diaData); 
                 ops++;
                 created++;
 
@@ -140,35 +127,29 @@ async function _generateCleanDatabase(userId, onProgress) {
 
 // --- 2. Lógica de Lectura (Días y Memorias) ---
 
-// CAMBIO: Necesita userId
 async function loadAllDaysData(userId) {
     if (!userId) throw new Error("loadAllDaysData requiere un userId.");
-    const userDiasRef = getUserDaysRef(userId); // CAMBIO
+    const userDiasRef = getUserDaysRef(userId); 
     const q = query(userDiasRef, orderBy(documentId()));
     const querySnapshot = await getDocs(q);
 
     const allDays = [];
     querySnapshot.forEach((doc) => {
-        // La validación del ID sigue siendo útil
         if (doc.id.length === 5 && doc.id.includes('-')) {
             allDays.push({ id: doc.id, ...doc.data() });
         }
     });
 
     console.log(`Store: Cargados ${allDays.length} días para ${userId}.`);
-    // Si allDays está vacío (usuario nuevo?), checkAndRunApp debería haber corrido
-    // y generado los días. Si aún así está vacío, podría ser un error.
     if (allDays.length === 0) {
         console.warn(`Store: No se encontraron días para ${userId}. ¿Es un usuario nuevo o hubo un error en checkAndRunApp?`);
-        // Podríamos intentar regenerar aquí como fallback, pero es mejor que checkAndRunApp lo maneje.
     }
     return allDays;
 }
 
-// CAMBIO: Necesita userId
 async function loadMemoriesForDay(userId, diaId) {
     if (!userId) throw new Error("loadMemoriesForDay requiere un userId.");
-    const userMemoriasRef = getUserMemoriesRef(userId, diaId); // CAMBIO
+    const userMemoriasRef = getUserMemoriesRef(userId, diaId); 
     const q = query(userMemoriasRef, orderBy("Fecha_Original", "desc"));
 
     const querySnapshot = await getDocs(q);
@@ -180,15 +161,14 @@ async function loadMemoriesForDay(userId, diaId) {
     return memories;
 }
 
-// CAMBIO: Necesita userId
 async function getTodaySpotlight(userId, todayId) {
     if (!userId) throw new Error("getTodaySpotlight requiere un userId.");
     try {
-        const diaRef = getUserDayRef(userId, todayId); // CAMBIO
+        const diaRef = getUserDayRef(userId, todayId); 
         const diaSnap = await getDoc(diaRef);
         const dayName = diaSnap.exists() ? (diaSnap.data().Nombre_Especial || 'Unnamed Day') : 'Unnamed Day';
 
-        const memoriasRef = getUserMemoriesRef(userId, todayId); // CAMBIO
+        const memoriasRef = getUserMemoriesRef(userId, todayId); 
         const q = query(memoriasRef, orderBy("Fecha_Original", "desc"), limit(3));
         const memSnapshot = await getDocs(q);
 
@@ -196,7 +176,7 @@ async function getTodaySpotlight(userId, todayId) {
         memSnapshot.forEach(doc => {
             memories.push({
                 id: doc.id,
-                diaId: todayId, // El diaId es el mismo
+                diaId: todayId, 
                 ...doc.data()
             });
         });
@@ -211,22 +191,19 @@ async function getTodaySpotlight(userId, todayId) {
 
 // --- 3. Lógica de Escritura (Días y Memorias) ---
 
-// CAMBIO: Necesita userId
 async function saveDayName(userId, diaId, newName) {
     if (!userId) throw new Error("saveDayName requiere un userId.");
-    const diaRef = getUserDayRef(userId, diaId); // CAMBIO
+    const diaRef = getUserDayRef(userId, diaId); 
     const finalName = newName && newName.trim() !== '' ? newName.trim() : "Unnamed Day";
     await updateDoc(diaRef, {
         Nombre_Especial: finalName
     });
 }
 
-// CAMBIO: Necesita userId
 async function saveMemory(userId, diaId, memoryData, memoryId) {
     if (!userId) throw new Error("saveMemory requiere un userId.");
-    const diaRef = getUserDayRef(userId, diaId); // CAMBIO
+    const diaRef = getUserDayRef(userId, diaId); 
 
-    // La lógica de Timestamp y borrar 'file' e 'id' se mantiene
     if (memoryData.Fecha_Original && !(memoryData.Fecha_Original instanceof Timestamp)) {
         memoryData.Fecha_Original = Timestamp.fromDate(memoryData.Fecha_Original);
     }
@@ -234,25 +211,22 @@ async function saveMemory(userId, diaId, memoryData, memoryId) {
     delete memoryData.id;
 
     if (memoryId) { // Actualizar
-        const memRef = getUserMemoryRef(userId, diaId, memoryId); // CAMBIO
+        const memRef = getUserMemoryRef(userId, diaId, memoryId); 
         await updateDoc(memRef, memoryData);
     } else { // Añadir
         memoryData.Creado_En = Timestamp.now();
-        const memRef = getUserMemoriesRef(userId, diaId); // CAMBIO
+        const memRef = getUserMemoriesRef(userId, diaId); 
         await addDoc(memRef, memoryData);
     }
 
-    // Marcar el día como que tiene memorias (la lógica se mantiene)
     await updateDoc(diaRef, {
         tieneMemorias: true
     });
 }
 
-// CAMBIO: Necesita userId
 async function deleteMemory(userId, diaId, memId, imagenURL) {
     if (!userId) throw new Error("deleteMemory requiere un userId.");
 
-    // Borrado de Storage no cambia conceptualmente, pero la URL ya contiene el userId
     if (imagenURL) {
         try {
             const imageRef = ref(storage, imagenURL);
@@ -263,32 +237,28 @@ async function deleteMemory(userId, diaId, memId, imagenURL) {
         }
     }
 
-    // Borrar documento de Firestore
-    const memRef = getUserMemoryRef(userId, diaId, memId); // CAMBIO
+    const memRef = getUserMemoryRef(userId, diaId, memId); 
     await deleteDoc(memRef);
 
-    // Comprobar si quedan memorias (la lógica se mantiene, pero usa refs de usuario)
-    const memoriasRef = getUserMemoriesRef(userId, diaId); // CAMBIO
+    const memoriasRef = getUserMemoriesRef(userId, diaId); 
     const q = query(memoriasRef, limit(1));
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-        const diaRef = getUserDayRef(userId, diaId); // CAMBIO
+        const diaRef = getUserDayRef(userId, diaId); 
         await updateDoc(diaRef, {
             tieneMemorias: false
         });
     }
 }
 
-// UploadImage ya incluye userId en la ruta, no necesita más cambios lógicos aquí
 async function uploadImage(file, userId, diaId) {
-    // ... (sin cambios, ya usa userId para la ruta) ...
     if (!file || !userId || !diaId) {
         throw new Error("Faltan datos (archivo, userId o diaId) para subir la imagen.");
     }
     const fileExtension = file.name.split('.').pop();
     const uniqueName = `${diaId}_${Date.now()}.${fileExtension}`;
-    const storagePath = `images/${userId}/${uniqueName}`; // Ruta ya incluye userId
+    const storagePath = `images/${userId}/${uniqueName}`; 
     const imageRef = ref(storage, storagePath);
     console.log(`Store: Subiendo imagen a: ${storagePath}`);
     const snapshot = await uploadBytes(imageRef, file);
@@ -300,13 +270,11 @@ async function uploadImage(file, userId, diaId) {
 
 // --- 4. Lógica de Búsqueda y "Almacén" ---
 
-// CAMBIO: Necesita userId
 async function searchMemories(userId, term) {
     if (!userId) throw new Error("searchMemories requiere un userId.");
-    term = term.toLowerCase(); // Asegurarse de buscar en minúsculas
+    term = term.toLowerCase(); 
 
-    const userDiasRef = getUserDaysRef(userId); // CAMBIO
-    // Buscamos solo los días del usuario que tienen memorias
+    const userDiasRef = getUserDaysRef(userId); 
     const diasConMemoriasQuery = query(userDiasRef, where("tieneMemorias", "==", true));
     const diasSnapshot = await getDocs(diasConMemoriasQuery);
 
@@ -315,11 +283,10 @@ async function searchMemories(userId, term) {
 
     diasSnapshot.forEach(diaDoc => {
         const diaId = diaDoc.id;
-        // Validación del ID sigue siendo útil
         if (diaId.length !== 5 || !diaId.includes('-')) return;
 
         const p = (async () => {
-            const memoriasRef = getUserMemoriesRef(userId, diaId); // CAMBIO
+            const memoriasRef = getUserMemoriesRef(userId, diaId); 
             const memSnapshot = await getDocs(memoriasRef);
 
             memSnapshot.forEach(memDoc => {
@@ -345,7 +312,6 @@ async function searchMemories(userId, term) {
 
     await Promise.all(searchPromises);
 
-    // Ordenar resultados se mantiene
     results.sort((a, b) => {
         const dateA = a.Fecha_Original ? a.Fecha_Original.toMillis() : 0;
         const dateB = b.Fecha_Original ? b.Fecha_Original.toMillis() : 0;
@@ -355,33 +321,27 @@ async function searchMemories(userId, term) {
     return results;
 }
 
-// CAMBIO: Necesita userId. Ya no podemos usar collectionGroup eficientemente
-// para filtrar por usuario Y tipo. Lo reescribimos para iterar sobre los días del usuario.
 async function getMemoriesByType(userId, type, pageSize = 10, lastVisibleDocSnapshot = null) {
     if (!userId) throw new Error("getMemoriesByType requiere un userId.");
 
-    // 1. Obtener todos los días del usuario que TIENEN memorias
     const userDiasRef = getUserDaysRef(userId);
-    const diasQuery = query(userDiasRef, where("tieneMemorias", "==", true), orderBy(documentId())); // Ordenar por ID de día es razonable
+    const diasQuery = query(userDiasRef, where("tieneMemorias", "==", true), orderBy(documentId())); 
     const diasSnapshot = await getDocs(diasQuery);
 
     let items = [];
     let processedMemories = 0;
-    let lastProcessedMemoryDoc = null; // Guardará el DocumentSnapshot de Firestore de la última memoria
+    let lastProcessedMemoryDoc = null; 
 
-    // Simular paginación manual: necesitamos saber desde dónde continuar si lastVisibleDocSnapshot existe
     let startProcessing = !lastVisibleDocSnapshot;
     const startAfterDiaId = lastVisibleDocSnapshot?.ref.parent.parent.id;
     const startAfterMemId = lastVisibleDocSnapshot?.id;
 
-    // 2. Iterar sobre cada día y buscar memorias del tipo correcto
     for (const diaDoc of diasSnapshot.docs) {
         const diaId = diaDoc.id;
 
-        // Lógica para saltar días hasta encontrar el punto de inicio de la paginación
         if (!startProcessing && startAfterDiaId) {
             if (diaId === startAfterDiaId) {
-                // Encontramos el día, ahora procesaremos memorias a partir de la correcta
+                // Encontramos el día
             } else {
                 continue; // Saltar este día
             }
@@ -390,37 +350,32 @@ async function getMemoriesByType(userId, type, pageSize = 10, lastVisibleDocSnap
         const memoriasRef = getUserMemoriesRef(userId, diaId);
         let q = query(memoriasRef, where("Tipo", "==", type), orderBy("Fecha_Original", "desc"));
 
-        // Si estamos en el día donde nos quedamos, aplicamos startAfter a la memoria
         if (!startProcessing && startAfterDiaId === diaId && startAfterMemId && lastVisibleDocSnapshot) {
              q = query(q, startAfter(lastVisibleDocSnapshot));
         }
-        startProcessing = true; // Empezar a procesar desde aquí
+        startProcessing = true; 
 
         const memSnapshot = await getDocs(q);
 
         for (const memDoc of memSnapshot.docs) {
-            items.push(_formatStoreItem(memDoc, diaId)); // Formato sigue igual
+            items.push(_formatStoreItem(memDoc, diaId)); 
             processedMemories++;
-            lastProcessedMemoryDoc = memDoc; // Actualizar el último procesado
+            lastProcessedMemoryDoc = memDoc; 
 
             if (processedMemories >= pageSize) {
-                break; // Alcanzamos el tamaño de página
+                break; 
             }
         }
 
         if (processedMemories >= pageSize) {
-            break; // Salir del bucle de días
+            break; 
         }
     }
 
-    // 3. Comprobar si hay más resultados (simulación)
-    // Buscamos UNA memoria más del mismo tipo después de la última encontrada.
     let hasMore = false;
     if (lastProcessedMemoryDoc) {
-        // Necesitamos saber el diaId de la última memoria
         const lastDiaId = lastProcessedMemoryDoc.ref.parent.parent.id;
         
-        // Primero, intentamos buscar más en el MISMO día
         const nextMemQuerySameDay = query(
             getUserMemoriesRef(userId, lastDiaId),
             where("Tipo", "==", type),
@@ -433,40 +388,37 @@ async function getMemoriesByType(userId, type, pageSize = 10, lastVisibleDocSnap
         if (!nextSnapshot.empty) {
             hasMore = true;
         } else {
-            // Si no hay más en ese día, buscamos en los días SIGUIENTES
-            const diasRestantesQuery = query(userDiasRef, where("tieneMemorias", "==", true), orderBy(documentId()), startAfter(await getDoc(getUserDayRef(userId, lastDiaId)))); // Empezar después del último día procesado
+            const diasRestantesQuery = query(userDiasRef, where("tieneMemorias", "==", true), orderBy(documentId()), startAfter(await getDoc(getUserDayRef(userId, lastDiaId)))); 
             const diasRestantesSnapshot = await getDocs(diasRestantesQuery);
 
             for (const nextDiaDoc of diasRestantesSnapshot.docs) {
                 const nextMemQueryNextDays = query(
                     getUserMemoriesRef(userId, nextDiaDoc.id),
                     where("Tipo", "==", type),
-                    limit(1) // Solo necesitamos saber si existe al menos una
+                    limit(1) 
                 );
                 nextSnapshot = await getDocs(nextMemQueryNextDays);
                 if (!nextSnapshot.empty) {
                     hasMore = true;
-                    break; // Encontramos una, ya sabemos que hay más
+                    break; 
                 }
             }
         }
     }
 
-
-    return { items, lastVisible: lastProcessedMemoryDoc, hasMore }; // lastVisible es ahora el DocumentSnapshot
+    return { items, lastVisible: lastProcessedMemoryDoc, hasMore };
 }
 
 
-// CAMBIO: Necesita userId
 async function getNamedDays(userId, pageSize = 10, lastVisibleDoc = null) {
     if (!userId) throw new Error("getNamedDays requiere un userId.");
-    const userDiasRef = getUserDaysRef(userId); // CAMBIO
+    const userDiasRef = getUserDaysRef(userId); 
 
     let q;
     const baseQuery = query(userDiasRef,
-                           where("Nombre_Especial", "!=", "Unnamed Day"),
-                           orderBy("Nombre_Especial", "asc"), // Podría ser interesante ordenar por ID de día también
-                           limit(pageSize));
+                              where("Nombre_Especial", "!=", "Unnamed Day"),
+                              orderBy("Nombre_Especial", "asc"), 
+                              limit(pageSize));
 
     if (lastVisibleDoc) {
         q = query(baseQuery, startAfter(lastVisibleDoc));
@@ -478,12 +430,11 @@ async function getNamedDays(userId, pageSize = 10, lastVisibleDoc = null) {
 
     const items = [];
     querySnapshot.forEach(doc => {
-        items.push(_formatStoreItem(doc, doc.id, true)); // true = isDay
+        items.push(_formatStoreItem(doc, doc.id, true)); 
     });
 
     const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
 
-    // Comprobar si hay más (la lógica se mantiene)
     let hasMore = false;
     if (lastVisible) {
         const nextQuery = query(userDiasRef,
@@ -498,12 +449,81 @@ async function getNamedDays(userId, pageSize = 10, lastVisibleDoc = null) {
     return { items, lastVisible, hasMore };
 }
 
+// *** NUEVA FUNCIÓN PARA EL TIMELINE (v2.8) ***
+/**
+ * Obtiene todas las memorias de un usuario, agrupadas por mes y día,
+ * ordenadas cronológicamente para la vista de Timeline.
+ * @param {string} userId - El ID del usuario.
+ * @returns {Promise<Array>} Un array de objetos de mes.
+ * Ej: [{ monthName: "Enero", days: [{ diaId: "01-01", ... memories: [...] }] }]
+ */
+export async function getAllMemoriesForTimeline(userId) {
+    if (!userId) throw new Error("getAllMemoriesForTimeline requiere un userId.");
+
+    console.log("Store: Cargando datos de Timeline para", userId);
+    
+    // 1. Obtener todos los días que tienen memorias, ordenados por ID ("01-01", "01-02"...)
+    const userDiasRef = getUserDaysRef(userId);
+    const qDias = query(userDiasRef, where("tieneMemorias", "==", true), orderBy(documentId()));
+    
+    const diasSnapshot = await getDocs(qDias);
+    
+    const allDaysWithMemories = [];
+
+    // 2. Para cada día con memorias, obtener sus memorias
+    for (const diaDoc of diasSnapshot.docs) {
+        const diaData = diaDoc.data();
+        const diaId = diaDoc.id;
+
+        // Obtener las memorias de este día, ordenadas por año
+        const memoriasRef = getUserMemoriesRef(userId, diaId);
+        const qMems = query(memoriasRef, orderBy("Fecha_Original", "desc"));
+        const memSnapshot = await getDocs(qMems);
+
+        const memories = memSnapshot.docs.map(memDoc => ({
+            id: memDoc.id,
+            ...memDoc.data()
+        }));
+
+        // Añadir solo si de verdad tiene memorias
+        if (memories.length > 0) {
+            allDaysWithMemories.push({
+                diaId: diaId,
+                nombreDia: diaData.Nombre_Dia,
+                nombreEspecial: diaData.Nombre_Especial,
+                memories: memories
+            });
+        }
+    }
+
+    // 3. Agrupar la lista plana de días en meses
+    const groupedByMonth = [];
+    let currentMonth = -1;
+    
+    allDaysWithMemories.forEach(day => {
+        const monthIndex = parseInt(day.diaId.substring(0, 2), 10) - 1; // "01" -> 0
+        
+        if (monthIndex !== currentMonth) {
+            // Es un nuevo mes, crear un nuevo grupo
+            groupedByMonth.push({
+                monthName: MONTH_NAMES[monthIndex],
+                days: []
+            });
+            currentMonth = monthIndex;
+        }
+        
+        // Añadir el día al último grupo de mes creado
+        groupedByMonth[groupedByMonth.length - 1].days.push(day);
+    });
+
+    console.log(`Store: Timeline procesado. ${groupedByMonth.length} meses con datos.`);
+    return groupedByMonth;
+}
+
 
 // --- 5. Funciones de Ayuda (Helpers) ---
 
-// _formatStoreItem no necesita userId, ya que recibe el DocumentSnapshot
 function _formatStoreItem(docSnap, diaId, isDay = false) {
-    // ... (sin cambios) ...
     const data = docSnap.data();
     if (isDay) {
         return {
@@ -533,5 +553,7 @@ export {
     searchMemories,
     getTodaySpotlight,
     getMemoriesByType,
-    getNamedDays
+    getNamedDays,
+    // *** NUEVO: Exportar la función de Timeline ***
+    getAllMemoriesForTimeline 
 };
