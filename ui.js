@@ -1,5 +1,5 @@
 /*
- * ui.js (v2.66 - Fix appendChild in createStoreModal init)
+ * ui.js (v2.67 - Fixes for Edit Modal)
  * Módulo de interfaz de usuario.
  */
 
@@ -27,7 +27,7 @@ let _activeMaps = []; // Para gestionar mapas Leaflet
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.66 - Fix appendChild init)"); // Versión actualizada
+    console.log("UI Module init (v2.67 - Fixes for Edit Modal)"); // Versión actualizada
     callbacks = mainCallbacks;
     // _allDaysData se llenará con updateAllDaysData
 
@@ -41,7 +41,7 @@ function init(mainCallbacks) {
     // Pre-crear modales principales
     createPreviewModal();
     createEditModal();
-    createStoreModal(); // Llama a la función corregida
+    createStoreModal();
     createStoreListModal();
     createAlertPromptModal();
     createConfirmModal();
@@ -494,11 +494,14 @@ function _bindEditModalEvents() {
             const memoriaId = deleteBtn.dataset.memoriaId;
             if (memoriaId && _currentMemories && callbacks.onDeleteMemory) {
                 const memToDelete = _currentMemories.find(m => m.id === memoriaId);
-                const diaId = _currentDay ? _currentDay.id : document.getElementById('edit-mem-day')?.value;
-                if (memToDelete && diaId) {
-                    callbacks.onDeleteMemory(diaId, memToDelete);
+                
+                // *** CAMBIO: Simplificado y corregido ***
+                // La lista de memorias solo es visible si _currentDay está seteado
+                // por lo tanto, _currentDay.id es la única ID de día que necesitamos.
+                if (memToDelete && _currentDay) {
+                    callbacks.onDeleteMemory(_currentDay.id, memToDelete);
                 } else {
-                    console.error("No se pudo determinar memoria o día para borrar:", memoriaId, diaId);
+                    console.error("No se pudo determinar memoria o día para borrar:", memoriaId, _currentDay);
                 }
             }
         }
@@ -540,7 +543,8 @@ function openEditModal(dia, memories) {
 
         if (dynamicTitleEl) dynamicTitleEl.textContent = 'Editar Día';
         const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
-        titleEl.textContent = `Editando: ${dia.Nombre_Dia}${dayName}`;
+        // *** CAMBIO: Título simplificado ***
+        titleEl.textContent = `${dia.Nombre_Dia}${dayName}`;
         nameInput.value = dia.Nombre_Especial !== 'Unnamed Day' ? dia.Nombre_Especial : '';
 
     } else { // Modo Añadir Memoria
