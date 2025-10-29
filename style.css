@@ -1,4 +1,4 @@
-/* style.css - v17.11 - Fix: Simplified notebook holes (again) */
+/* style.css - v2.62 - Notebook paper fix (IDÉNTICO) */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -690,45 +690,53 @@ main {
     flex-grow: 1;
 }
 
-/* --- INICIO CAMBIO: ESTILO CUADERNO PREVIEW (Punto 4) --- */
+/* --- ***** INICIO CAMBIO v2.62: ESTILO CUADERNO IDÉNTICO ***** --- */
 .modal-preview-notebook-paper {
     flex-grow: 1;
     overflow-y: auto;
-    background-color: #fdf5e6;
-    /* CAMBIO: Padding izquierdo más grande para anillas y línea */
-    padding: 20px 20px 20px 50px;
+    background-color: #ffffff; /* Fondo blanco */
+    padding: 20px 20px 20px 50px; /* Padding izquierdo para línea/agujeros */
     position: relative;
-    /* CAMBIO: Líneas horizontales (negras) y quitada línea vertical de aquí */
-    background-image:
-        repeating-linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 24px);
-    background-size: 100% 24px;
-    background-position: 0 10px;
-    line-height: 24px;
+    line-height: 24px; /* Altura de línea para el texto */
     font-family: 'Courier New', Courier, monospace;
     color: #333;
+
+    /* Múltiples fondos: 1. Agujeros, 2. Líneas Horizontales */
+    background-image:
+        /* 1. Agujeros (Círculos grises) */
+        repeating-radial-gradient(
+            circle at 15px center, /* Posición X a 15px del borde */
+            #cccccc 0,
+            #cccccc 4px, /* Radio del círculo 4px */
+            transparent 4px,
+            transparent 24px /* Espaciado vertical (line-height) */
+        ),
+        /* 2. Líneas horizontales (Azules) */
+        repeating-linear-gradient(
+            to bottom,
+            transparent 0px,
+            transparent 23px, /* Espacio en blanco */
+            #aaccff 23px, /* Línea azul de 1px */
+            #aaccff 24px
+        );
+    
+    background-size: 100% 24px; /* Repetir cada 24px verticalmente */
+    background-position: 0 10px; /* Offset inicial */
 }
+
 .modal-preview-notebook-paper::before {
     content: '';
     position: absolute;
     top: 0;
-    /* CAMBIO: Movido a la izquierda para hacer espacio a las anillas */
-    left: 15px;
+    left: 40px; /* Posición de la línea roja (a la derecha de los agujeros) */
     bottom: 0;
-    width: 25px; /* Ancho para anillas y línea */
-    /* CAMBIO: Línea roja a la derecha de este pseudo-elemento */
-    border-right: 2px solid rgba(255, 100, 100, 0.5);
+    width: 0;
+    border-right: 1px solid #ff6666; /* Línea roja/rosa */
     
-    /* ***** CAMBIO v17.11: Agujeros SIMPLIFICADOS (Fix) ***** */
-    background-image: repeating-radial-gradient(
-        circle at center,
-        #cccccc 0,  /* Círculo gris simple */
-        #cccccc 4px, /* Radio de 4px */
-        transparent 4.5px, /* Pequeño borde transparente */
-        transparent 24px /* Espaciado (igual que line-height) */
-    );
-    background-position: 5px 22px; /* Posición de los agujeros */
+    /* Limpiado: ya no se encarga de los agujeros */
+    background-image: none;
 }
-/* --- FIN CAMBIO: ESTILO CUADERNO PREVIEW --- */
+/* --- ***** FIN CAMBIO v2.62 ***** --- */
 
 
 .modal-preview-memorias {
