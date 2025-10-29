@@ -1,6 +1,6 @@
 /*
- * main.js (v2.66 - Cache Implementation)
- * Controlador principal de Ephemerides con sistema de caché híbrido.
+ * main.js (v2.67 - Cache + Debouncing)
+ * Controlador principal de Ephemerides con sistema de caché híbrido y debouncing.
  */
 
 // --- Importaciones de Módulos ---
@@ -22,6 +22,7 @@ import {
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
 import { showSettings } from './settings.js';
+import { debounce } from './utils.js';
 
 // --- Sistema de Caché ---
 const CACHE_VERSION = '1.0';
@@ -236,7 +237,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.66 (Cache Implementation)...");
+    console.log("Iniciando Ephemerides v2.67 (Cache + Debouncing)...");
 
     try {
         ui.setLoading("Iniciando...", true);
@@ -373,8 +374,8 @@ function getUICallbacks() {
         onSaveDayName: handleSaveDayName,
         onSaveMemory: handleSaveMemorySubmit,
         onDeleteMemory: handleDeleteMemory,
-        onSearchMusic: handleMusicSearch,
-        onSearchPlace: handlePlaceSearch,
+        onSearchMusic: debouncedMusicSearch,
+        onSearchPlace: debouncedPlaceSearch,
         onStoreCategoryClick: handleStoreCategoryClick,
         onStoreLoadMore: handleStoreLoadMore,
         onStoreItemClick: handleStoreItemClick,
@@ -773,6 +774,8 @@ async function handleDeleteMemory(diaId, mem) {
 }
 
 // --- 4. Lógica de API Externa (Controlador) ---
+
+// Función interna sin debounce
 async function handleMusicSearch(term) {
     if (!term || term.trim() === '') return;
     try {
@@ -785,6 +788,7 @@ async function handleMusicSearch(term) {
     }
 }
 
+// Función interna sin debounce
 async function handlePlaceSearch(term) {
     if (!term || term.trim() === '') return;
     try {
@@ -796,6 +800,10 @@ async function handlePlaceSearch(term) {
         ui.showPlaceResults([]);
     }
 }
+
+// Versiones con debounce (500ms de espera)
+const debouncedMusicSearch = debounce(handleMusicSearch, 500);
+const debouncedPlaceSearch = debounce(handlePlaceSearch, 500);
 
 // --- 5. Lógica del "Almacén" (Controlador) ---
 async function handleStoreCategoryClick(type) {
