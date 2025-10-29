@@ -1637,3 +1637,79 @@ a:hover {
     80% { transform: translateY(-40px); opacity: 1; }
     100% { transform: translateY(-50px); opacity: 0; }
 }
+/* Contenedor principal para la lista de timeline */
+.timeline-view {
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* Encabezado para cada mes (ej. "Enero") */
+.timeline-month-header {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.6);
+    padding: 15px 10px 10px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 15px;
+    text-transform: capitalize;
+}
+
+/* Cada día en el timeline será una "tarjeta" o "grupo"
+   Usamos un estilo similar a .list-view-group que ya te gusta */
+.timeline-day-group {
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    margin: 0 0 20px 0; /* Espacio entre días */
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    color: #333;
+}
+
+/* La cabecera de la tarjeta del día (ej. "viernes 10") */
+.timeline-day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: linear-gradient(to bottom, #fdfdfd 0%, #f0f0f0 100%);
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+.timeline-day-header:active {
+    background: #e0e0e0;
+}
+
+.timeline-day-date {
+    font-size: 17px;
+    font-weight: bold;
+    color: #000;
+    text-transform: capitalize;
+}
+.timeline-day-special {
+    font-size: 14px;
+    font-weight: normal;
+    color: #4a5462;
+    margin-left: 8px;
+}
+
+/* Contenedor para las memorias de ese día */
+.timeline-memories-list {
+    /* No se necesita padding, los .list-view-item ya lo tienen */
+}
+
+/* Usaremos los .list-view-item que ya definimos, 
+   pero sin el fondo blanco (ya lo tiene el .timeline-day-group) */
+.timeline-memories-list .list-view-item {
+    background-color: transparent;
+}
+
+/* Placeholder si el timeline está vacío */
+.timeline-empty-placeholder {
+    padding: 40px 20px;
+    text-align: center;
+    font-size: 18px;
+    color: #ccc;
+    text-shadow: 0 1px 1px rgba(0,0,0,0
+}
