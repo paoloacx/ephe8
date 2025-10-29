@@ -1,5 +1,5 @@
 /*
- * main.js (v4.21 - Restaurada lógica de búsqueda)
+ * main.js (v2.62 - Estable)
  * Controlador principal de Ephemerides.
  */
 
@@ -39,7 +39,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v4.21 (Búsquedas restauradas)..."); // Cambiado
+    console.log("Iniciando Ephemerides v2.62 (Estable)..."); // Cambiado
 
     try {
         ui.setLoading("Iniciando...", true);
@@ -292,7 +292,7 @@ async function handleFooterAction(action) {
     }
     // La acción 'settings' no requiere login
     if (action === 'settings') {
-         ui.showAlert("Settings\n\nApp Version: 4.21 (Búsquedas restauradas)\nMore settings coming soon!", 'settings');
+         ui.showAlert("Settings\n\nApp Version: 2.62 (Estable)\nMore settings coming soon!", 'settings');
          return;
     }
     
