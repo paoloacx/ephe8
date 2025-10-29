@@ -1,5 +1,5 @@
 /*
- * main.js (v2.72 - Adaptado a ui-forms.js)
+ * main.js (v2.8 - Integración de Timeline View Mode)
  * Controlador principal de Ephemerides.
  */
 
@@ -21,7 +21,10 @@ import {
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
-import { showSettings } from './settings.js'; // Importación del módulo settings
+// *** CAMBIO: Importar initSettings ***
+import { initSettings, showSettings } from './settings.js'; 
+// *** NUEVO: Importar loadSetting ***
+import { loadSetting } from './utils.js';
 
 // --- Estado Global de la App ---
 let state = {
@@ -30,6 +33,8 @@ let state = {
     currentUser: null,
     todayId: '',
     dayInPreview: null,
+    // *** NUEVO: Añadir estado para el modo de vista ***
+    currentViewMode: 'calendar', // 'calendar' o 'timeline'
     store: {
         currentType: null,
         lastVisible: null,
@@ -40,13 +45,16 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.72 (Adaptado a ui-forms)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v2.8 (Timeline View Mode)..."); // Versión actualizada
 
     try {
         ui.setLoading("Iniciando...", true); 
         initFirebase(); 
         
         ui.init(getUICallbacks()); 
+        // *** NUEVO: Inicializar el módulo de settings ***
+        initSettings(getUICallbacks()); 
+        
         initAuthListener(handleAuthStateChange); 
 
         ui.setLoading("Autenticando...", true); 
@@ -96,10 +104,14 @@ async function initializeUserSession() {
         const today = new Date();
         state.todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
 
+        // *** NUEVO: Cargar la preferencia de vista del usuario ***
+        state.currentViewMode = loadSetting('viewMode', 'calendar');
+        console.log("Modo de vista cargado:", state.currentViewMode);
+
         ui.updateAllDaysData(state.allDaysData); 
 
-        drawCurrentMonth(); 
-        loadTodaySpotlight(); 
+        // *** CAMBIO: Usar el nuevo enrutador de vistas ***
+        drawMainView();
         
         ui.showApp(true); 
 
@@ -134,7 +146,8 @@ async function loadTodaySpotlight() {
     }
 }
 
-function drawCurrentMonth() {
+// *** CAMBIO: Renombrada de drawCurrentMonth a drawCalendarView ***
+function drawCalendarView() {
     const monthName = new Date(2024, state.currentMonthIndex, 1).toLocaleDateString('es-ES', { month: 'long' });
     const monthNumber = state.currentMonthIndex + 1;
 
@@ -145,6 +158,39 @@ function drawCurrentMonth() {
     ui.drawCalendar(monthName, diasDelMes, state.todayId); 
 }
 
+// *** NUEVO: Marcador de posición para la vista de Timeline ***
+function drawTimelineView() {
+    console.log("Dibujando la vista de Timeline...");
+    const appContent = document.getElementById('app-content');
+    if (!appContent) return;
+    
+    // Dejamos un placeholder
+    appContent.innerHTML = `<p class="loading-message" style="color: white; text-shadow: 0 1px 1px #000;">Vista de Timeline (¡Próximamente!)</p>`;
+    // La vista timeline no debe ser un grid
+    appContent.style.display = 'block';
+}
+
+// *** NUEVO: Enrutador de vistas ***
+/**
+ * Dibuja la vista principal (Calendario o Timeline) según el estado.
+ * También gestiona la visibilidad del spotlight y la nav. del mes.
+ */
+function drawMainView() {
+    const monthNav = document.querySelector('.month-nav');
+    const spotlight = document.getElementById('spotlight-section');
+
+    if (state.currentViewMode === 'timeline') {
+        if (monthNav) monthNav.style.display = 'none';
+        if (spotlight) spotlight.style.display = 'none';
+        drawTimelineView();
+    } else {
+        // Modo Calendario (default)
+        if (monthNav) monthNav.style.display = 'flex';
+        if (spotlight) spotlight.style.display = 'block';
+        drawCalendarView(); 
+        loadTodaySpotlight(); // El Spotlight solo se carga en la vista de calendario
+    }
+}
 
 // --- 2. Callbacks y Manejadores de Eventos ---
 
@@ -166,6 +212,8 @@ function getUICallbacks() {
         onStoreLoadMore: handleStoreLoadMore,
         onStoreItemClick: handleStoreItemClick,
         onCrumbieClick: handleCrumbieClick,
+        // *** NUEVO: Callback para el conmutador de vista ***
+        onViewModeChange: handleViewModeChange, 
     };
 }
 
@@ -215,12 +263,17 @@ function handleAuthStateChange(user) {
 
 function handleMonthChange(direction) {
     if (!state.currentUser) return; 
+    
+    // *** CAMBIO: La nav. de mes solo funciona en vista calendario ***
+    if (state.currentViewMode !== 'calendar') return; 
+
     if (direction === 'prev') {
         state.currentMonthIndex = (state.currentMonthIndex - 1 + 12) % 12;
     } else {
         state.currentMonthIndex = (state.currentMonthIndex + 1) % 12;
     }
-    drawCurrentMonth();
+    // *** CAMBIO: Llamar al enrutador de vistas ***
+    drawMainView();
 }
 
 async function handleDayClick(dia) {
@@ -291,7 +344,9 @@ async function handleHeaderAction(action) {
         try {
             const results = await searchMemories(userId, term); 
             ui.setLoading(null, false); 
-            drawCurrentMonth(); 
+            
+            // *** CAMBIO: Llamar al enrutador de vistas ***
+            drawMainView(); 
 
             results.forEach(mem => {
                 if (!mem.Nombre_Dia) {
@@ -303,7 +358,8 @@ async function handleHeaderAction(action) {
 
         } catch (err) {
              ui.setLoading(null, false); 
-             drawCurrentMonth();
+             // *** CAMBIO: Llamar al enrutador de vistas ***
+             drawMainView();
              ui.showErrorAlert(`Error al buscar: ${err.message}`, 'Error de Búsqueda');
         }
     }
@@ -348,9 +404,12 @@ function handleShuffleClick() {
     const randomDia = state.allDaysData[randomIndex];
     const randomMonthIndex = parseInt(randomDia.id.substring(0, 2), 10) - 1;
 
-    if (state.currentMonthIndex !== randomMonthIndex) {
+    if (state.currentViewMode === 'calendar' && state.currentMonthIndex !== randomMonthIndex) {
         state.currentMonthIndex = randomMonthIndex;
-        drawCurrentMonth();
+        // *** CAMBIO: Llamar al enrutador de vistas ***
+        drawMainView();
+    } else if (state.currentViewMode === 'timeline') {
+        // En modo timeline, no cambiamos de mes, solo abrimos el día
     }
 
     setTimeout(() => {
@@ -358,6 +417,25 @@ function handleShuffleClick() {
     }, 100);
 
     window.scrollTo(0, 0);
+}
+
+// *** NUEVO: Handler para el conmutador de vista ***
+/**
+ * Se llama desde settings.js cuando el usuario cambia el conmutador de vista.
+ * @param {string} newViewMode - 'calendar' o 'timeline'
+ */
+function handleViewModeChange(newViewMode) {
+    if (state.currentViewMode === newViewMode) return; // Sin cambios
+
+    console.log("Cambiando modo de vista a:", newViewMode);
+    state.currentViewMode = newViewMode;
+
+    // Volver al mes actual si cambiamos a calendario
+    if (newViewMode === 'calendar') {
+        state.currentMonthIndex = new Date().getMonth();
+    }
+
+    drawMainView();
 }
 
 
@@ -381,7 +459,9 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
         }
 
         ui.showModalStatus(statusElementId, 'Nombre guardado', false); 
-        drawCurrentMonth(); 
+        
+        // *** CAMBIO: Llamar al enrutador de vistas ***
+        drawMainView(); 
 
         if (statusElementId === 'save-status' && state.dayInPreview && state.dayInPreview.id === diaId) { 
              const dia = state.dayInPreview; 
@@ -416,6 +496,7 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
     const saveBtn = document.getElementById('save-memoria-btn'); 
 
     try {
+        // ... (Validación de fecha, etc. - sin cambios)
         if (!memoryData.year || isNaN(parseInt(memoryData.year))) throw new Error('El año es obligatorio.');
         const year = parseInt(memoryData.year);
         if (year < 1900 || year > 2100) throw new Error('Año debe estar entre 1900-2100.');
@@ -432,6 +513,7 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
             memoryData.ImagenURL = await uploadImage(memoryData.file, userId, diaId); 
             ui.showModalStatus('image-upload-status', 'Imagen subida.', false); 
         }
+        // ... (Fin validación)
 
         const memoryId = isEditing ? memoryData.id : null;
         await saveMemory(userId, diaId, memoryData, memoryId); 
@@ -446,7 +528,8 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
         if (dayIndex !== -1 && !state.allDaysData[dayIndex].tieneMemorias) {
             state.allDaysData[dayIndex].tieneMemorias = true;
-            drawCurrentMonth(); 
+            // *** CAMBIO: Llamar al enrutador de vistas ***
+            drawMainView(); 
         }
 
     } catch (err) {
@@ -494,7 +577,8 @@ async function handleDeleteMemory(diaId, mem) {
             const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
             if (dayIndex !== -1 && state.allDaysData[dayIndex].tieneMemorias) { 
                 state.allDaysData[dayIndex].tieneMemorias = false;
-                drawCurrentMonth(); 
+                // *** CAMBIO: Llamar al enrutador de vistas ***
+                drawMainView(); 
             }
         }
 
@@ -506,11 +590,9 @@ async function handleDeleteMemory(diaId, mem) {
 
 // --- 4. Lógica de API Externa (Controlador) ---
 
-// *** CAMBIO: Aceptar el 'resultsCallback' que pasa ui.js ***
 async function handleMusicSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
     
-    // *** CAMBIO: Comprobar que el callback es una función ***
     if (typeof resultsCallback !== 'function') {
         console.error("handleMusicSearch: resultsCallback no es una función.");
         return;
@@ -523,21 +605,17 @@ async function handleMusicSearch(term, resultsCallback) {
             throw new Error('No se pudo conectar al servicio de música. Revisa tu conexión.');
         }
         
-        // *** CAMBIO: Usar el callback en lugar de ui.showMusicResults ***
         resultsCallback(results); 
     } catch (error) {
         console.error("Error en handleMusicSearch:", error);
         ui.showModalStatus('memoria-status', `Error al buscar música: ${error.message}`, true); 
-        // *** CAMBIO: Usar el callback en lugar de ui.showMusicResults ***
         resultsCallback([]); 
     }
 }
 
-// *** CAMBIO: Aceptar el 'resultsCallback' que pasa ui.js ***
 async function handlePlaceSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
 
-    // *** CAMBIO: Comprobar que el callback es una función ***
     if (typeof resultsCallback !== 'function') {
         console.error("handlePlaceSearch: resultsCallback no es una función.");
         return;
@@ -550,12 +628,10 @@ async function handlePlaceSearch(term, resultsCallback) {
             throw new Error('No se pudo conectar al servicio de mapas. Revisa tu conexión.');
         }
 
-        // *** CAMBIO: Usar el callback en lugar de ui.showPlaceResults ***
         resultsCallback(results); 
     } catch (error) {
         console.error("Error en handlePlaceSearch:", error);
         ui.showModalStatus('memoria-status', `Error al buscar lugares: ${error.message}`, true); 
-        // *** CAMBIO: Usar el callback en lugar de ui.showPlaceResults ***
         resultsCallback([]); 
     }
 }
@@ -669,10 +745,14 @@ function handleStoreItemClick(diaId) {
     ui.closeStoreModal(); 
 
     const monthIndex = parseInt(dia.id.substring(0, 2), 10) - 1;
-    if (state.currentMonthIndex !== monthIndex) {
+    if (state.currentViewMode === 'calendar' && state.currentMonthIndex !== monthIndex) {
         state.currentMonthIndex = monthIndex;
-        drawCurrentMonth();
+        // *** CAMBIO: Llamar al enrutador de vistas ***
+        drawMainView();
+    } else if (state.currentViewMode === 'timeline') {
+        // En modo timeline, no cambiamos de mes, solo cerramos modales
     }
+
 
     setTimeout(() => {
         handleDayClick(dia); 
