@@ -1,7 +1,10 @@
 /*
- * ui.js (v2.68 - Modal logic and Map destruction fix)
+ * ui.js (v2.69 - Modularización: Maps extraídos)
  * Módulo de interfaz de usuario.
  */
+
+// --- IMPORTACIÓN DEL NUEVO MÓDULO ---
+import { uiMaps } from './ui-maps.js';
 
 // --- Variables privadas del módulo (Estado de la UI) ---
 let callbacks = {}; // Almacena las funciones de main.js
@@ -22,12 +25,13 @@ let editModal = null;
 let storeModal = null;
 let storeListModal = null;
 
-let _activeMaps = []; // Para gestionar mapas Leaflet
+// *** ELIMINADO: let _activeMaps = []; ***
+// Ahora se gestiona en ui-maps.js
 
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.68 - Modal/Map Fix)"); // Versión actualizada
+    console.log("UI Module init (v2.69 - Maps Modular)"); // Versión actualizada
     callbacks = mainCallbacks;
     // _allDaysData se llenará con updateAllDaysData
 
@@ -37,32 +41,14 @@ function init(mainCallbacks) {
     _bindLoginEvents();
     _bindGlobalListeners();
     _bindCrumbieEvents();
-function createAlertPromptModal() {
-    if (alertPromptModal) return;
-    alertPromptModal = document.createElement('div');
-    alertPromptModal.id = 'alert-prompt-modal';
-    alertPromptModal.className = 'modal-alert-prompt';
-    alertPromptModal.innerHTML = `
-        <div class="modal-alert-content">
-            <p id="alert-prompt-message"></p>
-            <input type="text" id="alert-prompt-input" style="display: none;">
-            <div class="modal-main-buttons">
-                <button id="alert-prompt-cancel" class="aqua-button secondary">Cancelar</button>
-                <button id="alert-prompt-ok" class="aqua-button">OK</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(alertPromptModal);
-    _bindAlertPromptEvents();
-}
 
     // Pre-crear modales principales
     createPreviewModal();
     createEditModal();
     createStoreModal();
     createStoreListModal();
-    createAlertPromptModal(); // Ahora se implementa
-    createConfirmModal(); // Ahora se implementa
+    createAlertPromptModal();
+    createConfirmModal();
 }
 
 // --- Bindings ---
@@ -181,7 +167,7 @@ function drawCalendar(monthName, days, todayId) {
 
     if (!days || days.length === 0) {
         appContent.innerHTML = '<p class="list-placeholder" style="padding: 20px; color: #ccc;">No hay datos del calendario.</p>';
-         appContent.style.display = 'block'; // Asegurar display block para el placeholder
+         appContent.style.display = 'block';
         return;
     }
 
@@ -202,7 +188,7 @@ function drawCalendar(monthName, days, todayId) {
 
     appContent.innerHTML = '';
     appContent.appendChild(grid);
-    appContent.style.display = 'grid'; // Asegurar display grid para el calendario
+    appContent.style.display = 'grid';
 }
 
 function updateSpotlight(dateString, dayName, memories) {
@@ -231,12 +217,12 @@ function updateSpotlight(dateString, dayName, memories) {
         placeholder.className = 'list-placeholder';
         placeholder.textContent = 'No hay memorias destacadas.';
         containerEl.appendChild(placeholder);
-         _destroyActiveMaps(containerEl); // Limpiar mapas solo de este contenedor
+         uiMaps.destroyMapsInContainer(containerEl); // *** USA MÓDULO ***
         return;
     }
 
     // Limpiar mapas antiguos solo de este contenedor
-     _destroyActiveMaps(containerEl);
+     uiMaps.destroyMapsInContainer(containerEl); // *** USA MÓDULO ***
 
     memories.forEach(mem => {
         const itemEl = document.createElement('div');
@@ -261,7 +247,7 @@ function updateSpotlight(dateString, dayName, memories) {
     });
 
     // Inicializar mapas *después* de que todos los items estén en el DOM
-    _initMapsInContainer(containerEl, 'spotlight');
+    uiMaps.initMapsInContainer(containerEl, 'spotlight'); // *** USA MÓDULO ***
 }
 
 
@@ -320,14 +306,14 @@ function openPreviewModal(dia, memories) {
     if (titleEl) titleEl.textContent = `${dia.Nombre_Dia}${dayNameSpecial}`;
 
     // Limpiar mapas antiguos (solo del modal) antes de renderizar
-    _destroyActiveMaps(previewModal);
+    uiMaps.destroyMapsInContainer(previewModal); // *** USA MÓDULO ***
     _renderMemoryList(listEl, memories, false, 'preview');
 
     previewModal.style.display = 'flex';
     setTimeout(() => {
         previewModal.classList.add('visible');
         // Inicializar mapas después de que el modal sea visible y el contenido esté renderizado
-        _initMapsInContainer(listEl, 'preview');
+        uiMaps.initMapsInContainer(listEl, 'preview'); // *** USA MÓDULO ***
     }, 10);
 }
 
@@ -335,8 +321,7 @@ function closePreviewModal() {
     if (!previewModal) return;
     previewModal.classList.remove('visible');
 
-    // *** CAMBIO: Destruir mapas solo del modal al cerrar ***
-    _destroyActiveMaps(previewModal); 
+    uiMaps.destroyMapsInContainer(previewModal); // *** USA MÓDULO ***
 
     setTimeout(() => {
         previewModal.style.display = 'none';
@@ -553,7 +538,6 @@ function openEditModal(dia, memories) {
 
         if (dynamicTitleEl) dynamicTitleEl.textContent = 'Editar Día';
         const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
-        // *** CAMBIO: Título simplificado ***
         titleEl.textContent = `${dia.Nombre_Dia}${dayName}`;
         nameInput.value = dia.Nombre_Especial !== 'Unnamed Day' ? dia.Nombre_Especial : '';
 
@@ -599,8 +583,7 @@ function openEditModal(dia, memories) {
 function closeEditModal() {
     if (!editModal) return;
     editModal.classList.remove('visible');
-    // *** CAMBIO: Destruir mapas solo del modal al cerrar ***
-    _destroyActiveMaps(editModal);
+    uiMaps.destroyMapsInContainer(editModal); // *** USA MÓDULO ***
     setTimeout(() => {
         editModal.style.display = 'none';
         _currentDay = null;
@@ -651,7 +634,7 @@ function createStoreModal() {
     document.getElementById('close-store-btn')?.addEventListener('click', closeStoreModal);
 }
 function openStoreModal() {
-    if (!storeModal) createStoreModal(); // Asegura que el modal existe
+    if (!storeModal) createStoreModal();
     storeModal.style.display = 'flex';
     setTimeout(() => storeModal.classList.add('visible'), 10);
 }
@@ -750,7 +733,6 @@ function updateStoreList(items, append = false, hasMore = false) {
 }
 
 // --- Modales: Alerta, Prompt, Confirmación ---
-// *** CAMBIO: Funciones implementadas ***
 
 function createAlertPromptModal() {
     if (alertPromptModal) return;
@@ -758,7 +740,7 @@ function createAlertPromptModal() {
     alertPromptModal.id = 'alert-prompt-modal';
     alertPromptModal.className = 'modal-alert-prompt';
     alertPromptModal.innerHTML = `
-        <div classclass="modal-alert-content">
+        <div class="modal-alert-content">
             <p id="alert-prompt-message"></p>
             <input type="text" id="alert-prompt-input" style="display: none;">
             <div class="modal-main-buttons">
@@ -786,7 +768,7 @@ function closeAlertPromptModal(isOk) {
             if (isOk) {
                 _promptResolve(input.value);
             } else {
-                _promptResolve(null); // Resuelve null si es Cancelar o se cierra
+                _promptResolve(null);
             }
             _promptResolve = null;
         }
@@ -801,16 +783,16 @@ function showAlert(message, type = 'default') {
     const inputEl = document.getElementById('alert-prompt-input');
     const cancelBtn = document.getElementById('alert-prompt-cancel');
 
-    content.className = `modal-alert-content ${type}-alert`; // Aplicar estilo
+    content.className = `modal-alert-content ${type}-alert`;
     msgEl.textContent = message;
     inputEl.style.display = 'none';
-    cancelBtn.style.display = 'none'; // Solo botón OK
+    cancelBtn.style.display = 'none';
 
     alertPromptModal.style.display = 'flex';
     setTimeout(() => alertPromptModal.classList.add('visible'), 10);
     
     return new Promise((resolve) => {
-        _promptResolve = resolve; // Resuelve con null (isOk=false) o undefined (isOk=true)
+        _promptResolve = resolve;
     });
 }
 
@@ -822,17 +804,17 @@ function showPrompt(message, defaultValue = '', type = 'default') {
     const inputEl = document.getElementById('alert-prompt-input');
     const cancelBtn = document.getElementById('alert-prompt-cancel');
 
-    content.className = `modal-alert-content ${type}-alert`; // Aplicar estilo
+    content.className = `modal-alert-content ${type}-alert`;
     msgEl.textContent = message;
     inputEl.style.display = 'block';
     inputEl.value = defaultValue;
-    cancelBtn.style.display = 'block'; // Mostrar OK y Cancelar
+    cancelBtn.style.display = 'block';
 
     alertPromptModal.style.display = 'flex';
     setTimeout(() => alertPromptModal.classList.add('visible'), 10);
 
     return new Promise((resolve) => {
-        _promptResolve = resolve; // Resuelve con el valor del input o null
+        _promptResolve = resolve;
     });
 }
 
@@ -865,7 +847,7 @@ function closeConfirmModal(isConfirmed) {
     setTimeout(() => {
         confirmModal.style.display = 'none';
         if (_confirmResolve) {
-            _confirmResolve(isConfirmed); // Resuelve true o false
+            _confirmResolve(isConfirmed);
             _confirmResolve = null;
         }
     }, 200);
@@ -881,90 +863,14 @@ function showConfirm(message) {
     setTimeout(() => confirmModal.classList.add('visible'), 10);
 
     return new Promise((resolve) => {
-        _confirmResolve = resolve; // Resuelve true o false
+        _confirmResolve = resolve;
     });
 }
-// --- FIN CAMBIO Modales ---
 
 
 // --- Funciones de Ayuda (Helpers) de UI ---
-
-/**
- * Renderiza un mapa Leaflet en un contenedor.
- */
-function _renderMap(containerId, lat, lon, zoom = 13) {
-    try {
-        const container = document.getElementById(containerId);
-        if (!container || container._leaflet_id) {
-            return;
-        }
-        const map = L.map(containerId).setView([lat, lon], zoom);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-        L.marker([lat, lon]).addTo(map);
-        _activeMaps.push(map);
-    } catch (e) {
-        console.error("Error renderizando mapa Leaflet:", e);
-        const container = document.getElementById(containerId);
-        if (container) {
-            container.innerHTML = "Error al cargar el mapa.";
-        }
-    }
-}
-
-/**
- * Busca e inicializa todos los placeholders de mapas dentro de un contenedor.
- */
-function _initMapsInContainer(containerEl, prefix) {
-    if (!containerEl) return;
-    const mapPlaceholders = containerEl.querySelectorAll(`div[id^="${prefix}-map-"][data-lat]`);
-    mapPlaceholders.forEach(el => {
-        if (el._leaflet_id) return; // No reinicializar
-        const lat = el.dataset.lat;
-        const lon = el.dataset.lon;
-        const zoom = el.dataset.zoom || 13;
-        if (lat && lon) {
-            setTimeout(() => {
-                 _renderMap(el.id, parseFloat(lat), parseFloat(lon), parseInt(zoom));
-            }, 50); 
-        }
-    });
-}
-
-/**
- * Destruye todas las instancias de mapas activas DENTRO de un contenedor específico.
- */
-function _destroyActiveMaps(containerEl) {
-    // *** CAMBIO: Lógica modificada para ser selectiva ***
-    if (!containerEl) {
-        console.warn("_destroyActiveMaps llamada sin contenedor. Abortando.");
-        return; 
-    }
-
-    const mapsToDestroy = [];
-    const stillActiveMaps = [];
-
-    _activeMaps.forEach(map => {
-        // Comprobar si el contenedor del mapa está dentro del modal que se cierra
-        if (containerEl.contains(map.getContainer())) {
-            mapsToDestroy.push(map);
-        } else {
-            stillActiveMaps.push(map);
-        }
-    });
-
-    mapsToDestroy.forEach(map => {
-        try { 
-            map.remove(); 
-        } catch(e) { 
-            console.warn("Error removing map:", e); 
-        }
-    });
-    
-    _activeMaps = stillActiveMaps; // Mantener solo los mapas que no se borraron
-}
-
+// *** ELIMINADAS: _renderMap, _initMapsInContainer, _destroyActiveMaps ***
+// Ahora están en ui-maps.js
 
 function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') {
     if (!listEl) return;
@@ -978,7 +884,7 @@ function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') {
     memories.sort((a, b) => {
         const dateA = a.Fecha_Original?.seconds ? new Date(a.Fecha_Original.seconds * 1000) : (a.Fecha_Original instanceof Date ? a.Fecha_Original : new Date(0));
         const dateB = b.Fecha_Original?.seconds ? new Date(b.Fecha_Original.seconds * 1000) : (b.Fecha_Original instanceof Date ? b.Fecha_Original : new Date(0));
-        return dateB.getFullYear() - dateA.getFullYear(); // Ordenar por año descendente
+        return dateB.getFullYear() - dateA.getFullYear();
     });
 
 
@@ -999,9 +905,9 @@ function updateMemoryList(memories) {
 
     const previewList = document.getElementById('preview-memorias-list');
     if (previewList && previewModal && previewModal.classList.contains('visible') && _currentDay) {
-         _destroyActiveMaps(previewModal); // Destruir mapas antiguos del preview
+         uiMaps.destroyMapsInContainer(previewModal); // *** USA MÓDULO ***
          _renderMemoryList(previewList, _currentMemories, false, 'preview');
-         setTimeout(() => _initMapsInContainer(previewList, 'preview'), 10);
+         setTimeout(() => uiMaps.initMapsInContainer(previewList, 'preview'), 10); // *** USA MÓDULO ***
     }
 }
 
@@ -1013,14 +919,14 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
     if (mem.Fecha_Original) {
         try {
             const date = mem.Fecha_Original.seconds ? new Date(mem.Fecha_Original.seconds * 1000) : new Date(mem.Fecha_Original);
-            if (!isNaN(date)) { // Verificar si la fecha es válida
+            if (!isNaN(date)) {
                 yearStr = date.getFullYear();
             }
         } catch (e) { console.warn("Fecha inválida:", mem.Fecha_Original, e); }
     }
 
 
-    let contentHTML = `<small>${yearStr}</small>`; // Small ya está bold por CSS
+    let contentHTML = `<small>${yearStr}</small>`;
     let artworkHTML = '';
     let icon = 'article';
     let mapHTML = '';
@@ -1149,7 +1055,7 @@ function createStoreListItem(item) {
     itemEl.innerHTML = `
         <span class="memoria-icon material-icons-outlined">${icon}</span>
         <div class="memoria-item-content">${contentHTML}</div>
-        `; // Chevron eliminado
+        `;
     return itemEl;
 }
 
@@ -1159,7 +1065,7 @@ function _createLoginButton(isLoggedOut, container) {
     if (btn) btn.remove();
 
     if (!isLoggedOut) {
-        return; // No mostrar botón si está logueado
+        return;
     }
 
     btn = document.createElement('button');
@@ -1167,7 +1073,6 @@ function _createLoginButton(isLoggedOut, container) {
     btn.className = 'header-login-btn';
     btn.title = 'Login with Google';
     btn.dataset.action = 'login';
-    // SVG de Google
     btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.20455c0-.63864-.05727-1.25182-.16909-1.84091H9v3.48182h4.84364c-.20864 1.125-.84273 2.07818-1.77727 2.71136v2.25818h2.90864c1.70182-1.56682 2.68409-3.87409 2.68409-6.61045z"/><path fill="#34A853" d="M9 18c2.43 0 4.47182-.80591 5.96273-2.18045l-2.90864-2.25818c-.80591.54364-1.83682.86591-2.94.86591-2.27318 0-4.20727-1.53318-4.9-3.58227H1.07182v2.33318C2.56636 16.3 5.56 18 9 18z"/><path fill="#FBBC05" d="M4.1 10.71c-.22-.64-.35-1.32-.35-2.03s.13-.139.35-2.03V4.31H1.07C.38 5.67 0 7.29 0 9.03s.38 3.36 1.07 4.72l3.03-2.33v.03z"/><path fill="#EA4335" d="M9 3.57955c1.32136 0 2.50773.45455 3.44091 1.34591l2.58136-2.58136C13.46318.891364 11.4259 0 9 0 5.56 0 2.56636 1.70182 1.07182 4.31l3.02818 2.33318C4.79273 5.11273 6.72682 3.57955 9 3.57955z"/></svg>`;
     container.appendChild(btn);
 }
@@ -1418,7 +1323,6 @@ function showModalStatus(elementId, message, isError) {
 
 // --- Crumbie ---
 function showCrumbieAnimation(message) {
-    // *** CAMBIO: Implementado ***
     let animEl = document.querySelector('.crumbie-float-text');
     if (animEl) {
         animEl.remove();
