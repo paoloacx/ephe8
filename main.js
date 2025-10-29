@@ -590,9 +590,11 @@ async function handleDeleteMemory(diaId, mem) {
 
 // --- 4. Lógica de API Externa (Controlador) ---
 
+// *** CAMBIO: Aceptar el 'resultsCallback' que pasa ui.js ***
 async function handleMusicSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
     
+    // *** CAMBIO: Comprobar que el callback es una función ***
     if (typeof resultsCallback !== 'function') {
         console.error("handleMusicSearch: resultsCallback no es una función.");
         return;
@@ -605,17 +607,21 @@ async function handleMusicSearch(term, resultsCallback) {
             throw new Error('No se pudo conectar al servicio de música. Revisa tu conexión.');
         }
         
+        // *** CAMBIO: Usar el callback en lugar de ui.showMusicResults ***
         resultsCallback(results); 
     } catch (error) {
         console.error("Error en handleMusicSearch:", error);
         ui.showModalStatus('memoria-status', `Error al buscar música: ${error.message}`, true); 
+        // *** CAMBIO: Usar el callback en lugar de ui.showMusicResults ***
         resultsCallback([]); 
     }
 }
 
+// *** CAMBIO: Aceptar el 'resultsCallback' que pasa ui.js ***
 async function handlePlaceSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
 
+    // *** CAMBIO: Comprobar que el callback es una función ***
     if (typeof resultsCallback !== 'function') {
         console.error("handlePlaceSearch: resultsCallback no es una función.");
         return;
@@ -628,10 +634,12 @@ async function handlePlaceSearch(term, resultsCallback) {
             throw new Error('No se pudo conectar al servicio de mapas. Revisa tu conexión.');
         }
 
+        // *** CAMBIO: Usar el callback en lugar de ui.showPlaceResults ***
         resultsCallback(results); 
     } catch (error) {
         console.error("Error en handlePlaceSearch:", error);
         ui.showModalStatus('memoria-status', `Error al buscar lugares: ${error.message}`, true); 
+        // *** CAMBIO: Usar el callback en lugar de ui.showPlaceResults ***
         resultsCallback([]); 
     }
 }
