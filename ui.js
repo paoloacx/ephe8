@@ -1,7 +1,10 @@
 /*
- * ui.js (v2.70 - Alerta de Error y UI Spotlight unificada)
+ * ui.js (v2.71 - Modulo de Mapas Extraído)
  * Módulo de interfaz de usuario con modal de búsqueda global.
  */
+
+// --- Importaciones de Módulos ---
+import { uiMaps } from './ui-maps.js'; // *** NUEVO: Importar el módulo de mapas ***
 
 // --- Variables privadas del módulo (Estado de la UI) ---
 let callbacks = {}; // Almacena las funciones de main.js
@@ -15,8 +18,8 @@ let alertPromptModal = null;
 let _promptResolve = null;
 let confirmModal = null;
 let _confirmResolve = null;
-let genericAlertModal = null; // *** NUEVO: Modal para alertas de error genéricas ***
-let _genericAlertResolve = null; // *** NUEVO ***
+let genericAlertModal = null;
+let _genericAlertResolve = null;
 
 // Referencias a los modales principales
 let previewModal = null;
@@ -25,12 +28,13 @@ let storeModal = null;
 let storeListModal = null;
 let searchResultsModal = null;
 
-let _activeMaps = []; // Para gestionar mapas Leaflet
+// --- ELIMINADO ---
+// let _activeMaps = []; // Movido a ui-maps.js
 
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.70 - Error Alert & Spotlight UI)");
+    console.log("UI Module init (v2.71 - Map Module Extracted)");
     callbacks = mainCallbacks;
 
     _bindHeaderEvents();
@@ -48,7 +52,7 @@ function init(mainCallbacks) {
     createSearchResultsModal();
     createAlertPromptModal();
     createConfirmModal();
-    createGenericAlertModal(); // *** NUEVO: Crear el modal de alerta genérico ***
+    createGenericAlertModal();
 }
 
 // --- Bindings ---
@@ -94,7 +98,7 @@ function _bindGlobalListeners() {
         if (e.target.classList.contains('modal-search-results')) closeSearchResultsModal();
         if (e.target.classList.contains('modal-alert-prompt')) closeAlertPromptModal(false);
         if (e.target.classList.contains('modal-confirm')) closeConfirmModal(false);
-        if (e.target.classList.contains('modal-simple-alert')) closeGenericAlertModal(); // *** NUEVO ***
+        if (e.target.classList.contains('modal-simple-alert')) closeGenericAlertModal();
     });
 }
 
@@ -194,8 +198,7 @@ function drawCalendar(monthName, days, todayId) {
 }
 
 
-// *** --- (NUEVA FUNCIÓN HELPER) --- ***
-// Este helper extrae un título y subtítulo para el Spotlight
+// --- (NUEVA FUNCIÓN HELPER) ---
 function _getMemorySpotlightDetails(mem) {
     let title = 'Memoria';
     let subtitle = 'Año desc.';
@@ -228,7 +231,6 @@ function _getMemorySpotlightDetails(mem) {
         case 'Texto':
         default:
             title = mem.Descripcion || 'Nota vacía';
-            // Acortar texto largo para el spotlight
             if (title.length > 50) {
                 title = title.substring(0, 50) + '...';
             }
@@ -237,8 +239,7 @@ function _getMemorySpotlightDetails(mem) {
     return { title, subtitle };
 }
 
-// *** --- (FUNCIÓN MODIFICADA) --- ***
-// Renderiza el Spotlight usando el estilo UITableView (.list-view-group)
+// --- (FUNCIÓN MODIFICADA) ---
 function updateSpotlight(dateString, dayName, memories) {
     const titleEl = document.getElementById('spotlight-date-header');
     const listEl = document.getElementById('today-memory-spotlight');
@@ -247,7 +248,9 @@ function updateSpotlight(dateString, dayName, memories) {
     if (!listEl) return;
 
     listEl.innerHTML = ''; // Limpiar
-    _destroyActiveMaps(listEl); // Destruir mapas (el nuevo diseño no los usa, pero es buena práctica)
+    
+    // *** CAMBIO: Llamar al módulo de mapas ***
+    uiMaps.destroyMapsInContainer(listEl); 
 
     if (dayName) {
         const dayNameEl = document.createElement('h3');
@@ -256,14 +259,12 @@ function updateSpotlight(dateString, dayName, memories) {
         listEl.appendChild(dayNameEl);
     }
 
-    // 1. Crear el contenedor de la lista (Grupo)
     const containerEl = document.createElement('div');
-    containerEl.className = 'list-view-group'; // Usar la nueva clase de style.css
+    containerEl.className = 'list-view-group';
     listEl.appendChild(containerEl);
 
 
     if (!memories || memories.length === 0) {
-        // 2. Usar un 'list-view-item' para el placeholder
         containerEl.innerHTML = `
             <div class="list-view-item">
                 <div class="list-view-item-content">
@@ -276,18 +277,16 @@ function updateSpotlight(dateString, dayName, memories) {
         return;
     }
 
-    // 3. Ordenar memorias (igual que en _renderMemoryList)
     memories.sort((a, b) => {
         const dateA = a.Fecha_Original?.seconds ? new Date(a.Fecha_Original.seconds * 1000) : (a.Fecha_Original instanceof Date ? a.Fecha_Original : new Date(0));
         const dateB = b.Fecha_Original?.seconds ? new Date(b.Fecha_Original.seconds * 1000) : (b.Fecha_Original instanceof Date ? b.Fecha_Original : new Date(0));
         return dateB.getFullYear() - dateA.getFullYear();
     });
 
-    // 4. Crear los nuevos items de lista
     memories.forEach(mem => {
-        const details = _getMemorySpotlightDetails(mem); // Usar el nuevo helper
+        const details = _getMemorySpotlightDetails(mem); 
 
-        const itemEl = document.createElement('a'); // 'a' en lugar de 'div' para que sea clickeable
+        const itemEl = document.createElement('a');
         itemEl.className = 'list-view-item';
 
         itemEl.innerHTML = `
@@ -309,7 +308,6 @@ function updateSpotlight(dateString, dayName, memories) {
 
         containerEl.appendChild(itemEl);
     });
-    // 5. Ya no se inicializan mapas en el Spotlight, el diseño es de lista limpia.
 }
 
 
@@ -367,13 +365,15 @@ function openPreviewModal(dia, memories) {
     const dayNameSpecial = dia.Nombre_Especial !== 'Unnamed Day' ? `: -${dia.Nombre_Especial}-` : '';
     if (titleEl) titleEl.textContent = `${dia.Nombre_Dia}${dayNameSpecial}`;
 
-    _destroyActiveMaps(previewModal);
+    // *** CAMBIO: Llamar al módulo de mapas ***
+    uiMaps.destroyMapsInContainer(previewModal);
     _renderMemoryList(listEl, memories, false, 'preview');
 
     previewModal.style.display = 'flex';
     setTimeout(() => {
         previewModal.classList.add('visible');
-        _initMapsInContainer(listEl, 'preview');
+        // *** CAMBIO: Llamar al módulo de mapas ***
+        uiMaps.initMapsInContainer(listEl, 'preview');
     }, 10);
 }
 
@@ -381,7 +381,8 @@ function closePreviewModal() {
     if (!previewModal) return;
     previewModal.classList.remove('visible');
 
-    _destroyActiveMaps(previewModal); 
+    // *** CAMBIO: Llamar al módulo de mapas ***
+    uiMaps.destroyMapsInContainer(previewModal); 
 
     setTimeout(() => {
         previewModal.style.display = 'none';
@@ -414,7 +415,6 @@ function createSearchResultsModal() {
 
     document.getElementById('close-search-results-btn')?.addEventListener('click', closeSearchResultsModal);
     
-    // Hacer que los resultados sean clickeables
     const contentEl = document.getElementById('search-results-content');
     contentEl?.addEventListener('click', (e) => {
         const item = e.target.closest('.search-result-memory-item');
@@ -448,7 +448,8 @@ function openSearchResultsModal(searchTerm, results) {
         if (results.length === 0) {
             contentEl.innerHTML = '<p class="list-placeholder" style="padding: 20px;">No se encontraron memorias.</p>';
         } else {
-            _destroyActiveMaps(searchResultsModal);
+            // *** CAMBIO: Llamar al módulo de mapas ***
+            uiMaps.destroyMapsInContainer(searchResultsModal);
             
             results.forEach(mem => {
                 const itemEl = document.createElement('div');
@@ -471,7 +472,8 @@ function openSearchResultsModal(searchTerm, results) {
                 contentEl.appendChild(itemEl);
             });
             
-            _initMapsInContainer(contentEl, 'search');
+            // *** CAMBIO: Llamar al módulo de mapas ***
+            uiMaps.initMapsInContainer(contentEl, 'search');
         }
     }
 
@@ -482,7 +484,8 @@ function openSearchResultsModal(searchTerm, results) {
 function closeSearchResultsModal() {
     if (!searchResultsModal) return;
     searchResultsModal.classList.remove('visible');
-    _destroyActiveMaps(searchResultsModal);
+    // *** CAMBIO: Llamar al módulo de mapas ***
+    uiMaps.destroyMapsInContainer(searchResultsModal);
     setTimeout(() => {
         searchResultsModal.style.display = 'none';
     }, 200);
@@ -741,7 +744,8 @@ function openEditModal(dia, memories) {
 function closeEditModal() {
     if (!editModal) return;
     editModal.classList.remove('visible');
-    _destroyActiveMaps(editModal);
+    // *** CAMBIO: Llamar al módulo de mapas ***
+    uiMaps.destroyMapsInContainer(editModal);
     setTimeout(() => {
         editModal.style.display = 'none';
         _currentDay = null;
@@ -933,7 +937,6 @@ function closeAlertPromptModal(isOk) {
     }, 200);
 }
 
-// Esta es tu función original, usada para Alertas Estilizadas (Search, Settings)
 function showAlert(message, type = 'default') {
     if (!alertPromptModal) createAlertPromptModal();
     
@@ -1026,13 +1029,12 @@ function showConfirm(message) {
     });
 }
 
-// *** --- (NUEVO MODAL DE ALERTA GENÉRICA) --- ***
-// Este modal es para errores de red y del sistema. Usa .modal-simple-alert de style.css
+// --- (NUEVO MODAL DE ALERTA GENÉRICA) ---
 function createGenericAlertModal() {
     if (genericAlertModal) return;
     genericAlertModal = document.createElement('div');
     genericAlertModal.id = 'generic-alert-modal';
-    genericAlertModal.className = 'modal-simple-alert'; // Usa el estilo de CSS
+    genericAlertModal.className = 'modal-simple-alert'; 
     genericAlertModal.innerHTML = `
         <div class="simple-alert-content">
             <h3 id="generic-alert-title" class="simple-alert-title"></h3>
@@ -1056,14 +1058,13 @@ function closeGenericAlertModal() {
     setTimeout(() => {
         genericAlertModal.style.display = 'none';
         if (_genericAlertResolve) {
-            _genericAlertResolve(); // Resuelve la promesa
+            _genericAlertResolve(); 
             _genericAlertResolve = null;
         }
     }, 200);
 }
 
-// *** --- (NUEVA FUNCIÓN PÚBLICA) --- ***
-// Esta es la función que deberías llamar desde api.js o main.js para errores
+// --- (NUEVA FUNCIÓN PÚBLICA) ---
 function showErrorAlert(message, title = 'Error') {
     if (!genericAlertModal) createGenericAlertModal();
     
@@ -1084,70 +1085,9 @@ function showErrorAlert(message, title = 'Error') {
 
 // --- Funciones de Ayuda (Helpers) de UI ---
 
-function _renderMap(containerId, lat, lon, zoom = 13) {
-    try {
-        const container = document.getElementById(containerId);
-        if (!container || container._leaflet_id) {
-            return;
-        }
-        const map = L.map(containerId).setView([lat, lon], zoom);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-        L.marker([lat, lon]).addTo(map);
-        _activeMaps.push(map);
-    } catch (e) {
-        console.error("Error renderizando mapa Leaflet:", e);
-        const container = document.getElementById(containerId);
-        if (container) {
-            container.innerHTML = "Error al cargar el mapa.";
-        }
-    }
-}
-
-function _initMapsInContainer(containerEl, prefix) {
-    if (!containerEl) return;
-    const mapPlaceholders = containerEl.querySelectorAll(`div[id^="${prefix}-map-"][data-lat]`);
-    mapPlaceholders.forEach(el => {
-        if (el._leaflet_id) return;
-        const lat = el.dataset.lat;
-        const lon = el.dataset.lon;
-        const zoom = el.dataset.zoom || 13;
-        if (lat && lon) {
-            setTimeout(() => {
-                 _renderMap(el.id, parseFloat(lat), parseFloat(lon), parseInt(zoom));
-            }, 50); 
-        }
-    });
-}
-
-function _destroyActiveMaps(containerEl) {
-    if (!containerEl) {
-        console.warn("_destroyActiveMaps llamada sin contenedor. Abortando.");
-        return; 
-    }
-
-    const mapsToDestroy = [];
-    const stillActiveMaps = [];
-
-    _activeMaps.forEach(map => {
-        if (containerEl.contains(map.getContainer())) {
-            mapsToDestroy.push(map);
-        } else {
-            stillActiveMaps.push(map);
-        }
-    });
-
-    mapsToDestroy.forEach(map => {
-        try { 
-            map.remove(); 
-        } catch(e) { 
-            console.warn("Error removing map:", e); 
-        }
-    });
-    
-    _activeMaps = stillActiveMaps;
-}
+// --- ELIMINADO ---
+// _renderMap, _initMapsInContainer, y _destroyActiveMaps
+// se han movido a ui-maps.js
 
 
 function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') {
@@ -1183,9 +1123,11 @@ function updateMemoryList(memories) {
 
     const previewList = document.getElementById('preview-memorias-list');
     if (previewList && previewModal && previewModal.classList.contains('visible') && _currentDay) {
-         _destroyActiveMaps(previewModal);
+         // *** CAMBIO: Llamar al módulo de mapas ***
+         uiMaps.destroyMapsInContainer(previewModal);
          _renderMemoryList(previewList, _currentMemories, false, 'preview');
-         setTimeout(() => _initMapsInContainer(previewList, 'preview'), 10);
+         // *** CAMBIO: Llamar al módulo de mapas ***
+         setTimeout(() => uiMaps.initMapsInContainer(previewList, 'preview'), 10);
     }
 }
 
@@ -1351,7 +1293,7 @@ function _createLoginButton(isLoggedOut, container) {
     btn.className = 'header-login-btn';
     btn.title = 'Login with Google';
     btn.dataset.action = 'login';
-    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.20455c0-.63864-.05727-1.25182-.16909-1.84091H9v3.48182h4.84364c-.20864 1.125-.84273 2.07818-1.77727 2.71136v2.25818h2.90864c1.70182-1.56682 2.68409-3.87409 2.68409-6.61045z"/><path fill="#34A853" d="M9 18c2.43 0 4.47182-.80591 5.96273-2.18045l-2.90864-2.25818c-.80591.54364-1.83682.86591-2.94.86591-2.27318 0-4.20727-1.53318-4.9-3.58227H1.07182v2.33318C2.56636 16.3 5.56 18 9 18z"/><path fill="#FBBC05" d="M4.1 10.71c-.22-.64-.35-1.32-.35-2.03s.13-.139.35-2.03V4.31H1.07C.38 5.67 0 7.29 0 9.03s.38 3.36 1.07 4.72l3.03-2.33v.03z"/><path fill="#EA4335" d="M9 3.57955c1.32136 0 2.50773.45455 3.44091 1.34591l2.58136-2.58136C13.46318.891364 11.4259 0 9 0 5.56 0 2.56636 1.70182 1.07182 4.31l3.02818 2.33318C4.79273 5.11273 6.72682 3.57955 9 3.57955z"/></svg>`;
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.20455c0-.63864-.05727-1.25182-.16909-1.84091H9v3.48182h4.84364c-.20864 1.125-.84273 2.07818-1.77727 2.71136v2.25818h2.90864c1.70182-1.56682 2.68409-3.87409 2.68409-6.61045z"/><path fill="#34A853" d="M9 18c2.43 0 4.47182-.80591 5.96273-2.18045l-2.90864-2.25818c-.80591.54364-1.83682.86591-2.94.86591-2.27318 0-4.20727-1.53318-4.9-3.58227H1.07182v2.33318C2.56636 16.3 5.56 18 9 18z"/><path fill="#FBBC05" d="M4.1 10.71c-.22-.64-.35-1.32-.35-2.03s.13-.139.35-2.03V4.31H1.07C.38 5.67 0 7.29 0 9.03s.38 3.36 1.07 4.72l3.03-2.33v.03z"/><path fill="#EA4335" d="M9 3.57955c1.32136 0 2.50773.45455 3.44091 1.34591l2.58136-2.58136C13.46318.891364 11.4259 0 9 0 5.56 0 2.56636 1.70182 1.07182 4.31l3.02818 2.33318C4.79273 5.11273 6.72682 3.57955 9 3.57955z"/></svg>`;
     container.appendChild(btn);
 }
 
