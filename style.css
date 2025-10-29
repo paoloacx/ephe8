@@ -1,4 +1,4 @@
-/* style.css - v2.64 - Notebook simplified: No circles, Bold year, Darker dash */
+/* style.css - v2.65 - Striped Background, Preview & Store UI tweaks */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -455,6 +455,9 @@ main {
     overflow: hidden;
     color: #333;
 }
+.modal-preview-content {
+    max-height: 75vh;
+}
 
 /* Modal Alerta/Confirmación Base */
 .modal-alert-content {
@@ -542,18 +545,42 @@ main {
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
 }
 
-/* Scrollable dentro del modal */
+/* Fondo Rayado */
+.striped-background {
+    background-color: #f0f0f0;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(0, 0, 0, 0.03),
+        rgba(0, 0, 0, 0.03) 10px,
+        transparent 10px,
+        transparent 20px
+    );
+}
+.modal-edit .modal-content-scrollable,
+.modal-store .modal-content-scrollable,
+.modal-store-list .modal-content-scrollable {
+    background-color: #f0f0f0; /* Fallback */
+    background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(0, 0, 0, 0.03),
+        rgba(0, 0, 0, 0.03) 10px,
+        transparent 10px,
+        transparent 20px
+    );
+}
+
+/* Scrollable dentro del modal (Genérico) */
 .modal-content-scrollable {
     overflow-y: auto;
     flex-grow: 1;
     padding: 0;
-    background-color: #f0f0f0;
 }
+
 /* Secciones del modal */
 .modal-section {
     padding: 10px 15px 15px 15px;
     border-bottom: 1px solid #ccc;
-    background: #f0f0f0;
+    background: transparent;
     color: #333;
     text-shadow: none;
     border-radius: 0;
@@ -582,7 +609,6 @@ main {
     border-bottom: none;
     padding-bottom: 20px;
 }
-/* Controles de selección de día */
 .day-selection-controls {
     display: flex;
     align-items: center;
@@ -645,51 +671,28 @@ main {
     flex-grow: 1;
 }
 
-/* --- ***** INICIO CAMBIO v2.64: ESTILO CUADERNO SIMPLIFICADO FINAL ***** --- */
+/* --- ESTILO CUADERNO SIMPLIFICADO FINAL --- */
 .modal-preview-notebook-paper {
     flex-grow: 1;
     overflow-y: auto;
-    background-color: #ffffff; /* 1. Fondo blanco */
-    padding: 20px 20px 20px 50px; /* Padding izquierdo para línea */
+    background-color: #ffffff;
+    padding: 20px 20px 20px 50px;
     position: relative;
     line-height: 24px;
     font-family: 'Courier New', Courier, monospace;
-    color: #333;
-
-    /* Múltiples fondos: Línea roja vertical y líneas azules horizontales */
+    color: #000000;
     background-image:
-        /* 1. Línea vertical roja (A 40px del borde) */
-        linear-gradient(
-            to right,
-            transparent 0px,
-            transparent 39px,
-            #ff6666 39px, /* Línea roja de 1px */
-            #ff6666 40px,
-            transparent 40px
-        ),
-        /* 2. Líneas horizontales (Azules) */
-        repeating-linear-gradient(
-            to bottom,
-            transparent 0px,
-            transparent 23px, /* Espacio en blanco */
-            #aaccff 23px, /* Línea azul de 1px */
-            #aaccff 24px
-        );
-
-    /* Propiedades explícitas para cada fondo */
-    background-repeat: repeat-y, repeat; /* Línea roja solo vertical, líneas azules normal */
-    background-position: 0 0, 0 10px; /* Posición para cada capa */
-    background-size: auto, 100% 24px; /* Tamaño para cada capa */
-
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.1); /* Sombra interior papel */
+        linear-gradient( to right, transparent 0px, transparent 39px, #ff6666 39px, #ff6666 40px, transparent 40px ),
+        repeating-linear-gradient( to bottom, transparent 0px, transparent 23px, #aaccff 23px, #aaccff 24px );
+    background-repeat: repeat-y, repeat;
+    background-position: 0 0, 0 10px;
+    background-size: auto, 100% 24px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
 }
-
-/* Limpiar el ::before ya que la línea roja ahora es parte del background-image */
 .modal-preview-notebook-paper::before {
     content: none;
 }
-/* --- ***** FIN CAMBIO v2.64 ***** --- */
-
+/* --- FIN ESTILO CUADERNO --- */
 
 .modal-preview-memorias {
     padding: 0;
@@ -706,7 +709,6 @@ main {
 }
 .modal-preview-notebook-paper .memoria-item {
     background-color: transparent;
-    /* ***** CAMBIO: Separador dashed más oscuro ***** */
     border-bottom: 2px dashed #aaaaaa;
     padding: 10px 0;
     margin-bottom: 10px;
@@ -721,28 +723,26 @@ main {
     margin-bottom: 0;
     padding-bottom: 5px;
 }
-
-/* Estilo contenido memoria en Preview */
 .modal-preview-notebook-paper .memoria-item-main-content {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 .modal-preview-notebook-paper .memoria-item small { /* Año */
-    color: #777;
+    color: #000000;
     margin-bottom: 3px;
     display: block;
     font-size: 11px;
     min-width: 0;
     text-align: left;
     flex-shrink: 1;
-    /* ***** CAMBIO: Año en negrita ***** */
     font-weight: bold;
 }
 .modal-preview-notebook-paper .memoria-item-content {
     display: block;
     flex-grow: 1;
     word-break: break-word;
+    color: #000000;
 }
 .modal-preview-notebook-paper .memoria-artwork {
     width: 30px;
@@ -757,10 +757,10 @@ main {
     vertical-align: middle;
     margin-right: 0;
     flex-shrink: 0;
-    color: #666;
+    color: #000000;
 }
 .modal-preview-notebook-paper .artist-name {
-    color: #555;
+    color: #333333;
     font-size: 0.9em;
 }
 .modal-preview-notebook-paper .list-placeholder {
@@ -768,7 +768,6 @@ main {
      font-style: italic;
      padding: 10px 0;
 }
-/* Estilos Mapa Preview */
 .memoria-map-container {
     height: 150px;
     width: 100%;
@@ -795,6 +794,10 @@ main {
     margin: 5px;
     flex-grow: 1;
     max-width: 45%;
+    /* Estilos .small aplicados directamente */
+    padding: 5px 12px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
 }
 
 /* Footer Modales Claros (Edit, Store) */
@@ -1005,6 +1008,45 @@ main {
     color: #aaa;
     font-size: 24px;
     margin-left: auto;
+}
+
+/* Estilos Lista Almacén (Store List) */
+.store-list-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+    background-color: #fff;
+}
+.store-list-item:hover {
+    background-color: #f5f5f5;
+}
+.store-list-item:last-child {
+    border-bottom: none;
+}
+.store-list-item .memoria-icon {
+    font-size: 24px;
+    color: #666;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+.store-list-item .memoria-item-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    font-size: 14px;
+    min-width: 0;
+}
+.store-list-item .memoria-item-content strong {
+    font-weight: bold;
+    color: #333;
+}
+.store-list-item .memoria-item-content small {
+    font-size: 12px;
+    color: #777;
+    margin-top: 2px;
 }
 
 /* Resultados Búsqueda Música/Lugar */
