@@ -554,6 +554,4 @@ export {
     getTodaySpotlight,
     getMemoriesByType,
     getNamedDays,
-    // *** NUEVO: Exportar la función de Timeline ***
-    getAllMemoriesForTimeline 
 };
