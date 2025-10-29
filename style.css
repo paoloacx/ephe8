@@ -545,29 +545,33 @@ main {
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
 }
 
-/* Fondo Rayado */
+/* --- CAMBIO: Fondo Rayado Vertical --- */
 .striped-background {
-    background-color: #f0f0f0;
+    /* Fondo vertical azulado, basado en IMG_0363.jpeg */
+    background-color: #f7f9fc; /* Fondo casi blanco */
     background-image: repeating-linear-gradient(
-        -45deg,
-        rgba(0, 0, 0, 0.03),
-        rgba(0, 0, 0, 0.03) 10px,
-        transparent 10px,
-        transparent 20px
+        to right,
+        #f7f9fc,
+        #f7f9fc 10px,
+        #edf2f7 10px, /* Raya azul clara */
+        #edf2f7 20px
     );
 }
 .modal-edit .modal-content-scrollable,
 .modal-store .modal-content-scrollable,
 .modal-store-list .modal-content-scrollable {
-    background-color: #f0f0f0; /* Fallback */
+    /* Hereda de .striped-background */
+    background-color: #f7f9fc; /* Fondo casi blanco */
     background-image: repeating-linear-gradient(
-        -45deg,
-        rgba(0, 0, 0, 0.03),
-        rgba(0, 0, 0, 0.03) 10px,
-        transparent 10px,
-        transparent 20px
+        to right,
+        #f7f9fc,
+        #f7f9fc 10px,
+        #edf2f7 10px, /* Raya azul clara */
+        #edf2f7 20px
     );
 }
+/* --- FIN CAMBIO --- */
+
 
 /* Scrollable dentro del modal (Genérico) */
 .modal-content-scrollable {
@@ -651,6 +655,11 @@ main {
 .day-selection-controls input {
     width: auto;
 }
+/* Ocultar grupos de formulario por defecto */
+.add-memory-input-group {
+    display: none;
+}
+
 
 /* Cabecera Modal Preview */
 .modal-preview-header {
