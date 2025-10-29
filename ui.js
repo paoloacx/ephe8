@@ -1,5 +1,5 @@
 /*
- * ui.js (v2.69 - Search Results Modal)
+ * ui.js (v2.70 - Alerta de Error y UI Spotlight unificada)
  * Módulo de interfaz de usuario con modal de búsqueda global.
  */
 
@@ -15,20 +15,22 @@ let alertPromptModal = null;
 let _promptResolve = null;
 let confirmModal = null;
 let _confirmResolve = null;
+let genericAlertModal = null; // *** NUEVO: Modal para alertas de error genéricas ***
+let _genericAlertResolve = null; // *** NUEVO ***
 
 // Referencias a los modales principales
 let previewModal = null;
 let editModal = null;
 let storeModal = null;
 let storeListModal = null;
-let searchResultsModal = null; // NUEVO
+let searchResultsModal = null;
 
 let _activeMaps = []; // Para gestionar mapas Leaflet
 
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.69 - Search Modal)");
+    console.log("UI Module init (v2.70 - Error Alert & Spotlight UI)");
     callbacks = mainCallbacks;
 
     _bindHeaderEvents();
@@ -43,9 +45,10 @@ function init(mainCallbacks) {
     createEditModal();
     createStoreModal();
     createStoreListModal();
-    createSearchResultsModal(); // NUEVO
+    createSearchResultsModal();
     createAlertPromptModal();
     createConfirmModal();
+    createGenericAlertModal(); // *** NUEVO: Crear el modal de alerta genérico ***
 }
 
 // --- Bindings ---
@@ -88,9 +91,10 @@ function _bindGlobalListeners() {
         if (e.target.classList.contains('modal-edit')) closeEditModal();
         if (e.target.classList.contains('modal-store')) closeStoreModal();
         if (e.target.classList.contains('modal-store-list')) closeStoreListModal();
-        if (e.target.classList.contains('modal-search-results')) closeSearchResultsModal(); // NUEVO
+        if (e.target.classList.contains('modal-search-results')) closeSearchResultsModal();
         if (e.target.classList.contains('modal-alert-prompt')) closeAlertPromptModal(false);
         if (e.target.classList.contains('modal-confirm')) closeConfirmModal(false);
+        if (e.target.classList.contains('modal-simple-alert')) closeGenericAlertModal(); // *** NUEVO ***
     });
 }
 
@@ -119,8 +123,8 @@ function showApp(show) {
     if (appContent) appContent.style.display = show ? 'grid' : 'none';
 
     if (show) {
-         const loading = appContent?.querySelector('.loading-message');
-         if (loading) loading.remove();
+        const loading = appContent?.querySelector('.loading-message');
+        if (loading) loading.remove();
     }
 }
 
@@ -165,7 +169,7 @@ function drawCalendar(monthName, days, todayId) {
 
     if (!days || days.length === 0) {
         appContent.innerHTML = '<p class="list-placeholder" style="padding: 20px; color: #ccc;">No hay datos del calendario.</p>';
-         appContent.style.display = 'block';
+        appContent.style.display = 'block';
         return;
     }
 
@@ -189,6 +193,52 @@ function drawCalendar(monthName, days, todayId) {
     appContent.style.display = 'grid';
 }
 
+
+// *** --- (NUEVA FUNCIÓN HELPER) --- ***
+// Este helper extrae un título y subtítulo para el Spotlight
+function _getMemorySpotlightDetails(mem) {
+    let title = 'Memoria';
+    let subtitle = 'Año desc.';
+
+    // Get Subtítulo (Año)
+    if (mem.Fecha_Original) {
+        try {
+            const date = mem.Fecha_Original.seconds ? new Date(mem.Fecha_Original.seconds * 1000) : new Date(mem.Fecha_Original);
+            if (!isNaN(date)) subtitle = date.getFullYear().toString();
+        } catch (e) { /* Ignorar error de fecha */ }
+    }
+
+    // Get Título
+    switch (mem.Tipo) {
+        case 'Lugar':
+            title = mem.LugarNombre || 'Lugar sin nombre';
+            break;
+        case 'Musica':
+            const trackName = mem.CancionData?.trackName || mem.CancionData?.title;
+            const artistName = mem.CancionData?.artistName || mem.CancionData?.artist?.name;
+            if (trackName) {
+                title = `${trackName} - ${artistName || 'Artista desc.'}`;
+            } else {
+                title = mem.CancionInfo || 'Canción sin nombre';
+            }
+            break;
+        case 'Imagen':
+            title = mem.Descripcion || 'Imagen';
+            break;
+        case 'Texto':
+        default:
+            title = mem.Descripcion || 'Nota vacía';
+            // Acortar texto largo para el spotlight
+            if (title.length > 50) {
+                title = title.substring(0, 50) + '...';
+            }
+            break;
+    }
+    return { title, subtitle };
+}
+
+// *** --- (FUNCIÓN MODIFICADA) --- ***
+// Renderiza el Spotlight usando el estilo UITableView (.list-view-group)
 function updateSpotlight(dateString, dayName, memories) {
     const titleEl = document.getElementById('spotlight-date-header');
     const listEl = document.getElementById('today-memory-spotlight');
@@ -196,7 +246,8 @@ function updateSpotlight(dateString, dayName, memories) {
     if (titleEl) titleEl.textContent = dateString;
     if (!listEl) return;
 
-    listEl.innerHTML = '';
+    listEl.innerHTML = ''; // Limpiar
+    _destroyActiveMaps(listEl); // Destruir mapas (el nuevo diseño no los usa, pero es buena práctica)
 
     if (dayName) {
         const dayNameEl = document.createElement('h3');
@@ -205,36 +256,52 @@ function updateSpotlight(dateString, dayName, memories) {
         listEl.appendChild(dayNameEl);
     }
 
+    // 1. Crear el contenedor de la lista (Grupo)
     const containerEl = document.createElement('div');
-    containerEl.id = 'spotlight-memories-container';
+    containerEl.className = 'list-view-group'; // Usar la nueva clase de style.css
     listEl.appendChild(containerEl);
 
 
     if (!memories || memories.length === 0) {
-        const placeholder = document.createElement('p');
-        placeholder.className = 'list-placeholder';
-        placeholder.textContent = 'No hay memorias destacadas.';
-        containerEl.appendChild(placeholder);
-         _destroyActiveMaps(containerEl);
+        // 2. Usar un 'list-view-item' para el placeholder
+        containerEl.innerHTML = `
+            <div class="list-view-item">
+                <div class="list-view-item-content">
+                    <div class="list-view-item-title" style="font-weight: normal; font-style: italic; color: #666;">
+                        No hay memorias destacadas.
+                    </div>
+                </div>
+            </div>
+        `;
         return;
     }
 
-    _destroyActiveMaps(containerEl);
+    // 3. Ordenar memorias (igual que en _renderMemoryList)
+    memories.sort((a, b) => {
+        const dateA = a.Fecha_Original?.seconds ? new Date(a.Fecha_Original.seconds * 1000) : (a.Fecha_Original instanceof Date ? a.Fecha_Original : new Date(0));
+        const dateB = b.Fecha_Original?.seconds ? new Date(b.Fecha_Original.seconds * 1000) : (b.Fecha_Original instanceof Date ? b.Fecha_Original : new Date(0));
+        return dateB.getFullYear() - dateA.getFullYear();
+    });
 
+    // 4. Crear los nuevos items de lista
     memories.forEach(mem => {
-        const itemEl = document.createElement('div');
-        itemEl.className = 'spotlight-memory-item';
+        const details = _getMemorySpotlightDetails(mem); // Usar el nuevo helper
 
-        if (mem.Tipo === 'Texto') {
-            itemEl.classList.add('spotlight-item-text');
-        }
+        const itemEl = document.createElement('a'); // 'a' en lugar de 'div' para que sea clickeable
+        itemEl.className = 'list-view-item';
 
-        itemEl.innerHTML = createMemoryItemHTML(mem, false, 'spotlight');
+        itemEl.innerHTML = `
+            <div class="list-view-item-content">
+                <div class="list-view-item-title">${details.title}</div>
+                <div class="list-view-item-subtitle">${details.subtitle}</div>
+            </div>
+            <div class="list-view-chevron"></div>
+        `;
 
         itemEl.addEventListener('click', () => {
-             const diaObj = _allDaysData.find(d => d.id === mem.diaId);
-             if (diaObj && callbacks.onDayClick) {
-                 callbacks.onDayClick(diaObj);
+            const diaObj = _allDaysData.find(d => d.id === mem.diaId);
+            if (diaObj && callbacks.onDayClick) {
+                callbacks.onDayClick(diaObj);
             } else {
                 console.warn("No se encontró el objeto 'dia' para el spotlight:", mem.diaId);
             }
@@ -242,8 +309,7 @@ function updateSpotlight(dateString, dayName, memories) {
 
         containerEl.appendChild(itemEl);
     });
-
-    _initMapsInContainer(containerEl, 'spotlight');
+    // 5. Ya no se inicializan mapas en el Spotlight, el diseño es de lista limpia.
 }
 
 
@@ -750,7 +816,7 @@ function createStoreListModal() {
                  <h3 id="store-list-modal-title">Cargando...</h3>
             </div>
             <div class="modal-content-scrollable striped-background" id="store-list-content">
-                </div>
+                 </div>
             <div class="modal-main-buttons">
                 <button id="close-store-list-btn" class="aqua-button">Cerrar</button>
             </div>
@@ -867,6 +933,7 @@ function closeAlertPromptModal(isOk) {
     }, 200);
 }
 
+// Esta es tu función original, usada para Alertas Estilizadas (Search, Settings)
 function showAlert(message, type = 'default') {
     if (!alertPromptModal) createAlertPromptModal();
     
@@ -956,6 +1023,61 @@ function showConfirm(message) {
 
     return new Promise((resolve) => {
         _confirmResolve = resolve;
+    });
+}
+
+// *** --- (NUEVO MODAL DE ALERTA GENÉRICA) --- ***
+// Este modal es para errores de red y del sistema. Usa .modal-simple-alert de style.css
+function createGenericAlertModal() {
+    if (genericAlertModal) return;
+    genericAlertModal = document.createElement('div');
+    genericAlertModal.id = 'generic-alert-modal';
+    genericAlertModal.className = 'modal-simple-alert'; // Usa el estilo de CSS
+    genericAlertModal.innerHTML = `
+        <div class="simple-alert-content">
+            <h3 id="generic-alert-title" class="simple-alert-title"></h3>
+            <p id="generic-alert-message" class="simple-alert-message"></p>
+            <div class="simple-alert-buttons">
+                <button id="generic-alert-ok" class="simple-alert-button default-action">OK</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(genericAlertModal);
+    _bindGenericAlertModalEvents();
+}
+
+function _bindGenericAlertModalEvents() {
+    document.getElementById('generic-alert-ok')?.addEventListener('click', closeGenericAlertModal);
+}
+
+function closeGenericAlertModal() {
+    if (!genericAlertModal) return;
+    genericAlertModal.classList.remove('visible');
+    setTimeout(() => {
+        genericAlertModal.style.display = 'none';
+        if (_genericAlertResolve) {
+            _genericAlertResolve(); // Resuelve la promesa
+            _genericAlertResolve = null;
+        }
+    }, 200);
+}
+
+// *** --- (NUEVA FUNCIÓN PÚBLICA) --- ***
+// Esta es la función que deberías llamar desde api.js o main.js para errores
+function showErrorAlert(message, title = 'Error') {
+    if (!genericAlertModal) createGenericAlertModal();
+    
+    const titleEl = document.getElementById('generic-alert-title');
+    const msgEl = document.getElementById('generic-alert-message');
+
+    if(titleEl) titleEl.textContent = title;
+    if(msgEl) msgEl.textContent = message;
+
+    genericAlertModal.style.display = 'flex';
+    setTimeout(() => genericAlertModal.classList.add('visible'), 10);
+
+    return new Promise((resolve) => {
+        _genericAlertResolve = resolve;
     });
 }
 
@@ -1097,10 +1219,10 @@ function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
                 const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
                 const mapClass = (mapIdPrefix === 'spotlight' || mapIdPrefix === 'search') ? 'spotlight-map-container' : 'memoria-map-container';
                 mapHTML = `<div id="${mapContainerId}"
-                                class="${mapClass}"
-                                data-lat="${lat}"
-                                data-lon="${lon}"
-                                data-zoom="13">Cargando mapa...</div>`;
+                                 class="${mapClass}"
+                                 data-lat="${lat}"
+                                 data-lon="${lon}"
+                                 data-zoom="13">Cargando mapa...</div>`;
             }
             break;
         case 'Musica':
@@ -1513,9 +1635,10 @@ export const ui = {
     closeStoreModal,
     openStoreListModal,
     closeStoreListModal,
-    openSearchResultsModal,  // NUEVO
-    closeSearchResultsModal, // NUEVO
-    showAlert,
+    openSearchResultsModal,
+    closeSearchResultsModal,
+    showAlert, // Tu función original para alertas/prompts estilizados
+    showErrorAlert, // *** NUEVA: Para errores genéricos ***
     showPrompt,
     showConfirm,
     updateStoreList,
