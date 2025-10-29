@@ -750,16 +750,83 @@ function showConfirm(message) { /* ... sin cambios ... */ }
 
 
 // --- Funciones de Ayuda (Helpers) de UI ---
-function _renderMap(containerId, lat, lon, zoom = 13) { /* ... sin cambios ... */ }
-function _initMapsInContainer(containerEl, prefix) { /* ... sin cambios ... */ }
+
+/**
+ * Renderiza un mapa Leaflet en un contenedor.
+ */
+function _renderMap(containerId, lat, lon, zoom = 13) {
+    try {
+        // Comprobar si el contenedor ya tiene un mapa
+        const container = document.getElementById(containerId);
+        if (!container || container._leaflet_id) {
+            return;
+        }
+
+        // Crear el mapa
+        const map = L.map(containerId).setView([lat, lon], zoom);
+
+        // Añadir la capa de tiles (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Añadir un marcador
+        L.marker([lat, lon]).addTo(map);
+
+        // Guardar la instancia del mapa para destruirla después
+        _activeMaps.push(map);
+
+    } catch (e) {
+        console.error("Error renderizando mapa Leaflet:", e);
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = "Error al cargar el mapa.";
+        }
+    }
+}
+
+/**
+ * Busca e inicializa todos los placeholders de mapas dentro de un contenedor.
+ */
+function _initMapsInContainer(containerEl, prefix) {
+    if (!containerEl) return;
+
+    // Buscar todos los placeholders de mapa que aún no se han inicializado
+    const mapPlaceholders = containerEl.querySelectorAll(`div[id^="${prefix}-map-"][data-lat]`);
+    
+    mapPlaceholders.forEach(el => {
+        // Comprobar si ya tiene un mapa (evitar reinicialización)
+        if (el._leaflet_id) return;
+
+        const lat = el.dataset.lat;
+        const lon = el.dataset.lon;
+        const zoom = el.dataset.zoom || 13;
+        
+        if (lat && lon) {
+            // Dar un pequeño respiro al DOM para que mida el div
+            setTimeout(() => {
+                 _renderMap(el.id, parseFloat(lat), parseFloat(lon), parseInt(zoom));
+            }, 50); // 50ms de espera
+        }
+    });
+}
+
+/**
+ * Destruye todas las instancias de mapas activas.
+ */
 function _destroyActiveMaps() {
     _activeMaps.forEach(map => {
         if (map && map.remove) {
-            try { map.remove(); } catch (e) { console.warn("Error removing map:", e); }
+            try { 
+                map.remove(); 
+            } catch (e) { 
+                console.warn("Error removing map:", e); 
+            }
         }
     });
     _activeMaps = [];
 }
+
 function _renderMemoryList(listEl, memories, showActions, mapIdPrefix = 'map') {
     if (!listEl) return;
     listEl.innerHTML = '';
