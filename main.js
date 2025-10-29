@@ -1,5 +1,5 @@
 /*
- * main.js (v2.63 - Modularized Settings)
+ * main.js (v2.65 - Preview/Store/Edit UI tweaks)
  * Controlador principal de Ephemerides.
  */
 
@@ -21,7 +21,7 @@ import {
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
-import { showSettings } from './settings.js'; // <-- NUEVA IMPORTACIÓN
+import { showSettings } from './settings.js'; // Importación del módulo settings
 
 // --- Estado Global de la App ---
 let state = {
@@ -40,13 +40,13 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.63 (Modularized Settings)..."); // Cambiado
+    console.log("Iniciando Ephemerides v2.65 (UI Tweaks)..."); // Versión actualizada
 
     try {
-        ui.setLoading("Iniciando...", true);
+        ui.setLoading("Iniciando...", true); //
         initFirebase(); //
         
-        ui.init(getUICallbacks(), []); //
+        ui.init(getUICallbacks()); // - Eliminado segundo argumento []
         initAuthListener(handleAuthStateChange); //
 
         ui.setLoading("Autenticando...", true); //
@@ -271,12 +271,12 @@ async function handleFooterAction(action) {
          return;
     }
 
-    // --- CAMBIO: Llamar a showSettings del módulo settings.js ---
+    // --- Llamada a showSettings ---
     if (action === 'settings') {
          showSettings(); // Llama a la función importada
          return;
     }
-    // --- FIN CAMBIO ---
+    // --- Fin llamada ---
     
     const userId = state.currentUser?.uid; 
 
