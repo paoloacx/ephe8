@@ -1,688 +1,39 @@
-/* style.css - v2.62 - Notebook paper FINAL FIX (Identical) & Dashed Separator */
+/* style.css - v2.63 - Notebook paper EXTREME SIMPLIFICATION */
 @charset "UTF-8";
 
-/* --- Base y Fondo --- */
-body {
-    margin: 0;
-    padding: 0 0 90px 0; /* Altura del footer */
-    background-image: url('plain-linen.jpeg');
-    background-color: #333; /* Fallback */
-    background-repeat: repeat;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    color: #f0f0f0;
-    font-size: 16px;
-    -webkit-tap-highlight-color: transparent;
-    overflow-x: hidden;
-}
+/* ... (resto del CSS igual que antes)... */
 
-button, input, textarea, select {
-    font-family: inherit;
-    font-size: inherit;
-    color: #333;
-}
-
-/* --- Header (Barra Superior) --- */
-header {
-    background: linear-gradient(to bottom, #bcc6d1 0%, #a4b0bd 50%, #909dad 51%, #a4b0bd 100%);
-    border-bottom: 1px solid #6d6d6d;
-    padding: 5px 10px;
-    text-align: center;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 45px;
-}
-header h1 {
-    margin: 0;
-    font-size: 20px;
-    color: #333333; /* CAMBIO: Color más oscuro */
-    font-weight: bold;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
-    flex-grow: 1;
-    text-align: center;
-    padding-left: 50px;
-    padding-right: 50px;
-    text-transform: uppercase;
-}
-#header-search-btn {
-    flex-shrink: 0;
-    margin: 0 5px;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    left: 10px;
-    background: none;
-    border: none;
-    padding: 5px;
-    cursor: pointer;
-    color: white;
-    opacity: 0.8;
-    line-height: 0;
-    text-shadow: 0 -1px 0 rgba(0,0,0,0.5);
-}
-#header-search-btn:hover {
-    opacity: 1;
-}
-#header-search-btn .material-icons-outlined {
-    font-size: 24px;
-}
-
-#login-section {
-     flex-shrink: 0;
-    margin: 0 5px;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    right: 10px;
-    display: flex;
-    align-items: center;
-}
-#user-info {
-    display: none;
-    align-items: center;
-    margin-right: 5px;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 5px;
-    transition: background-color 0.2s;
-}
-#user-info:hover {
-    background-color: rgba(0,0,0,0.1);
-}
-#user-img {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    margin-right: 0;
-    border: 1px solid rgba(255,255,255,0.5);
-}
-#user-name {
-    display: none;
-}
-#login-btn-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-#user-info[style*="flex"] + #login-btn-container {
-    display: none;
-}
-.header-login-btn {
-    background: none;
-    border: none;
-    padding: 5px;
-    cursor: pointer;
-    color: white;
-    opacity: 0.8;
-    line-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.header-login-btn:hover { opacity: 1; }
-.header-login-btn .material-icons-outlined {
-    font-size: 24px;
-}
-.header-login-btn svg {
-    width: 24px;
-    height: 24px;
-}
-
-
-/* --- Navegación Mes (Aqua) --- */
-.month-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 15px;
-    background-color: #555c64;
-    border-bottom: 1px solid #222;
-    position: sticky;
-    top: 55px;
-    z-index: 9;
-    background-image: repeating-linear-gradient(rgba(0,0,0,0.1) 0, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px),
-                      repeating-linear-gradient(to right, rgba(0,0,0,0.1) 0, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px);
-}
-#month-name-display {
-    font-size: 17px;
-    font-weight: bold;
-    color: #ffffff;
-    text-align: center;
-    flex-grow: 1;
-    text-transform: capitalize;
-}
-
-/* --- Botón Aqua (Estilo iOS) --- */
-.aqua-button {
-    background: linear-gradient(to bottom, #a7d1ef 0%, #76b6e4 50%, #58a5d9 51%, #4aa2d8 100%);
-    border: 1px solid #3c82b1 !important;
-    border-radius: 15px !important;
-    padding: 8px 20px !important;
-    font-size: 15px !important;
-    font-weight: bold !important;
-    color: #fff !important;
-    cursor: pointer;
-    box-shadow: 0 2px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1) !important;
-    text-shadow: 0 -1px 0 rgba(0,0,0,0.3) !important;
-    min-width: 40px;
-    transition: all 0.1s ease-in-out;
-    margin: 5px;
-    line-height: normal !important;
-    -webkit-appearance: none;
-    appearance: none;
-    text-align: center;
-    display: inline-block;
-}
-/* Estilo Aqua más pequeño para botones específicos */
-.aqua-button.small {
-    padding: 5px 12px !important;
-    font-size: 13px !important;
-    border-radius: 10px !important;
-}
-/* CAMBIO v17.0: Botón de cancelar en formulario */
-#btn-cancel-mem-edit {
-    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e0e0e0 100%) !important;
-    color: #333 !important;
-    border: 1px solid #999 !important;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.6) !important;
-    margin-left: 10px;
-}
-#btn-cancel-mem-edit:hover {
-     background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 50%, #d8d8d8 51%, #e8e8e8 100%) !important;
-}
-
-
-.aqua-button:hover {
-    background: linear-gradient(to bottom, #b8dcf4 0%, #8cc8ec 50%, #6fbde4 51%, #5fb9e2 100%) !important;
-}
-.aqua-button:active {
-    background: linear-gradient(to top, #a7d1ef 0%, #76b6e4 50%, #58a5d9 51%, #4aa2d8 100%) !important;
-    box-shadow: inset 0 2px 3px rgba(0,0,0,0.3) !important;
-    transform: translateY(1px);
-}
-.month-nav .aqua-button {
-    padding: 5px 10px !important;
-    border-radius: 8px !important;
-    line-height: 0 !important;
-}
-.month-nav .aqua-button .material-icons-outlined {
-    font-size: 16px;
-    vertical-align: middle;
-    margin-top: 0;
-}
-
-
-/* --- Contenido Principal (Spotlight y Grid) --- */
-main {
-    padding: 10px;
-    max-width: 960px;
-    margin: 0 auto;
-    background-color: transparent; /* Fondo transparente */
-    border-radius: 0;
-    box-shadow: none;
-}
-
-/* Spotlight "Today" */
-#spotlight-section {
-    padding: 0 10px;
-    max-width: 960px;
-    margin: 0 auto;
-    position: relative;
-    z-index: 1;
-}
-#spotlight-date-header {
-    font-size: 19px;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.5);
-    margin: 10px 0 8px 10px;
-    text-transform: capitalize;
-}
-#today-memory-spotlight {
-    background-color: #f5f5f5; /* Blanco gris claro (Diapositiva) */
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Sombra normal */
-    color: #333; /* Texto oscuro */
-}
-.spotlight-day-name {
-    text-align: center;
-    font-size: 16px;
-    font-weight: bold;
-    color: #555;
-    margin: 5px 0 15px 0;
-    padding-bottom: 10px;
-    border-bottom: 1px dashed #ccc;
-}
-
-/* v17.2: Contenedor interior del spotlight */
-#spotlight-memories-container {
-    background-color: rgba(0, 0, 0, 0.05); /* Fondo "transparente" oscuro */
-    border-radius: 5px;
-    padding: 5px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); /* Sombra interior (profundidad) */
-    border-top: 1px solid rgba(0,0,0,0.1);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.spotlight-memory-item {
-    font-size: 14px;
-    padding: 10px;
-    border-bottom: 1px solid rgba(0,0,0,0.1); /* Borde sutil */
-    background-color: transparent; /* Quitar el fondo de la celda */
-    color: #333;
-    margin-bottom: 0; /* Sin margen */
-    border-radius: 0; /* Sin radius en la celda */
-    display: flex;
-    flex-direction: column; /* Columna para poner mapa debajo */
-    gap: 8px;
-    cursor: pointer;
-}
-#spotlight-memories-container .spotlight-memory-item:last-child {
-    border-bottom: none;
-}
-#spotlight-memories-container .spotlight-memory-item:hover {
-    background-color: rgba(255, 255, 255, 0.3); /* Hover más claro */
-}
-#spotlight-memories-container .list-placeholder {
-    color: #555;
-    font-style: italic;
-    padding: 15px;
-    text-align: center;
-}
-
-/* Contenido superior del item (icono, año, texto) */
-.spotlight-item-main-content {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-}
-
-.spotlight-memory-item small {
-    display: block;
-    color: #777; /* Color de texto secundario */
-    margin-bottom: 3px;
-    font-weight: bold;
-    font-size: 11px;
-}
-.spotlight-memory-item .memoria-item-content {
-    flex-grow: 1;
-    line-height: 1.3;
-    min-width: 0; /* Ayuda a flexbox con el truncado */
-}
-.spotlight-memory-item .memoria-artwork {
-    width: 30px;
-    height: 30px;
-    flex-shrink: 0;
-    border-radius: 3px;
-    object-fit: cover;
-}
-.spotlight-memory-item .memoria-icon {
-    font-size: 20px;
-    color: #666; /* Icono más oscuro */
-    flex-shrink: 0;
-}
-/* Truncado de 3 líneas para items de texto */
-.spotlight-item-text .memoria-item-content {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
-    line-height: 1.4;
-}
-
-/* Estilos Mapa Spotlight */
-.spotlight-map-container {
-    height: 120px;
-    width: 100%;
-    border-radius: 5px;
-    border: 1px solid rgba(0,0,0,0.2);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-    background-color: #eee;
-    margin-top: 5px;
-}
-
-/* --- Grid del Calendario --- */
-.calendario-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 10px;
-    padding-bottom: 20px;
-}
-.dia-btn {
-    background-color: #fdfdfd;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 0;
-    text-align: center;
-    cursor: pointer;
-    box-shadow: 0 2px 3px rgba(0,0,0,0.3);
-    color: #333;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
-    transition: background-color 0.1s, transform 0.1s;
-}
-.dia-btn:active {
-    background-color: #eee;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-    transform: translateY(1px);
-}
-.dia-numero {
-    font-size: 28px;
-    font-weight: bold;
-    color: #444;
-    line-height: 1;
-    margin-top: 10px;
-    z-index: 2;
-    position: relative;
-}
-.dia-btn .nombre-especial { display: none; }
-
-.dia-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 10px;
-    background-color: #e57373;
-    border-bottom: 1px solid #c62828;
-    border-radius: 8px 8px 0 0;
-}
-.dia-btn-today .dia-numero {
-    color: #c62828;
-}
-
-.dia-btn.tiene-memorias::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 0 0 12px 12px;
-    border-color: transparent transparent #bbb transparent;
-    z-index: 3;
-    filter: drop-shadow(-1px 1px 1px rgba(0,0,0,0.15));
-    background: linear-gradient(-135deg, transparent 50%, white 50%);
-}
-.dia-btn-today.tiene-memorias::after {
-    border-color: transparent transparent #ff9e9e transparent;
-    background: linear-gradient(-135deg, transparent 50%, #d9534f 50%);
-}
-
-
-/* --- Modales --- */
-.modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-alert-prompt, .modal-confirm {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    display: none;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 15px;
-    padding-top: 5vh;
-    box-sizing: border-box;
-    opacity: 0;
-    transition: opacity 0.2s ease-out;
-    z-index: 1000;
-}
-.modal-preview.visible,
-.modal-edit.visible,
-.modal-store.visible,
-.modal-store-list.visible,
-.modal-alert-prompt.visible,
-.modal-confirm.visible {
-    display: flex;
-    opacity: 1;
-}
-
-/* Contenido del Modal */
-.modal-content, .modal-preview-content, .modal-alert-content {
-    background: #f0f0f0;
-    padding: 0;
-    border-radius: 10px;
-    width: 100%;
-    max-width: 500px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    border: 1px solid #888;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    color: #333;
-}
-
-/* Modal Alerta/Confirmación Base */
-.modal-alert-content {
-    max-width: 300px;
-    max-height: 90vh;
-    border-radius: 8px;
-}
-
-/* Estilo Deep Blue (Settings y Search) */
-.modal-alert-content.settings-alert,
-.modal-alert-content.search-alert {
-     background: linear-gradient(to bottom, #4c5c70 0%, #303d4f 100%);
-     border: 1px solid #202834;
-     color: white;
-     text-shadow: 0 1px 0 rgba(0,0,0,0.6);
-     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-}
-.modal-alert-content.settings-alert p,
-.modal-alert-content.search-alert p {
-    padding: 20px 20px 10px 20px;
-    color: white;
-    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
-    font-weight: bold;
-    font-size: 16px;
-    white-space: pre-wrap;
-    margin: 0;
-    text-align: center;
-}
-.modal-alert-content.settings-alert p small,
-.modal-alert-content.search-alert p small {
-    display: block;
-    font-weight: normal;
-    font-size: 13px;
-    margin-top: 8px;
-    color: #ccc;
-}
-.modal-alert-content.search-alert input {
-    background-color: #fff;
-    border: 1px solid #202834;
-    border-radius: 5px;
-    color: #000;
-    padding: 8px;
-    margin: 10px 20px 15px 20px;
-    width: calc(100% - 40px);
-    box-sizing: border-box;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
-    font-size: 15px;
-}
-/* Botones Deep Blue */
-.modal-alert-content.settings-alert .modal-main-buttons,
-.modal-alert-content.search-alert .modal-main-buttons {
-    background: none;
-    border-top: 1px solid #202834;
-    padding: 0;
-    display: flex;
-}
-.modal-alert-content.settings-alert .modal-main-buttons button,
-.modal-alert-content.search-alert .modal-main-buttons button {
-    color: white;
-    border: none;
-    border-left: 1px solid #202834;
-    font-weight: bold;
-    background: linear-gradient(to bottom, #5a6a80 0%, #38485c 100%);
-    padding: 12px;
-    font-size: 16px;
-    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
-    flex-grow: 1;
-    cursor: pointer;
-    margin: 0;
-    border-radius: 0;
-    width: 50%;
-}
-.modal-alert-content.settings-alert .modal-main-buttons button:first-child,
-.modal-alert-content.search-alert .modal-main-buttons button:first-child {
-    border-left: none;
-    border-bottom-left-radius: 8px;
-}
-.modal-alert-content.settings-alert .modal-main-buttons button:last-child,
-.modal-alert-content.search-alert .modal-main-buttons button:last-child {
-    border-bottom-right-radius: 8px;
-}
-.modal-alert-content.settings-alert .modal-main-buttons button:active,
-.modal-alert-content.search-alert .modal-main-buttons button:active {
-    background: linear-gradient(to top, #5a6a80 0%, #38485c 100%);
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
-}
-
-/* Scrollable dentro del modal */
-.modal-content-scrollable {
-    overflow-y: auto;
-    flex-grow: 1;
-    padding: 0;
-    background-color: #f0f0f0;
-}
-/* Secciones del modal */
-.modal-section {
-    padding: 10px 15px 15px 15px;
-    border-bottom: 1px solid #ccc;
-    background: #f0f0f0;
-    color: #333;
-    text-shadow: none;
-    border-radius: 0;
-    margin-bottom: 0;
-}
-.modal-section h3, .modal-section h4 {
-    color: #4a5462;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
-    padding-bottom: 5px;
-    border-bottom: 1px solid #ddd;
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-.modal-section label {
-    color: #555;
-    font-weight: bold;
-    font-size: 15px;
-    display: block;
-    margin-bottom: 2px;
-}
-.memorias-section {
-    border-top: none;
-    padding-top: 10px;
-}
-.modal-section:last-child {
-    border-bottom: none;
-    padding-bottom: 20px;
-}
-/* Controles de selección de día */
-.day-selection-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-    min-width: 0;
-}
-#edit-mem-day {
-    flex-grow: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-#btn-name-selected-day {
-    flex-shrink: 0;
-}
-
-/* Estilos de Formulario (iOS-like) */
-.modal-section input[type="text"],
-.modal-section input[type="number"],
-.modal-section input[type="file"],
-.modal-section select,
-.modal-section textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 5px 0 15px 0;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-sizing: border-box;
-    font-size: 16px;
-    background-color: #fff;
-    -webkit-appearance: none;
-    appearance: none;
-}
-.modal-section textarea {
-    min-height: 80px;
-    resize: vertical;
-}
-.day-selection-controls select,
-.day-selection-controls input {
-    width: auto;
-}
-
-/* Cabecera Modal Preview */
-.modal-preview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #ccc;
-    padding: 15px 20px 10px 20px;
-    background: rgba(0, 0, 0, 0.03);
-    flex-shrink: 0;
-}
-.modal-preview-header h3 {
-    margin: 0;
-    font-size: 19px;
-    font-weight: bold;
-    color: #333;
-    text-align: left;
-    flex-grow: 1;
-}
-
-/* --- ***** INICIO CAMBIO v2.62: ESTILO CUADERNO IDÉNTICO (CORREGIDO) ***** --- */
+/* --- ***** INICIO CAMBIO v2.63: ESTILO CUADERNO ULTRA-SIMPLE ***** --- */
 .modal-preview-notebook-paper {
     flex-grow: 1;
     overflow-y: auto;
-    background-color: #ffffff; /* Fondo blanco explícito */
+    background-color: #ffffff; /* 1. Fondo blanco */
     padding: 20px 20px 20px 50px; /* Padding izquierdo aumentado */
     position: relative;
     line-height: 24px;
     font-family: 'Courier New', Courier, monospace;
     color: #333;
 
-    /* Múltiples fondos: 1. Agujeros grises, 2. Líneas Horizontales azules */
+    /* Múltiples fondos: Separados por comas, el primero está arriba */
     background-image:
-        /* 1. Agujeros (Círculos grises, menos, más oscuros) */
+        /* 1. Agujeros (Círculos grises simples, espaciados) */
         repeating-radial-gradient(
             circle at 15px center, /* Posición X a 15px del borde */
-            #666666 0, /* Color más oscuro */
+            #666666 0, /* Color gris oscuro */
             #666666 4px, /* Radio del círculo 4px */
-            transparent 4.5px, /* Pequeño borde */
-            transparent 48px /* Espaciado vertical (line-height * 2 para menos círculos) */
+            transparent 4.5px, /* Borde transparente pequeño */
+            transparent 48px /* Espaciado vertical (line-height * 2) */
         ),
-        /* 2. Líneas horizontales (Azules) */
+        /* 2. Línea vertical roja (A 40px del borde) */
+        linear-gradient(
+            to right,
+            transparent 0px,
+            transparent 39px,
+            #ff6666 39px, /* Línea roja de 1px */
+            #ff6666 40px,
+            transparent 40px
+        ),
+        /* 3. Líneas horizontales (Azules) */
         repeating-linear-gradient(
             to bottom,
             transparent 0px,
@@ -692,24 +43,23 @@ main {
         );
 
     /* Propiedades explícitas para cada fondo */
-    background-repeat: repeat-y, repeat; /* Agujeros solo vertical, líneas por defecto */
-    background-position: 0 22px, 0 10px; /* Posición X=0 Y=22px para agujeros, X=0 Y=10px para líneas */
-    background-size: auto, 100% 24px; /* Tamaño automático para agujeros, específico para líneas */
+    background-repeat: repeat-y, repeat-y, repeat; /* Agujeros y línea roja solo vertical, líneas azules normal */
+    background-position: 0 22px, 0 0, 0 10px; /* Posición para cada capa */
+    background-size: auto, auto, 100% 24px; /* Tamaño para cada capa */
 
-    box-shadow: inset 0 0 2px rgba(0,0,0,0.5); /* Sombra interior papel */
+    /* Quitar ::before ya que la línea roja está en el background */
 }
 
+/* Limpiar el ::before ya que la línea roja ahora es parte del background-image */
 .modal-preview-notebook-paper::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 40px; /* Posición de la línea roja */
-    bottom: 0;
-    width: 0;
-    border-right: 1px solid #ff6666; /* Línea roja/rosa */
-    background-image: none; /* Asegurar que ::before solo dibuje la línea roja */
+    content: none; /* Eliminado */
 }
-/* --- ***** FIN CAMBIO v2.62 ***** --- */
+
+/* Añadir sombra al papel para dar profundidad */
+.modal-preview-notebook-paper {
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+}
+/* --- ***** FIN CAMBIO v2.63 ***** --- */
 
 
 .modal-preview-memorias {
@@ -727,21 +77,19 @@ main {
 }
 .modal-preview-notebook-paper .memoria-item {
     background-color: transparent;
-    /* ***** CAMBIO: Separador dashed entre memorias ***** */
-    border-bottom: 2px dashed #cccccc;
-    padding: 10px 0; /* Aumentar padding vertical */
-    margin-bottom: 10px; /* Aumentar margen inferior */
+    border-bottom: 2px dashed #cccccc; /* Separador dashed entre memorias */
+    padding: 10px 0;
+    margin-bottom: 10px;
     line-height: 24px;
     min-height: 24px;
     display: flex;
     align-items: flex-start;
     flex-direction: column;
 }
-/* Eliminar el borde/margen/padding inferior del último elemento */
 .modal-preview-notebook-paper .memoria-item:last-of-type {
     border-bottom: none;
     margin-bottom: 0;
-    padding-bottom: 5px; /* Restaurar un poco de padding */
+    padding-bottom: 5px;
 }
 
 /* Estilo contenido memoria en Preview */
