@@ -1,4 +1,4 @@
-/* style.css - v17.0 - Original */
+/* style.css - v17.10 - Fix Notebook holes, Preview Year & Dashed Separator */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -278,7 +278,7 @@ main {
     margin-bottom: 0; /* Sin margen */
     border-radius: 0; /* Sin radius en la celda */
     display: flex;
-    align-items: center;
+    flex-direction: column; /* CAMBIO: Columna para poner mapa debajo */
     gap: 8px;
     cursor: pointer;
 }
@@ -293,6 +293,14 @@ main {
     font-style: italic;
     padding: 15px;
     text-align: center;
+}
+
+/* Contenido superior del item (icono, año, texto) */
+.spotlight-item-main-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
 }
 
 .spotlight-memory-item small {
@@ -329,6 +337,18 @@ main {
     white-space: normal;
     line-height: 1.4;
 }
+
+/* --- INICIO v17.6: Estilos Mapa Spotlight --- */
+.spotlight-map-container {
+    height: 120px; /* Altura fija para el minimapa */
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid rgba(0,0,0,0.2);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    background-color: #eee; /* Fondo mientras carga */
+    margin-top: 5px; /* Espacio superior */
+}
+/* --- FIN v17.6 --- */
 
 
 /* --- Grid del Calendario (Estilo Original Restaurado v15.6) --- */
@@ -460,80 +480,98 @@ main {
     color: #333;
 }
 
-/* Modal de Alerta/Confirmación */
+/* --- INICIO CAMBIO: Estilo iOS Deep Blue (Puntos 1 y 2) --- */
+
+/* Modal de Alerta/Confirmación (Base) */
 .modal-alert-content {
     max-width: 300px;
     max-height: 90vh; /* Alertas pueden ser más simples */
-}
-/* Estilo específico para alerta Settings (SE MANTIENE OSCURO) */
-.modal-alert-content.settings-alert {
-     background: linear-gradient(to bottom, #748496 0%, #4f6174 100%);
-     border: 1px solid #3c4a5a;
-     color: white;
-     text-shadow: 0 -1px 0 rgba(0,0,0,0.4);
-}
-.modal-alert-content.settings-alert p {
-    padding-bottom: 20px; /* Más espacio abajo */
-    white-space: pre-wrap; /* Respetar saltos de línea */
-}
-.modal-alert-content.settings-alert .modal-main-buttons {
-    background: none;
-    border-top: 1px solid #3c4a5a;
-    padding: 0;
-}
-.modal-alert-content.settings-alert .modal-main-buttons button {
-    color: white;
-    border-left: 1px solid #3c4a5a;
-    font-weight: bold;
-    background: none;
-    padding: 12px;
-    font-size: 16px;
-}
-.modal-alert-content.settings-alert .modal-main-buttons button:active {
-    background-color: rgba(0,0,0,0.2);
+    border-radius: 8px; /* Bordes más suaves iOS */
 }
 
-/* CAMBIO v17.4: Estilo para modal de Búsqueda */
+/* Estilo Deep Blue (Settings y Search) */
+.modal-alert-content.settings-alert,
 .modal-alert-content.search-alert {
-     background: linear-gradient(to bottom, #748496 0%, #4f6174 100%);
-     border: 1px solid #3c4a5a;
+     background: linear-gradient(to bottom, #4c5c70 0%, #303d4f 100%);
+     border: 1px solid #202834;
      color: white;
-     text-shadow: 0 -1px 0 rgba(0,0,0,0.4);
+     text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 }
+.modal-alert-content.settings-alert p,
 .modal-alert-content.search-alert p {
+    padding: 20px 20px 10px 20px;
     color: white; /* Texto blanco para párrafo */
-    text-shadow: 0 -1px 0 rgba(0,0,0,0.4);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    font-weight: bold;
+    font-size: 16px;
+    white-space: pre-wrap; /* Respetar saltos de línea */
+    margin: 0;
+    text-align: center;
 }
+/* Párrafo secundario (si existe) */
+.modal-alert-content.settings-alert p small,
+.modal-alert-content.search-alert p small {
+    display: block;
+    font-weight: normal;
+    font-size: 13px;
+    margin-top: 8px;
+    color: #ccc;
+}
+
 .modal-alert-content.search-alert input {
-    background-color: rgba(0,0,0,0.3);
-    border: 1px solid #222;
+    background-color: #fff;
+    border: 1px solid #202834;
     border-radius: 5px;
-    color: #fff;
-    padding: 10px;
-    margin: 0 20px 15px 20px;
+    color: #000;
+    padding: 8px;
+    margin: 10px 20px 15px 20px;
     width: calc(100% - 40px);
     box-sizing: border-box;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+    font-size: 15px;
 }
+
+/* Botones Deep Blue */
+.modal-alert-content.settings-alert .modal-main-buttons,
 .modal-alert-content.search-alert .modal-main-buttons {
     background: none;
-    border-top: 1px solid #3c4a5a;
+    border-top: 1px solid #202834;
     padding: 0;
+    display: flex;
 }
+.modal-alert-content.settings-alert .modal-main-buttons button,
 .modal-alert-content.search-alert .modal-main-buttons button {
     color: white;
-    border-left: 1px solid #3c4a5a;
-    font-weight: normal;
-    background: none;
+    border: none;
+    border-left: 1px solid #202834;
+    font-weight: bold;
+    background: linear-gradient(to bottom, #5a6a80 0%, #38485c 100%);
     padding: 12px;
     font-size: 16px;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    flex-grow: 1;
+    cursor: pointer;
+    margin: 0;
+    border-radius: 0;
+    width: 50%;
 }
-.modal-alert-content.search-alert .modal-main-buttons button:active {
-    background-color: rgba(0,0,0,0.2);
-}
+.modal-alert-content.settings-alert .modal-main-buttons button:first-child,
 .modal-alert-content.search-alert .modal-main-buttons button:first-child {
     border-left: none; /* El botón de Cancelar */
+    border-bottom-left-radius: 8px;
 }
+.modal-alert-content.settings-alert .modal-main-buttons button:last-child,
+.modal-alert-content.search-alert .modal-main-buttons button:last-child {
+    border-bottom-right-radius: 8px;
+}
+.modal-alert-content.settings-alert .modal-main-buttons button:active,
+.modal-alert-content.search-alert .modal-main-buttons button:active {
+    background: linear-gradient(to top, #5a6a80 0%, #38485c 100%);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* --- FIN CAMBIO: Estilo iOS Deep Blue --- */
 
 
 /* Scrollable dentro del modal */
@@ -582,13 +620,17 @@ main {
     align-items: center;
     gap: 10px; /* Espacio entre select y botón */
     margin-bottom: 10px; /* Espacio debajo */
+    /* INICIO v17.6: Fix bug visual de overflow */
     min-width: 0; /* Permite que el flex-item se encoja */
+    /* FIN v17.6 */
 }
 #edit-mem-day {
     flex-grow: 1; /* El select ocupa el espacio sobrante */
+    /* INICIO v17.6: Fix bug visual de overflow */
     min-width: 0; /* Asegura que el select pueda encogerse */
     overflow: hidden; /* Opcional, ayuda a truncar texto si es necesario */
     text-overflow: ellipsis; /* Trunca el texto largo en la opción */
+    /* FIN v17.6 */
 }
 #btn-name-selected-day {
     flex-shrink: 0; /* El botón no se encoge */
@@ -645,32 +687,55 @@ main {
     flex-grow: 1;
 }
 
-/* --- ESTILO CUADERNO PREVIEW --- */
+/* --- INICIO CAMBIO: ESTILO CUADERNO PREVIEW (Punto 2) --- */
 .modal-preview-notebook-paper {
     flex-grow: 1;
     overflow-y: auto;
     background-color: #fdf5e6;
-    padding: 20px 20px 20px 40px;
+    padding: 20px 20px 20px 50px; 
     position: relative;
+    /* Líneas horizontales */
     background-image:
-        repeating-linear-gradient(to bottom, #d1e7ff 0px, #d1e7ff 1px, transparent 1px, transparent 24px),
-        linear-gradient(to right, #ffdddd 30px, #ff8888 31px, transparent 31px);
-    background-size: 100% 24px, 100% 100%;
-    background-position: 0 10px, 0 0;
+        repeating-linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 24px);
+    background-size: 100% 24px;
+    background-position: 0 10px;
     line-height: 24px;
     font-family: 'Courier New', Courier, monospace;
     color: #333;
 }
+/* Margen Izquierdo con Agujeros */
 .modal-preview-notebook-paper::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 30px;
+    left: 15px; /* Posición de los agujeros */
     bottom: 0;
-    width: 2px;
-    background: rgba(0,0,0,0.1);
-    box-shadow: 1px 0 1px rgba(0,0,0,0.1);
+    width: 10px; /* Ancho de la zona de agujeros */
+    
+    /* CAMBIO: Agujeros (círculos oscuros) */
+    background-image: repeating-radial-gradient(
+        circle at center,
+        rgba(0,0,0,0.2) 0, /* Color del agujero */
+        rgba(0,0,0,0.2) 5px, /* Radio del agujero */
+        transparent 5px
+    );
+    background-repeat: repeat-y;
+    background-size: 100% 48px; /* Espaciado (2 líneas) */
+    background-position: center 22px; /* Centrado horizontal, offset vertical */
 }
+/* Línea Roja Vertical */
+.modal-preview-notebook-paper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 35px; /* Posición de la línea roja */
+    bottom: 0;
+    width: 2px; /* Ancho de la línea */
+    background-color: rgba(255, 100, 100, 0.5); /* Color de la línea */
+}
+/* --- FIN CAMBIO: ESTILO CUADERNO PREVIEW --- */
+
+
 .modal-preview-memorias {
     padding: 0;
     border: none;
@@ -686,40 +751,64 @@ main {
 }
 .modal-preview-notebook-paper .memoria-item {
     background-color: transparent;
-    border-bottom: none;
-    padding: 5px 0;
-    margin-bottom: 0;
+    padding: 5px 0 10px 0; /* CAMBIO: Añadido padding inferior */
+    margin-bottom: 10px; /* CAMBIO: Añadido margen inferior */
     line-height: 24px;
     min-height: 24px;
-    display: flex; /* Flex para alinear mejor año y contenido */
-    align-items: flex-start; /* Alinear arriba */
+    display: flex; 
+    align-items: flex-start; 
+    flex-direction: column; 
+    /* CAMBIO (Punto 3): Línea separadora */
+    border-bottom: 1px dashed #ccc; 
+}
+/* CAMBIO (Punto 3): Quitar borde al último item */
+.modal-preview-notebook-paper .memoria-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 5px;
+}
+
+/* --- INICIO CAMBIO: Estilo Preview (Punto 1) --- */
+.modal-preview-notebook-paper .memoria-item-main-content {
+    display: flex;
+    align-items: center; 
+    gap: 8px; 
 }
 .modal-preview-notebook-paper .memoria-item small { /* Año */
-    color: #666;
-    margin-bottom: 0;
-    margin-right: 10px;
-    display: inline-block; /* Block para ancho fijo */
-    font-size: 13px;
-    min-width: 50px; /* Ancho fijo para año */
-    text-align: right;
-    flex-shrink: 0; /* Evitar que se encoja */
+    /* CAMBIO (Punto 1): Negro y negrita */
+    color: #000;
+    font-weight: bold; 
+    
+    margin-bottom: 3px; 
+    margin-right: 0; 
+    display: block; 
+    font-size: 11px; 
+    min-width: 0; 
+    text-align: left; 
+    flex-shrink: 1; 
 }
 .modal-preview-notebook-paper .memoria-item-content {
-    display: inline; /* El contenido fluye */
-    flex-grow: 1; /* Ocupa espacio restante */
-    word-break: break-word; /* Romper palabras largas */
+    display: block; 
+    flex-grow: 1; 
+    word-break: break-word; 
 }
 .modal-preview-notebook-paper .memoria-artwork {
-    width: 20px;
-    height: 20px;
+    width: 30px; 
+    height: 30px; 
     vertical-align: middle;
-    margin-right: 5px;
+    margin-right: 0; 
+    flex-shrink: 0;
+    border-radius: 3px;
 }
 .modal-preview-notebook-paper .memoria-icon {
-    font-size: 16px;
+    font-size: 20px; 
     vertical-align: middle;
-    margin-right: 5px;
+    margin-right: 0; 
+    flex-shrink: 0;
+    color: #666;
 }
+/* --- FIN CAMBIO: Estilo Preview --- */
+
 .modal-preview-notebook-paper .artist-name {
     color: #555;
     font-size: 0.9em;
@@ -729,6 +818,21 @@ main {
      font-style: italic;
      padding: 10px 0;
 }
+/* --- INICIO v17.6: Estilos Mapa Preview --- */
+.memoria-map-container {
+    height: 150px; /* Un poco más grande para el preview */
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    background-color: #eee; /* Fondo mientras carga */
+    margin-top: 10px; /* Espacio superior */
+    margin-bottom: 5px;
+    z-index: 1; /* Asegurar que esté sobre las líneas */
+    position: relative;
+}
+/* --- FIN v17.6 --- */
+
 .modal-preview-footer {
     display: flex;
     justify-content: space-around;
@@ -808,6 +912,7 @@ main {
 }
 
 /* --- ESTILOS para .memoria-item en Modal Edición --- */
+/* (Combinados v17.0 y v17.5) */
 #edit-memorias-list .memoria-item {
     display: flex;
     align-items: center;
@@ -862,7 +967,7 @@ main {
     font-size: 0.9em;
 }
 
-/* --- INICIO BLOQUE FALTANTE (v17.5 RE-AÑADIDO) --- */
+/* --- INICIO BLOQUE FALTANTE (v17.5) --- */
 #edit-memorias-list .memoria-actions {
     display: flex;
     flex-shrink: 0;
@@ -884,7 +989,7 @@ main {
     color: #d15047; /* Rojo */
     font-size: 22px;
 }
-/* --- FIN BLOQUE FALTANTE --- */
+/* --- FIN BLOQUE FALTANTE (v17.5) --- */
 
 #edit-memorias-list .list-placeholder {
     padding: 20px;
@@ -924,17 +1029,132 @@ main {
     box-sizing: border-box;
     text-align: left;
 }
-.store-category-button:hover { background: #f8f8f8; }
-.store-category-button:active { background: #e0e0e0; }
+.store-category-button:hover {
+    background: #f8f8f8;
+}
+.store-category-button:active {
+    background: #e0e0e0;
+}
 .store-category-button .material-icons-outlined:first-child {
     margin-right: 15px;
     color: #555;
     font-size: 24px;
 }
-.store-category-button span:nth-of-type(1) { flex-grow: 1; font-weight: bold; }
-.store-category-button .material-icons-outlined:last-child { color: #aaa; font-size: 24px; }
+.store-category-button span:nth-of-type(1) { /* El texto */
+    flex-grow: 1;
+    font-weight: bold;
+}
+.store-category-button .material-icons-outlined:last-child { /* El chevron */
+    color: #aaa;
+    font-size: 24px;
+}
+
+/* --- Estilos Modal Almacén Lista --- */
+.store-list-container {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.store-list-item {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+.store-list-item:hover {
+    background: #f8f8f8;
+}
+.store-list-item .memoria-icon {
+    margin-right: 15px;
+    color: #555;
+    font-size: 24px;
+}
+.store-list-item .memoria-item-content {
+    flex-grow: 1;
+    line-height: 1.4;
+}
+.store-list-item .memoria-item-content strong {
+    display: block;
+    font-size: 15px;
+    color: #000;
+}
+.store-list-item .memoria-item-content small {
+    font-size: 12px;
+    color: #555;
+}
+.store-list-item .material-icons-outlined:last-child { /* El chevron */
+    color: #aaa;
+    font-size: 24px;
+}
+
 /* --- FIN v17.2 --- */
 
+
+/* --- INICIO v17.7: Estilos para Resultados de Búsqueda de Música --- */
+.search-results {
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    max-height: 200px; /* Limitar altura */
+    overflow-y: auto;
+    background-color: #fff;
+    /* Asegurar que sea visible */
+    display: block !important; 
+    visibility: visible !important;
+}
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+.search-result-item:last-child {
+    border-bottom: none;
+}
+.search-result-item:hover {
+    background-color: #f0f0f0;
+}
+.search-result-item .memoria-artwork {
+    width: 40px; /* Imagen un poco más grande */
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+.search-result-item .memoria-item-content {
+    flex-grow: 1; /* Ocupa el espacio */
+    line-height: 1.3;
+    font-size: 14px;
+    min-width: 0; /* Para que el texto se ajuste */
+}
+.search-result-item .memoria-item-content small {
+    font-size: 12px;
+    color: #555;
+    display: block; /* Asegura línea separada */
+}
+.search-result-item .material-icons-outlined {
+    font-size: 24px;
+    color: #007aff; /* Azul */
+    margin-left: 10px; /* Espacio a la izquierda */
+    flex-shrink: 0;
+}
+.search-result-selected {
+    padding: 12px;
+    font-weight: bold;
+    color: #333;
+    background-color: #e9f5ff;
+    border: 1px solid #b3d7ff;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+/* --- FIN v17.7 --- */
 
 /* Footer Dock */
 .footer-dock {
@@ -999,9 +1219,8 @@ a:hover { text-decoration: underline; }
     margin-top: 10px;
     font-size: 13px;
     text-align: center;
-    min-height: 1.2em; /* Original */
+    min-height: 1.2em; /* Para evitar saltos de layout */
 }
-
 
 /* --- Scrollbars --- */
 ::-webkit-scrollbar { width: 6px; }
@@ -1014,10 +1233,10 @@ a:hover { text-decoration: underline; }
   position: fixed;
   bottom: 100px;
   right: 24px;
-  width: 50px;
-  height: 50px;
+  width: 50px; /* CAMBIO: Reducido */
+  height: 50px; /* CAMBIO: Reducido */
   border: none;
-  border-radius: 50%;
+  border-radius: 50%; /* 🔵 botón completamente redondo */
   background-image: url('crumbie1.png');
   background-size: cover;
   background-position: center;
@@ -1029,6 +1248,8 @@ a:hover { text-decoration: underline; }
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   z-index: 999;
 }
+
+/* Hover: efecto flotante */
 .crumbie-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
@@ -1037,7 +1258,7 @@ a:hover { text-decoration: underline; }
 /* --- Animación de texto flotante de Crumbie --- */
 .crumbie-float-text {
     position: fixed;
-    bottom: 160px;
+    bottom: 160px; /* CAMBIO: Ajustado a 100px + 50px + 10px padding */
     right: 24px;
     padding: 5px 10px;
     background: rgba(0,0,0,0.7);
@@ -1052,8 +1273,18 @@ a:hover { text-decoration: underline; }
     animation: crumbie-float 2s ease-out;
     white-space: nowrap;
 }
+
 @keyframes crumbie-float {
-    0% { transform: translateY(0); opacity: 1; }
-    80% { transform: translateY(-40px); opacity: 1; }
-    100% { transform: translateY(-50px); opacity: 0; }
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    80% {
+        transform: translateY(-40px);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
 }
