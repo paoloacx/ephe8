@@ -1,5 +1,5 @@
 /*
- * ui.js (v4.25 - Implementación completa de Modales y resetForm)
+ * ui.js (v4.26 - Debugging Search Results Visibility)
  * Módulo de interfaz de usuario.
  */
 
@@ -29,7 +29,7 @@ let _activeMaps = [];
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v4.25 - Full Modal/Form Restore)");
+    console.log("UI Module init (v4.26 - Debug Search)"); // Cambio de versión
     callbacks = mainCallbacks;
     // _allDaysData se llenará con updateAllDaysData
 
@@ -510,12 +510,14 @@ function _bindEditModalEvents() {
     document.getElementById('btn-search-itunes')?.addEventListener('click', () => {
         if (callbacks.onSearchMusic) {
             const term = document.getElementById('memoria-music-search').value;
+            console.log("[DEBUG UI] Click en Buscar Canción, término:", term); // Log añadido
             if (term) callbacks.onSearchMusic(term);
         }
     });
     document.getElementById('btn-search-place')?.addEventListener('click', () => {
         if (callbacks.onSearchPlace) {
             const term = document.getElementById('memoria-place-search').value;
+            console.log("[DEBUG UI] Click en Buscar Lugar, término:", term); // Log añadido
             if (term) callbacks.onSearchPlace(term);
         }
     });
@@ -1216,14 +1218,11 @@ function createStoreListItem(item) {
 }
 
 function _createLoginButton(isLoggedOut, container) {
-    // Esta función no estaba en v4.20, pero la v4.24 la necesita.
-    // La dejamos como estaba en v4.24.
     const btnId = 'login-btn';
     let btn = document.getElementById(btnId);
     if (btn) btn.remove();
 
     if (!isLoggedOut) {
-        // No mostrar botón de "login" si está logueado
         return;
     }
 
@@ -1324,6 +1323,7 @@ function handleMemoryTypeChange() {
         const el = document.getElementById(`input-type-${id}`);
         if (el) el.style.display = (id === type) ? 'block' : 'none';
     });
+    // Limpiar resultados si se cambia de tipo
     if (type !== 'Musica') showMusicResults([]);
     if (type !== 'Lugar') showPlaceResults([]);
 }
@@ -1408,6 +1408,7 @@ function resetMemoryForm() {
     // Llamar al handler para mostrar/ocultar campos
     handleMemoryTypeChange(); 
 
+    // Limpiar explícitamente los contenedores de resultados
     document.getElementById('itunes-results').innerHTML = '';
     document.getElementById('place-results').innerHTML = '';
     showModalStatus('memoria-status', '', false);
@@ -1425,7 +1426,11 @@ function resetMemoryForm() {
 
 function showMusicResults(tracks, isSelected = false) {
     const resultsEl = document.getElementById('itunes-results');
-    if (!resultsEl) return;
+    if (!resultsEl) {
+        console.error("[DEBUG UI] Contenedor #itunes-results no encontrado.");
+        return;
+    }
+    console.log("[DEBUG UI] showMusicResults llamada con:", tracks, "isSelected:", isSelected); // Log añadido
     resultsEl.innerHTML = '';
     _selectedMusic = null;
 
@@ -1433,12 +1438,17 @@ function showMusicResults(tracks, isSelected = false) {
         const track = tracks[0];
         _selectedMusic = track; 
         const displayName = track.trackName || track.title;
+        console.log("[DEBUG UI] Mostrando selección de música:", displayName); // Log añadido
         resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${displayName}</p>`;
         return;
     }
 
-    if (!tracks || tracks.length === 0) return; 
+    if (!tracks || tracks.length === 0) {
+        console.log("[DEBUG UI] No hay resultados de música para mostrar."); // Log añadido
+        return; 
+    }
 
+    console.log(`[DEBUG UI] Renderizando ${tracks.length} resultados de música.`); // Log añadido
     tracks.forEach(track => {
         const trackName = track.trackName;
         const artistName = track.artistName;
@@ -1449,12 +1459,11 @@ function showMusicResults(tracks, isSelected = false) {
         itemEl.innerHTML = `
             <img src="${artwork}" class="memoria-artwork" alt="" ${artwork ? '' : 'style="display:none;"'}>
             <div class="memoria-item-content">
-                <small>${artistName}</small>
-                <strong>${trackName}</strong>
-            </div>
+                <small>${artistName || 'Artista desconocido'}</small> <strong>${trackName || 'Título desconocido'}</strong> </div>
             <span class="material-icons-outlined">add_circle_outline</span>
         `;
         itemEl.addEventListener('click', () => {
+            console.log("[DEBUG UI] Click en resultado de música:", track); // Log añadido
             _selectedMusic = track; 
             document.getElementById('memoria-music-search').value = `${trackName} - ${artistName}`;
             resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${trackName}</p>`;
@@ -1465,23 +1474,35 @@ function showMusicResults(tracks, isSelected = false) {
 
 function showPlaceResults(places, isSelected = false) {
     const resultsEl = document.getElementById('place-results');
-    if (!resultsEl) return;
+     if (!resultsEl) {
+        console.error("[DEBUG UI] Contenedor #place-results no encontrado.");
+        return;
+    }
+    console.log("[DEBUG UI] showPlaceResults llamada con:", places, "isSelected:", isSelected); // Log añadido
     resultsEl.innerHTML = '';
     _selectedPlace = null;
 
     if (isSelected && places.length > 0) {
         const placeData = places[0]; 
         _selectedPlace = {
-            name: placeData.display_name, 
+            // Asegurarnos que placeData tiene display_name, si no, usar el nombre guardado (fallback)
+            name: placeData.display_name || _selectedPlace?.name || "Lugar", 
             data: placeData 
         };
-        const displayName = placeData.display_name || "Lugar seleccionado";
+        const displayName = _selectedPlace.name; // Usar el nombre guardado en _selectedPlace
+        console.log("[DEBUG UI] Mostrando selección de lugar:", displayName); // Log añadido
         resultsEl.innerHTML = `<p class="search-result-selected">Seleccionado: ${displayName.substring(0, 50)}...</p>`;
         return;
     }
 
-    if (!places || places.length === 0) return;
+    if (!places || places.length === 0) {
+        console.log("[DEBUG UI] No hay resultados de lugares para mostrar."); // Log añadido
+        // Podríamos mostrar un mensaje "No se encontraron lugares"
+        // resultsEl.innerHTML = '<p style="padding: 10px; color: #888; font-style: italic;">No se encontraron lugares.</p>';
+        return;
+    }
 
+    console.log(`[DEBUG UI] Renderizando ${places.length} resultados de lugares.`); // Log añadido
     places.forEach(place => {
         const displayName = place.display_name;
         const shortName = displayName.split(',')[0]; 
@@ -1498,6 +1519,7 @@ function showPlaceResults(places, isSelected = false) {
         `;
         
         itemEl.addEventListener('click', () => {
+            console.log("[DEBUG UI] Click en resultado de lugar:", place); // Log añadido
             _selectedPlace = {
                 name: displayName, 
                 data: place 
