@@ -37,6 +37,24 @@ function init(mainCallbacks) {
     _bindLoginEvents();
     _bindGlobalListeners();
     _bindCrumbieEvents();
+function createAlertPromptModal() {
+    if (alertPromptModal) return;
+    alertPromptModal = document.createElement('div');
+    alertPromptModal.id = 'alert-prompt-modal';
+    alertPromptModal.className = 'modal-alert-prompt';
+    alertPromptModal.innerHTML = `
+        <div class="modal-alert-content">
+            <p id="alert-prompt-message"></p>
+            <input type="text" id="alert-prompt-input" style="display: none;">
+            <div class="modal-main-buttons">
+                <button id="alert-prompt-cancel" class="aqua-button secondary">Cancelar</button>
+                <button id="alert-prompt-ok" class="aqua-button">OK</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(alertPromptModal);
+    _bindAlertPromptEvents();
+}
 
     // Pre-crear modales principales
     createPreviewModal();
