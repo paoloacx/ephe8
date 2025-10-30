@@ -1,5 +1,5 @@
 /*
- * ui.js (v2.78 - Bugfix Visibilidad Timeline)
+ * ui.js (v2.79 - Toast Notifications)
  * Módulo "CORE" de UI. Orquestador.
  */
 
@@ -35,7 +35,7 @@ let searchResultsModal = null;
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.78 - Bugfix Visibilidad Timeline)");
+    console.log("UI Module init (v2.79 - Toast Notifications)");
     callbacks = mainCallbacks;
 
     // Objeto de estado y setters para inyectar en los módulos
@@ -130,18 +130,11 @@ function setLoading(message, show) {
     }
 }
 
-/**
- * Muestra/oculta el contenedor principal de la app.
- * CAMBIO: Esta función ya NO controla el nav ni el spotlight.
- * Esa lógica ahora vive 100% en drawMainView (main.js).
- */
 function showApp(show) {
     const appContent = document.getElementById('app-content');
     if (!appContent) return;
 
-    // Solo gestiona el app-content
     if (show) {
-        // Asumimos que drawMainView ya ha seteado el display (grid o block)
         const loading = appContent.querySelector('.loading-message');
         if (loading) loading.remove();
     } else {
@@ -241,6 +234,33 @@ function showCrumbieAnimation(message) {
     });
 }
 
+// *** NUEVA FUNCIÓN: Toast Notification ***
+function showToast(message, isError = false) {
+    // 1. Crear el elemento toast
+    let toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    if (isError) {
+        toast.classList.add('error');
+    }
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+
+    // 2. Animación de entrada
+    setTimeout(() => {
+        toast.classList.add('visible');
+    }, 10); // Pequeño delay para que la transición CSS funcione
+
+    // 3. Animación de salida y eliminación
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        // Esperar a que la transición de salida termine para eliminar
+        toast.addEventListener('transitionend', () => {
+            if (toast) toast.remove();
+        });
+    }, 3000); // El toast dura 3 segundos
+}
+
 
 // --- Exportaciones Públicas ---
 export const ui = {
@@ -253,6 +273,7 @@ export const ui = {
     updateMemoryList,
     showCrumbieAnimation,
     initSpotlightMaps, 
+    showToast, // *** AÑADIDO: Exportar showToast ***
 
     // --- Render Functions (from ui-render.js) ---
     drawCalendar: render.drawCalendar,
