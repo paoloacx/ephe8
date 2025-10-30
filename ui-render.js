@@ -1,5 +1,5 @@
 /*
- * ui-render.js (v1.5 - Year Tags)
+ * ui-render.js (v1.6 - Timeline & Edit List Layout)
  * Módulo para generar el HTML dinámico de la UI (listas, calendario, etc.)
  */
 
@@ -15,7 +15,7 @@ export function initRenderModule(uiState, callbacks, uiMaps) {
     _uiState = uiState;
     _callbacks = callbacks;
     _uiMaps = uiMaps; 
-    console.log("UI Render Module init (v1.5)");
+    console.log("UI Render Module init (v1.6)");
 }
 
 /**
@@ -62,13 +62,13 @@ export function drawCalendar(monthName, days, todayId) {
  */
 function _getMemorySpotlightDetails(mem) {
     let title = 'Memoria';
-    let subtitleHTML = 'Año desc.'; // *** CAMBIO: Convertido a HTML ***
+    let subtitleHTML = 'Año desc.'; // Convertido a HTML
 
     if (mem.Fecha_Original) {
         try {
             const date = mem.Fecha_Original.seconds ? new Date(mem.Fecha_Original.seconds * 1000) : new Date(mem.Fecha_Original);
             if (!isNaN(date)) {
-                // *** CAMBIO: Envolver el año en la etiqueta ***
+                // Envolver el año en la etiqueta
                 subtitleHTML = `<span class="year-tag">${date.getFullYear()}</span>`;
             }
         } catch (e) { /* Ignorar */ }
@@ -98,7 +98,6 @@ function _getMemorySpotlightDetails(mem) {
             }
             break;
     }
-    // *** CAMBIO: Devolver HTML ***
     return { title, subtitleHTML };
 }
 
@@ -206,8 +205,6 @@ export function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
         } catch (e) { console.warn("Fecha inválida:", mem.Fecha_Original, e); }
     }
 
-
-    // *** CAMBIO: Añadir clase .year-tag a <small> ***
     let contentHTML = `<small class="year-tag">${yearStr}</small>`;
     let artworkHTML = '';
     let icon = 'article';
@@ -273,16 +270,31 @@ export function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
             </button>
         </div>` : '';
 
-    const mainContentHTML = `
-        <div class="memoria-item-main-content ${mapIdPrefix === 'spotlight' || mapIdPrefix === 'search' ? 'spotlight-item-main-content' : ''}">
-            ${artworkHTML}
-            <div class="memoria-item-content">${contentHTML}</div>
+    // *** CAMBIO: Punto 6 - Reestructurado para el modal de Edición ***
+    if (showActions) {
+        // Estructura especial para el modal de edición (Punto 6)
+        return `
+            <div class="memoria-item-main-content">
+                <span class="year-tag">${yearStr}</span>
+                ${artworkHTML} 
+                <div class="memoria-item-content">
+                    ${contentHTML.substring(contentHTML.indexOf('</small>') + 8)} </div>
+            </div>
             ${actionsHTML}
-        </div>
-    `;
-
-    return mainContentHTML + mapHTML;
+        `;
+    } else {
+        // Estructura normal (Preview, Spotlight)
+        const mainContentHTML = `
+            <div class="memoria-item-main-content ${mapIdPrefix === 'spotlight' || mapIdPrefix === 'search' ? 'spotlight-item-main-content' : ''}">
+                ${artworkHTML}
+                <div class="memoria-item-content">${contentHTML}</div>
+                ${actionsHTML}
+            </div>
+        `;
+        return mainContentHTML + mapHTML;
+    }
 }
+
 
 /**
  * Crea el HTML para un botón de categoría del Almacén
@@ -321,21 +333,21 @@ export function createStoreListItem(item) {
         switch(item.Tipo) {
             case 'Lugar':
                 icon = 'place';
-                contentHTML = `<strong>${item.LugarNombre || 'Lugar'}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; // *** CAMBIO: Añadida year-tag ***
+                contentHTML = `<strong>${item.LugarNombre || 'Lugar'}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; 
                 break;
             case 'Musica':
                 icon = 'music_note';
-                contentHTML = `<strong>${item.CancionInfo || 'Canción'}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; // *** CAMBIO: Añadida year-tag ***
+                contentHTML = `<strong>${item.CancionInfo || 'Canción'}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; 
                 break;
             case 'Imagen':
                 icon = 'image';
-                contentHTML = `<strong>${item.Descripcion || 'Imagen'}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; // *** CAMBIO: Añadida year-tag ***
+                contentHTML = `<strong>${item.Descripcion || 'Imagen'}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; 
                 break;
             case 'Texto':
             default:
                 icon = 'article';
                 const desc = item.Descripcion ? item.Descripcion.substring(0, 50) + (item.Descripcion.length > 50 ? '...' : '') : 'Nota';
-                contentHTML = `<strong>${desc}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; // *** CAMBIO: Añadida year-tag ***
+                contentHTML = `<strong>${desc}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; 
                 break;
         }
     }
@@ -445,13 +457,17 @@ function appendMonthFragment(parentFragment, month) {
         memoriesList.className = 'timeline-memories-list';
         
         day.memories.forEach(mem => {
-            const details = _getMemorySpotlightDetails(mem); // *** CAMBIO: Ahora devuelve subtitleHTML ***
+            const details = _getMemorySpotlightDetails(mem); 
             const memItem = document.createElement('div');
             memItem.className = 'list-view-item';
+            
+            // *** CAMBIO: Punto 2 - Reestructurado para el Timeline ***
+            // El subtítulo ahora está vacío, el tag va en el título.
             memItem.innerHTML = `
                 <div class="list-view-item-content">
-                    <div class="list-view-item-title">${details.title}</div>
-                    <div class="list-view-item-subtitle">${details.subtitleHTML}</div> 
+                    <div class="list-view-item-title">
+                        ${details.subtitleHTML} ${details.title}
+                    </div>
                 </div>
             `;
             memoriesList.appendChild(memItem);
