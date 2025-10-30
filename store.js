@@ -1,5 +1,5 @@
 /*
- * store.js (v4.12 - Añadida la función de Timeline)
+ * store.js (v4.13 - Timeline Paginado)
  * Módulo de Lógica de Firestore y Storage.
  */
 
@@ -59,10 +59,10 @@ async function checkAndRunApp(userId, onProgress) {
     } catch (e) {
          console.error("Error al verificar la base de datos (puede ser por permisos o doc no existe):", e);
          try {
-            await _generateCleanDatabase(userId, onProgress); 
+           await _generateCleanDatabase(userId, onProgress); 
          } catch (genError) {
-            console.error("Store: Fallo crítico al regenerar la base de datos del usuario.", genError);
-            throw genError;
+           console.error("Store: Fallo crítico al regenerar la base de datos del usuario.", genError);
+           throw genError;
          }
     }
 }
@@ -416,9 +416,9 @@ async function getNamedDays(userId, pageSize = 10, lastVisibleDoc = null) {
 
     let q;
     const baseQuery = query(userDiasRef,
-                              where("Nombre_Especial", "!=", "Unnamed Day"),
-                              orderBy("Nombre_Especial", "asc"), 
-                              limit(pageSize));
+                               where("Nombre_Especial", "!=", "Unnamed Day"),
+                               orderBy("Nombre_Especial", "asc"), 
+                               limit(pageSize));
 
     if (lastVisibleDoc) {
         q = query(baseQuery, startAfter(lastVisibleDoc));
@@ -449,29 +449,41 @@ async function getNamedDays(userId, pageSize = 10, lastVisibleDoc = null) {
     return { items, lastVisible, hasMore };
 }
 
-// *** NUEVA FUNCIÓN PARA EL TIMELINE (v2.8) ***
 /**
- * Obtiene todas las memorias de un usuario, agrupadas por mes y día,
- * ordenadas cronológicamente para la vista de Timeline.
+ * CAMBIO: v4.13 - Renombrada a loadMonthForTimeline y paginada por mes.
+ * Obtiene todas las memorias de un usuario para un MES específico.
  * @param {string} userId - El ID del usuario.
- * @returns {Promise<Array>} Un array de objetos de mes.
- * Ej: [{ monthName: "Enero", days: [{ diaId: "01-01", ... memories: [...] }] }]
+ * @param {number} monthIndex - El índice del mes a cargar (0-11).
+ * @returns {Promise<object|null>} Un objeto de mes o null si no hay datos.
  */
-// *** CORRECCIÓN: Quitar 'export' de aquí ***
-async function getAllMemoriesForTimeline(userId) {
-    if (!userId) throw new Error("getAllMemoriesForTimeline requiere un userId.");
+async function loadMonthForTimeline(userId, monthIndex) {
+    if (!userId) throw new Error("loadMonthForTimeline requiere un userId.");
+    if (monthIndex < 0 || monthIndex > 11) {
+        throw new Error("loadMonthForTimeline requiere un monthIndex válido (0-11).");
+    }
 
-    console.log("Store: Cargando datos de Timeline para", userId);
+    const monthName = MONTH_NAMES[monthIndex];
+    console.log(`Store: Cargando datos de Timeline para ${userId} - Mes: ${monthName}`);
     
-    // 1. Obtener todos los días que tienen memorias, ordenados por ID ("01-01", "01-02"...)
+    // 1. Calcular el rango de IDs de los días para este mes
+    const monthStr = (monthIndex + 1).toString().padStart(2, '0');
+    const startId = `${monthStr}-01`;
+    const endId = `${monthStr}-${DAYS_IN_MONTH[monthIndex]}`; // Ej: "10-31"
+
+    // 2. Obtener todos los días de ESE MES que tienen memorias
     const userDiasRef = getUserDaysRef(userId);
-    const qDias = query(userDiasRef, where("tieneMemorias", "==", true), orderBy(documentId()));
+    const qDias = query(userDiasRef,
+        where("tieneMemorias", "==", true),
+        where(documentId(), ">=", startId),
+        where(documentId(), "<=", endId),
+        orderBy(documentId()) // Ordenar por ID ("10-01", "10-02"...)
+    );
     
     const diasSnapshot = await getDocs(qDias);
     
     const allDaysWithMemories = [];
 
-    // 2. Para cada día con memorias, obtener sus memorias
+    // 3. Para cada día con memorias, obtener sus memorias
     for (const diaDoc of diasSnapshot.docs) {
         const diaData = diaDoc.data();
         const diaId = diaDoc.id;
@@ -497,28 +509,18 @@ async function getAllMemoriesForTimeline(userId) {
         }
     }
 
-    // 3. Agrupar la lista plana de días en meses
-    const groupedByMonth = [];
-    let currentMonth = -1;
-    
-    allDaysWithMemories.forEach(day => {
-        const monthIndex = parseInt(day.diaId.substring(0, 2), 10) - 1; // "01" -> 0
-        
-        if (monthIndex !== currentMonth) {
-            // Es un nuevo mes, crear un nuevo grupo
-            groupedByMonth.push({
-                monthName: MONTH_NAMES[monthIndex],
-                days: []
-            });
-            currentMonth = monthIndex;
-        }
-        
-        // Añadir el día al último grupo de mes creado
-        groupedByMonth[groupedByMonth.length - 1].days.push(day);
-    });
-
-    console.log(`Store: Timeline procesado. ${groupedByMonth.length} meses con datos.`);
-    return groupedByMonth;
+    // 4. Agrupar y devolver el objeto del mes
+    if (allDaysWithMemories.length > 0) {
+        const monthData = {
+            monthName: monthName,
+            days: allDaysWithMemories
+        };
+        console.log(`Store: Timeline procesado. ${allDaysWithMemories.length} días para ${monthName}.`);
+        return monthData;
+    } else {
+        console.log(`Store: Timeline procesado. Sin datos para ${monthName}.`);
+        return null; // No hay datos para este mes
+    }
 }
 
 
@@ -555,6 +557,6 @@ export {
     getTodaySpotlight,
     getMemoriesByType,
     getNamedDays,
-    // *** CORRECCIÓN: Añadido aquí, sin 'export' inline ***
-    getAllMemoriesForTimeline 
+    // CAMBIO: Exportar la nueva función paginada
+    loadMonthForTimeline 
 };
