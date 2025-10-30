@@ -135,7 +135,7 @@ header h1 {
     color: #ffffff;
     text-align: center;
     flex-grow: 1;
-    text-transform: capitalize;
+    text-transform: none; /* CAMBIO: Punto 2 */
 }
 
 /* --- Contenido Principal (Spotlight y Grid) --- */
