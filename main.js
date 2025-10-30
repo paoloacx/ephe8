@@ -1,5 +1,5 @@
 /*
- * main.js (v2.9.1 - Bugfix Spotlight Maps)
+ * main.js (v2.9.2 - Toast y Bugfix Timeline)
  * Controlador principal de Ephemerides.
  */
 
@@ -47,7 +47,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.9.1 (Bugfix Spotlight Maps)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v2.9.2 (Toast y Bugfix Timeline)..."); // Versión actualizada
 
     try {
         ui.setLoading("Iniciando...", true); 
@@ -143,11 +143,9 @@ async function loadTodaySpotlight() {
         const dayName = spotlightData.dayName !== 'Unnamed Day' ? spotlightData.dayName : null;
         ui.updateSpotlight(dateString, dayName, spotlightData.memories); 
 
-        // *** CAMBIO: Punto 5 (Bugfix Mapa) ***
-        // Inicializar los mapas *después* de que el HTML haya sido renderizado
         setTimeout(() => {
             ui.initSpotlightMaps(); 
-        }, 10); // 10ms es suficiente para que el DOM se actualice
+        }, 10);
     }
 }
 
@@ -194,14 +192,24 @@ async function drawTimelineView() {
 function drawMainView() {
     const monthNav = document.querySelector('.month-nav');
     const spotlight = document.getElementById('spotlight-section');
+    const appContent = document.getElementById('app-content'); // *** AÑADIDO ***
 
     if (state.currentViewMode === 'timeline') {
         if (monthNav) monthNav.style.display = 'none';
         if (spotlight) spotlight.style.display = 'none';
         drawTimelineView();
     } else {
+        // MODO CALENDARIO
         if (monthNav) monthNav.style.display = 'flex';
         if (spotlight) spotlight.style.display = 'block';
+        
+        // *** FIX: Quitar la clase timeline-view y restaurar el grid ***
+        if (appContent) {
+            appContent.className = ''; // Limpia la clase 'timeline-view'
+            appContent.style.display = 'grid'; // Restaura el display de grid
+        }
+        // *** FIN FIX ***
+
         drawCalendarView(); 
         loadTodaySpotlight();
     }
@@ -254,10 +262,6 @@ async function handleTimelineLoadMore() {
             ui.appendTimelineMonth(monthData); 
             state.timeline.nextMonthToLoad = monthToLoad - 1; 
         } else {
-            // Si el mes no tiene datos, sigue intentando con el anterior
-            // hasta que uno tenga datos o se acaben los meses.
-            // Para evitar bucles infinitos si Enero-Septiembre están vacíos,
-            // vamos a cargar el siguiente mes directamente.
             state.timeline.nextMonthToLoad = monthToLoad - 1;
             if (state.timeline.nextMonthToLoad >= 0) {
                 handleTimelineLoadMore(); // Llama recursivamente al siguiente
@@ -269,7 +273,6 @@ async function handleTimelineLoadMore() {
         console.error("Error cargando más meses del timeline:", err);
         ui.showErrorAlert(`Error al cargar el mes: ${err.message}`, "Error de Timeline");
     } finally {
-        // Solo seteamos isLoading a false si no estamos en la llamada recursiva
         if (state.timeline.nextMonthToLoad === monthToLoad - 1) {
             state.timeline.isLoading = false;
             ui.setTimelineButtonLoading(false);
@@ -320,7 +323,7 @@ function handleAuthStateChange(user) {
     }
 }
 
-// --- Manejadores de UI (Sin cambios, excepto handleViewModeChange) ---
+// --- Manejadores de UI (Sin cambios) ---
 
 function handleMonthChange(direction) {
     if (!state.currentUser) return; 
@@ -487,11 +490,16 @@ function handleViewModeChange(newViewMode) {
 }
 
 
-// --- 3. Lógica de Modales (Controlador - Sin cambios) ---
+// --- 3. Lógica de Modales (Controlador) ---
 
 async function handleSaveDayName(diaId, newName, statusElementId = 'save-status') {
     if (!state.currentUser || !state.currentUser.uid) {
-        ui.showModalStatus(statusElementId, `Debes estar logueado`, true); 
+        // *** CAMBIO: Usar Toast para el error si es desde el modal de edición ***
+        if (statusElementId === 'save-status') {
+            ui.showToast('Debes estar logueado', true);
+        } else {
+            ui.showModalStatus(statusElementId, `Debes estar logueado`, true); 
+        }
         return;
     }
     const userId = state.currentUser.uid;
@@ -506,7 +514,12 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
             state.allDaysData[dayIndex].Nombre_Especial = finalName;
         }
 
-        ui.showModalStatus(statusElementId, 'Nombre guardado', false); 
+        // *** CAMBIO: Usar Toast en lugar de Modal Status ***
+        if (statusElementId === 'save-status') {
+            ui.showToast('Nombre guardado'); // Nueva llamada al toast
+        } else {
+            ui.showModalStatus(statusElementId, 'Nombre guardado', false);
+        }
         
         drawMainView(); 
 
@@ -528,7 +541,12 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
 
     } catch (err) {
         console.error("Error guardando nombre:", err);
-        ui.showModalStatus(statusElementId, `Error: ${err.message}`, true); 
+        // *** CAMBIO: Usar Toast para el error ***
+        if (statusElementId === 'save-status') {
+            ui.showToast(`Error: ${err.message}`, true); // Toast de error
+        } else {
+            ui.showModalStatus(statusElementId, `Error: ${err.message}`, true);
+        }
     }
 }
 
@@ -563,7 +581,8 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
         const memoryId = isEditing ? memoryData.id : null;
         await saveMemory(userId, diaId, memoryData, memoryId); 
 
-        ui.showModalStatus('memoria-status', isEditing ? 'Memoria actualizada' : 'Memoria guardada', false); 
+        // *** CAMBIO: Usar Toast para el éxito ***
+        ui.showToast(isEditing ? 'Memoria actualizada' : 'Memoria guardada');
         
         ui.resetMemoryForm(); 
 
@@ -578,7 +597,8 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 
     } catch (err) {
         console.error("Error guardando memoria:", err);
-        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); 
+        // *** CAMBIO: Usar Toast para el error ***
+        ui.showToast(`Error: ${err.message}`, true); 
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
@@ -593,13 +613,13 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 
 async function handleDeleteMemory(diaId, mem) {
     if (!state.currentUser || !state.currentUser.uid) {
-        ui.showModalStatus('memoria-status', `Debes estar logueado`, true); 
+        ui.showToast(`Debes estar logueado`, true); 
         return;
     }
     const userId = state.currentUser.uid;
     
     if (!mem || !mem.id) {
-         ui.showModalStatus('memoria-status', `Error: Información de memoria inválida.`, true); 
+         ui.showToast(`Error: Información de memoria inválida.`, true); 
          return;
     }
 
@@ -612,7 +632,7 @@ async function handleDeleteMemory(diaId, mem) {
     try {
         const imagenURL = (mem.Tipo === 'Imagen') ? mem.ImagenURL : null;
         await deleteMemory(userId, diaId, mem.id, imagenURL); 
-        ui.showModalStatus('memoria-status', 'Memoria borrada', false); 
+        ui.showToast('Memoria borrada'); 
 
         const updatedMemories = await loadMemoriesForDay(userId, diaId); 
         ui.updateMemoryList(updatedMemories); 
@@ -627,7 +647,7 @@ async function handleDeleteMemory(diaId, mem) {
 
     } catch (err) {
         console.error("Error borrando memoria:", err);
-        ui.showModalStatus('memoria-status', `Error: ${err.message}`, true); 
+        ui.showToast(`Error: ${err.message}`, true); 
     }
 }
 
