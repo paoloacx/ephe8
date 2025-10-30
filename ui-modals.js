@@ -256,7 +256,7 @@ function createEditModal() {
 
                     <div class="modal-section memorias-section">
                         
-                        <div id="edit-memorias-list-container" style="margin-top: 15px;">
+                        <div id="edit-memorias-list-container" style="margin-top: 15px; display: none;">
                             <h4 style="margin-top: 0;">Memorias Existentes</h4>
                             <div id="edit-memorias-list"></div>
                         </div>
