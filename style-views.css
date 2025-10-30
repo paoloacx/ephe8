@@ -14,7 +14,7 @@
     color: #fff;
     text-shadow: 0 1px 1px rgba(0,0,0,0.5);
     margin: 10px 0 8px 10px;
-    text-transform: capitalize;
+    text-transform: none; /* CAMBIO: Punto 2 */
 }
 #today-memory-spotlight {
     background-color: #f5f5ff; /* Un poco más claro */
@@ -199,6 +199,20 @@
 .timeline-view {
     padding: 10px;
     box-sizing: border-box;
+    position: relative; /* CAMBIO: Punto 1 (Para la línea) */
+    z-index: 1; /* Asegura que el contenido esté sobre la línea */
+}
+/* CAMBIO: Punto 1 (Línea blanca continua de fondo) */
+.timeline-view::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 5px; /* CAMBIO: 5px */
+    background: #fff; /* CAMBIO: blanca */
+    transform: translateX(-50%);
+    z-index: -1; /* Detrás del contenido */
 }
 .timeline-month-header {
     font-size: 22px;
@@ -208,40 +222,27 @@
     padding: 15px 10px 10px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     margin-bottom: 15px;
-    text-transform: capitalize;
+    text-transform: none; /* CAMBIO: Punto 2 */
 }
 .timeline-day-group {
     background-color: #ffffff;
     border: 1px solid #ccc;
     border-radius: 10px;
-    margin: 0 0 65px 0; /* CAMBIO: Punto 4 (Espacio) */
-    overflow: visible; /* Permitir que se vea el conector */
+    margin: 0 0 50px 0; /* CAMBIO: Punto 1 (Espacio 50px) */
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     color: #333;
-    position: relative; /* CAMBIO: Punto 4 (Para conector) */
+    position: relative;
+    cursor: pointer; /* CAMBIO: Punto 4 (Todo el bloque clicable) */
 }
-/* CAMBIO: Punto 4 (Conector) */
-.timeline-day-group:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 100%; /* Justo al final de la tarjeta */
-    height: 45px; /* Altura de la línea en el espacio de 65px */
-    margin-top: 10px; /* Espacio desde la tarjeta (10 + 45 + 10 = 65 total margin) */
-    width: 2px;
-    border-left: 2px dashed #000;
-    transform: translateX(-50%);
-}
+/* CAMBIO: Punto 1 (Eliminada la línea dashed '::after') */
 .timeline-day-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px;
-    /* CAMBIO: Punto 4 (Color Header) */
     background: linear-gradient(to bottom, #bcc6d1 0%, #a4b0bd 50%, #909dad 51%, #a4b0bd 100%);
     border-bottom: 1px solid #6d6d6d;
-    cursor: pointer;
-    /* Asegurar bordes redondeados solo arriba */
+    cursor: inherit; /* CAMBIO: Punto 4 (Hereda el cursor del padre) */
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
 }
@@ -251,16 +252,21 @@
 .timeline-day-date {
     font-size: 17px;
     font-weight: bold;
-    color: #333; /* CAMBIO: Punto 4 (Texto oscuro) */
-    text-shadow: 0 1px 0 rgba(255,255,255,0.6); /* CAMBIO: Punto 4 */
-    text-transform: capitalize;
+    color: #000; /* CAMBIO: Punto 3 (Negro) */
+    text-shadow: none; /* CAMBIO: Punto 3 (Sin sombra) */
+    text-transform: none; /* CAMBIO: Punto 2 */
 }
 .timeline-day-special {
     font-size: 14px;
     font-weight: normal;
-    color: #4a5462;
+    color: #000; /* CAMBIO: Punto 3 (Negro) */
     margin-left: 8px;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.6); /* CAMBIO: Punto 4 */
+    text-shadow: none; /* CAMBIO: Punto 3 (Sin sombra) */
+}
+/* CAMBIO: Punto 3 (Chevron blanco) */
+.timeline-day-header .list-view-chevron {
+    border-top: 2px solid #fff;
+    border-right: 2px solid #fff;
 }
 .timeline-memories-list {
     /* No se necesita padding, los .list-view-item ya lo tienen */
