@@ -1,5 +1,5 @@
 /*
- * settings.js (v2.0 - Modal real y conmutador)
+ * settings.js (v2.1 - Limpieza de texto)
  * Gestiona la lógica de la pantalla/modal de Ajustes.
  */
 
@@ -70,13 +70,8 @@ function _createSettingsModal() {
                         </label>
                     </div>
                 </div>
-                <p class="settings-list-group-footer">
-                    Activa esta opción para ver tus memorias en una lista cronológica en lugar del calendario.
-                </p>
-
-                <!-- Aquí irían futuros grupos (Import/Export, etc.) -->
-
-            </div>
+                
+                </div>
             
             <div class="modal-main-buttons">
                 <button id="close-settings-btn">Cerrar</button>
