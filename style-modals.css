@@ -1,7 +1,6 @@
 @charset "UTF-8";
 
 /* --- Modales (Base) --- */
-/* CAMBIO: Punto 7 (Centrado vertical) */
 .modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-search-results, .modal-alert-prompt, .modal-confirm, .modal-settings {
     position: fixed;
     top: 0;
@@ -11,9 +10,8 @@
     background-color: rgba(0,0,0,0);
     display: none;
     justify-content: center;
-    align-items: center; /* CAMBIO: De flex-start a center */
+    align-items: center; 
     padding: 15px;
-    /* padding-top: 5vh; */ /* CAMBIO: Eliminado */
     box-sizing: border-box;
     opacity: 0;
     transition: opacity 0.3s ease, background-color 0.3s ease;
@@ -124,12 +122,11 @@
     max-width: 500px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     border: 1px solid #888;
-    max-height: 85vh; /* CAMBIO: Punto 7 (Ajustado) */
+    max-height: 85vh; 
     display: flex;
     flex-direction: column;
     overflow: hidden;
     color: #333;
-    /* CAMBIO: Punto 7 (Ajustada animación de entrada) */
     transform: scale(0.95);
     opacity: 0;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
@@ -145,7 +142,6 @@
     transform: scale(1);
     opacity: 1;
 }
-/* CAMBIO: Punto 7 (max-height) */
 .modal-preview-content {
     max-height: 80vh;
 }
@@ -154,7 +150,6 @@
 .modal-search-results .modal-content {
     max-height: 80vh; 
 }
-/* Modales pequeños no necesitan max-height */
 .modal-alert-content,
 .modal-settings .modal-content,
 .modal-store .modal-content {
@@ -498,13 +493,12 @@
     border-radius: 0;
     margin-bottom: 0;
 }
-/* *** NUEVO: Divisor con sombra *** */
 .modal-section.modal-divider {
     padding: 0;
     height: 1px;
-    border-bottom: 1px solid #b0b0b0; /* Línea principal */
-    box-shadow: 0 1px 1px rgba(0,0,0,0.15); /* Sombra inferior */
-    margin: 10px 0 15px 0; /* Espaciado */
+    border-bottom: 1px solid #b0b0b0; 
+    box-shadow: 0 1px 1px rgba(0,0,0,0.15); 
+    margin: 10px 0 15px 0; 
 }
 .modal-section h3, .modal-section h4 {
     color: #4a5462;
@@ -524,6 +518,11 @@
 .memorias-section {
     border-top: none;
     padding-top: 10px;
+}
+/* CAMBIO: Punto 1 (quitar padding-top de "Memorias Existentes") */
+.memorias-section #edit-memorias-list-container h4 {
+    margin-top: 0;
+    padding-top: 0;
 }
 .modal-section:last-child {
     border-bottom: none;
@@ -591,11 +590,12 @@
     padding: 20px 20px 20px 50px;
     position: relative;
     line-height: 24px;
-    font-family: 'Courier New', Courier, monospace;
-    color: #000000; 
+    /* CAMBIO: Punto 3 (Fuente y color) */
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #777777; 
     font-size: 18px; 
     font-style: normal; 
-    font-weight: bold; /* CAMBIO: Punto 4 */
+    font-weight: bold; 
     background-image:
         linear-gradient( to right, transparent 0px, transparent 39px, #ff6666 39px, #ff6666 40px, transparent 40px ),
         repeating-linear-gradient( to bottom, transparent 0px, transparent 23px, #e8f0ff 23px, #e8f0ff 24px );
@@ -655,7 +655,7 @@
     display: block;
     flex-grow: 1;
     word-break: break-word;
-    color: #000000;
+    color: #777; /* CAMBIO: Punto 3 */
 }
 .modal-preview-notebook-paper .memoria-artwork {
     width: 60px; 
@@ -670,10 +670,10 @@
     vertical-align: middle;
     margin-right: 0;
     flex-shrink: 0;
-    color: #000000;
+    color: #777; /* CAMBIO: Punto 3 */
 }
 .modal-preview-notebook-paper .artist-name {
-    color: #333333;
+    color: #555; /* CAMBIO: Punto 3 (un poco más oscuro) */
     font-size: 0.9em;
 }
 .modal-preview-notebook-paper .list-placeholder {
@@ -695,11 +695,10 @@
 }
 
 /* --- Estilos .memoria-item en Modal Edición --- */
-/* CAMBIO: Punto 6 (Nuevo layout) */
 #edit-memorias-list .memoria-item {
     display: flex;
-    flex-direction: column; /* Apilado vertical */
-    align-items: stretch; /* Ocupar todo el ancho */
+    flex-direction: column; 
+    align-items: stretch; 
     padding: 10px;
     border-bottom: 1px solid #ddd;
     background-color: #fff;
@@ -707,7 +706,7 @@
     border-left: 1px solid #ddd;
     border-right: 1px solid #ddd;
     transition: background-color 0.2s ease;
-    position: relative; /* Para posicionar los botones de acción */
+    position: relative; 
 }
 #edit-memorias-list .memoria-item:hover {
     background-color: #f9f9f9;
@@ -721,7 +720,7 @@
     border-bottom: none;
 }
 #edit-memorias-list .memoria-item small {
-    display: none; /* Ocultamos el 'small' por defecto, usamos .year-tag */
+    display: none; 
 }
 #edit-memorias-list .memoria-item .memoria-item-main-content {
     display: flex;
@@ -730,7 +729,7 @@
     width: 100%;
 }
 #edit-memorias-list .memoria-item .memoria-artwork {
-    width: 30px; /* Un poco más grande */
+    width: 30px; 
     height: 30px;
     flex-shrink: 0;
     border-radius: 3px;
@@ -744,25 +743,22 @@
     flex-shrink: 0;
     margin-right: 0;
     margin-left: 0;
-    width: 30px; /* Coherente con artwork */
+    width: 30px; 
     text-align: center;
 }
 #edit-memorias-list .memoria-item .memoria-item-content {
     flex-grow: 1;
     color: #333;
     line-height: 1.3;
-    /* Dejar espacio para los botones de acción */
     padding-right: 60px;
 }
 #edit-memorias-list .memoria-item .artist-name {
     color: #555;
     font-size: 0.9em;
 }
-/* Acciones Editar/Borrar memoria */
 #edit-memorias-list .memoria-actions {
     display: flex;
     flex-shrink: 0;
-    /* CAMBIO: Punto 6 (Posicionar en esquina) */
     position: absolute;
     bottom: 8px;
     right: 8px;
@@ -796,13 +792,12 @@
     border: 1px solid #ddd;
     border-radius: 8px;
 }
-/* CAMBIO: Punto 5 (Botón estrecho y centrado) */
 #btn-show-add-form {
     margin-top: 15px;
-    width: auto; /* No 100% */
+    width: auto; 
     max-width: 250px;
     box-sizing: border-box;
-    display: block; /* Para centrar con margin */
+    display: block; 
     margin-left: auto;
     margin-right: auto;
 }
