@@ -156,18 +156,18 @@
 
 /* --- Etiqueta de Año (Year Tag) --- */
 .year-tag {
-    display: inline-block;
-    padding: 3px 8px;
-    background-color: #007aff;
-    border-radius: 5px;
-    font-size: 14px;
-    font-weight: bold;
-    color: #ffffff !important; /* Tarea 1 y 2: Texto blanco */
-    text-shadow: none !important; /* Tarea 2: Sin sombra */
-    line-height: 1;
-    vertical-align: middle;
-    margin-right: 6px;
-    min-width: 0;
-    flex-shrink: 0;
-    white-space: nowrap;
+    display: inline-block;
+    padding: 3px 8px;
+    background-color: #007aff;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffffff !important; /* Tarea 1 y 2: Texto blanco */
+    text-shadow: none !important; /* Tarea 2: Sin sombra */
+    line-height: 1;
+    vertical-align: middle;
+    margin-right: 6px;
+    min-width: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
