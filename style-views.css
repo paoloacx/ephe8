@@ -264,7 +264,7 @@
 .timeline-day-special {
     font-size: 14px;
     font-weight: normal;
-    color: #000;F
+    color: #000;s
     margin-left: 8px;
     text-shadow: none; 
 }
@@ -281,8 +281,8 @@
 .timeline-memories-list .list-view-item-subtitle {
     white-space: normal;
     overflow: visible;
-  m   text-overflow: clip;
-    color: #333; 
+    text-overflow: clip;
+  t color: #333; 
 }
 .timeline-memories-list .list-view-item-title {
     white-space: normal;
@@ -296,6 +296,6 @@
     padding: 40px 20px;
     text-align: center;
     font-size: 18px;
-s   color: #ccc;
+    color: #ccc;
     text-shadow: 0 1px 1px rgba(0,0,0,0);
 }
