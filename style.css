@@ -730,6 +730,32 @@ main {
     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     max-width: 320px; 
 }
+
+/* --- CAMBIO: Cabecera de Modal Unificada --- */
+/* Esta clase .modal-preview-header es usada por TODOS los modales no-alert */
+.modal-preview-header {
+    display: flex;
+    justify-content: center; /* Centrado como pediste */
+    align-items: center;
+    /* Copiado de .modal-alert-content.settings-alert */
+    background: linear-gradient(to bottom, #4c5c70 0%, #303d4f 100%);
+    border-bottom: 1px solid #202834;
+    padding: 15px 20px 10px 20px;
+    flex-shrink: 0;
+}
+.modal-preview-header h3 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: bold;
+    /* Copiado de .modal-alert-content.settings-alert p */
+    color: white;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    text-align: center; /* Centrado */
+    flex-grow: 1;
+}
+/* --- FIN CAMBIO Cabecera --- */
+
+
 .modal-settings .modal-main-buttons {
     background: none;
     border-top: 1px solid #202834;
@@ -965,24 +991,11 @@ main {
 }
 
 
-/* Cabecera Modal Preview */
-.modal-preview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #ccc;
-    padding: 15px 20px 10px 20px;
-    background: rgba(0, 0, 0, 0.03);
-    flex-shrink: 0;
-}
-.modal-preview-header h3 {
-    margin: 0;
-    font-size: 19px;
-    font-weight: bold;
-    color: #333;
-    text-align: left;
-    flex-grow: 1;
-}
+/* --- CAMBIO: Cabecera de Modal Unificada --- */
+/* .modal-preview-header está ahora definido cerca de la línea 855 */
+/* .modal-preview-header h3 está ahora definido cerca de la línea 855 */
+/* --- FIN CAMBIO Cabecera --- */
+
 
 /* --- ESTILO CUADERNO SIMPLIFICADO FINAL --- */
 .modal-preview-notebook-paper {
@@ -1094,42 +1107,38 @@ main {
     position: relative;
 }
 
-/* Footer Modal Preview */
-.modal-preview-footer {
+/* --- CAMBIO: Footer de Modal Unificado --- */
+.modal-preview-footer,
+.modal-main-buttons {
     display: flex;
     justify-content: space-around;
-    padding: 10px 20px;
-    border-top: 1px solid #ccc;
-    background-color: rgba(0,0,0,0.03);
+    padding: 10px 15px; /* Un poco menos de padding para que se parezca más al dock */
+    /* Estilo "casi negro" del footer-dock (un poco más oscuro) */
+    background: linear-gradient(to bottom, #3c3c3c 0%, #222222 100%);
+    border-top: 1px solid #111;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     flex-shrink: 0;
 }
 .modal-preview-footer .aqua-button {
     margin: 5px;
     flex-grow: 1;
     max-width: 45%;
-    /* Estilos .small aplicados directamente */
     padding: 5px 12px !important;
     font-size: 13px !important;
     border-radius: 10px !important;
-}
-
-/* Footer Modales Claros (Edit, Store) */
-.modal-main-buttons {
-    display: flex;
-    justify-content: space-around;
-    padding: 10px 20px;
-    border-top: 1px solid #ccc;
-    background-color: rgba(0,0,0,0.03);
-    flex-shrink: 0;
 }
 .modal-main-buttons .aqua-button {
     margin: 5px;
     flex-grow: 1;
     max-width: 100%;
 }
+/* --- FIN CAMBIO Footer --- */
 
 
 /* Footer Alert/Confirm (Estilo Aqua) */
+/* Estos son para los modales de alerta/confirmación más pequeños, 
+   los dejamos con el fondo claro (rgba(0,0,0,0.03)) que tenías
+   para que contrasten con el contenido blanco. */
 .modal-alert-content .modal-main-buttons {
      background: rgba(0,0,0,0.03);
      border-top: 1px solid #ccc;
