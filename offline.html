@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sin Conexión - Ephemerides</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: linear-gradient(to bottom, #c5ccd3 0%, #a5acb3 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .offline-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px 30px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .offline-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        p {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+        .retry-button {
+            background: linear-gradient(to bottom, #a7d1ef 0%, #76b6e4 50%, #58a5d9 51%, #4aa2d8 100%);
+            border: 1px solid #3c82b1;
+            border-radius: 12px;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+            text-shadow: 0 -1px 0 rgba(0,0,0,0.3);
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+        .retry-button:hover {
+            background: linear-gradient(to bottom, #b8dcf4 0%, #8cc8ec 50%, #6fbde4 51%, #5fb9e2 100%);
+        }
+        .retry-button:active {
+            transform: translateY(1px);
+            box-shadow: inset 0 2px 3px rgba(0,0,0,0.3);
+        }
+        .offline-tips {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .offline-tips h2 {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .offline-tips ul {
+            list-style: none;
+            font-size: 13px;
+            color: #666;
+            text-align: left;
+        }
+        .offline-tips li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .offline-tips li:before {
+            content: "•";
+            position: absolute;
+            left: 5px;
+            color: #4aa2d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        <h1>Sin Conexión</h1>
+        <p>No se puede conectar a Internet. Comprueba tu conexión y vuelve a intentarlo.</p>
+        <button class="retry-button" onclick="window.location.reload()">Reintentar</button>
+        
+        <div class="offline-tips">
+            <h2>FUNCIONES LIMITADAS OFFLINE:</h2>
+            <ul>
+                <li>Puedes ver el calendario cacheado</li>
+                <li>Los cambios se sincronizarán al reconectar</li>
+                <li>Algunas funciones requieren conexión</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
