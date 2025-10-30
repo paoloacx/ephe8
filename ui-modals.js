@@ -1,5 +1,5 @@
 /*
- * ui-modals.js (v1.0)
+ * ui-modals.js (v1.1 - Bugfix de edición y limpieza de Almacén)
  * Módulo para gestionar todos los modales, diálogos, prompts y alertas.
  */
 
@@ -49,7 +49,7 @@ export function initModalsModule(callbacks, uiState, uiMaps, forms, render) {
     createConfirmModal();
     createGenericAlertModal();
 
-    console.log("UI Modals Module init");
+    console.log("UI Modals Module init (v1.1)");
 }
 
 // --- Modal: Vista Previa (Preview) ---
@@ -392,8 +392,9 @@ function bindEditModalEvents() {
 
 /**
  * Función privada de este módulo para mostrar/ocultar el formulario
+ * *** CAMBIO: Añadido 'export' para que ui.js (core) pueda verla ***
  */
-function showMemoryForm(show) {
+export function showMemoryForm(show) {
     const form = document.getElementById('memory-form');
     const addMemoryButtonContainer = document.getElementById('add-memory-button-container');
     const memoryListContainer = document.getElementById('edit-memorias-list-container');
@@ -510,7 +511,8 @@ function createStoreModal() {
         categoryList.appendChild(_render.createStoreCategoryButton('Texto', 'article', 'Notas'));
         categoryList.appendChild(_render.createStoreCategoryButton('Lugar', 'place', 'Lugares'));
         categoryList.appendChild(_render.createStoreCategoryButton('Musica', 'music_note', 'Canciones'));
-        categoryList.appendChild(_render.createStoreCategoryButton('Imagen', 'image', 'Imágenes'));
+        // *** LÍNEA ELIMINADA (Punto 1) ***
+        // categoryList.appendChild(_render.createStoreCategoryButton('Imagen', 'image', 'Imágenes'));
 
         categoryList.addEventListener('click', (e) => {
             const btn = e.target.closest('.store-category-button');
@@ -808,3 +810,4 @@ export function showErrorAlert(message, title = 'Error') {
         _genericAlertResolve = resolve;
     });
 }
+
