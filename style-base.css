@@ -109,7 +109,7 @@ a:hover {
     100% { transform: translateY(-50px); opacity: 0; }
 }
 
-/* --- NUEVO: Toast Notification --- */
+/* --- Toast Notification --- */
 .toast-notification {
     position: fixed;
     top: 60px; /* Debajo del header */
@@ -137,11 +137,11 @@ a:hover {
     background: rgba(200, 50, 50, 0.85); /* Tono rojo oscuro */
 }
 
-/* --- NUEVO: Etiqueta de Año (.year-tag) --- */
+/* --- Etiqueta de Año (.year-tag) --- */
 .year-tag {
     display: inline-block;
     background-color: #007aff; /* Azul iOS */
-    color: #fff;
+    color: #fff; /* CAMBIO: Punto 6 */
     font-weight: bold;
     font-size: 11px;
     padding: 2px 6px;
@@ -154,6 +154,8 @@ a:hover {
 #edit-memorias-list .year-tag {
     font-size: 10px;
     padding: 1px 5px;
+    margin-right: 6px; /* Espacio extra antes del icono */
+    vertical-align: middle; /* Alinear con el icono */
 }
 /* En el spotlight, mantenerla */
 .spotlight-memory-item .year-tag {
@@ -164,10 +166,10 @@ a:hover {
     display: inline-block;
     width: auto;
 }
-/* En el preview notebook */
+/* CAMBIO: Punto 4 (Poner en azul) */
 .modal-preview-notebook-paper .year-tag {
     font-size: 14px; /* Un poco más grande para el estilo "Courier" */
-    background-color: #333;
+    background-color: #007aff;
     color: white;
     padding: 1px 5px;
     border-radius: 3px;
