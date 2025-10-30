@@ -642,9 +642,9 @@
     gap: 8px;
 }
 .modal-preview-notebook-paper .memoria-item small { /* Año */
-    color: #000000;
+    color: #ffffff;
     margin-bottom: 3px;
-    display: block;
+    display: unset;
     font-size: 11px;
     min-width: 0;
     text-align: left;
