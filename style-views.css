@@ -17,7 +17,7 @@
     text-transform: capitalize;
 }
 #today-memory-spotlight {
-    background-color: #f5f5f5;
+    background-color: #f5f5ff; /* Un poco más claro */
     border: 1px solid #ccc;
     border-radius: 10px;
     padding: 10px;
@@ -87,8 +87,8 @@
     min-width: 0;
 }
 .spotlight-memory-item .memoria-artwork {
-    width: 30px;
-    height: 30px;
+    width: 60px; /* CAMBIO: Punto 2 */
+    height: 60px; /* CAMBIO: Punto 2 */
     flex-shrink: 0;
     border-radius: 3px;
     object-fit: cover;
@@ -214,27 +214,45 @@
     background-color: #ffffff;
     border: 1px solid #ccc;
     border-radius: 10px;
-    margin: 0 0 20px 0; /* Espacio entre días */
-    overflow: hidden;
+    margin: 0 0 65px 0; /* CAMBIO: Punto 4 (Espacio) */
+    overflow: visible; /* Permitir que se vea el conector */
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     color: #333;
+    position: relative; /* CAMBIO: Punto 4 (Para conector) */
+}
+/* CAMBIO: Punto 4 (Conector) */
+.timeline-day-group:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%; /* Justo al final de la tarjeta */
+    height: 45px; /* Altura de la línea en el espacio de 65px */
+    margin-top: 10px; /* Espacio desde la tarjeta (10 + 45 + 10 = 65 total margin) */
+    width: 2px;
+    border-left: 2px dashed #000;
+    transform: translateX(-50%);
 }
 .timeline-day-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px;
-    background: linear-gradient(to bottom, #fdfdfd 0%, #f0f0f0 100%);
-    border-bottom: 1px solid #ddd;
+    /* CAMBIO: Punto 4 (Color Header) */
+    background: linear-gradient(to bottom, #bcc6d1 0%, #a4b0bd 50%, #909dad 51%, #a4b0bd 100%);
+    border-bottom: 1px solid #6d6d6d;
     cursor: pointer;
+    /* Asegurar bordes redondeados solo arriba */
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
 }
 .timeline-day-header:active {
-    background: #e0e0e0;
+    background: linear-gradient(to bottom, #a4b0bd 0%, #909dad 50%, #7e8c9a 51%, #909dad 100%);
 }
 .timeline-day-date {
     font-size: 17px;
     font-weight: bold;
-    color: #000;
+    color: #333; /* CAMBIO: Punto 4 (Texto oscuro) */
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6); /* CAMBIO: Punto 4 */
     text-transform: capitalize;
 }
 .timeline-day-special {
@@ -242,6 +260,7 @@
     font-weight: normal;
     color: #4a5462;
     margin-left: 8px;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6); /* CAMBIO: Punto 4 */
 }
 .timeline-memories-list {
     /* No se necesita padding, los .list-view-item ya lo tienen */
@@ -254,5 +273,5 @@
     text-align: center;
     font-size: 18px;
     color: #ccc;
-    text-shadow: 0 1px 1px rgba(0,0,0,0); /* Fix de typo, 0.0 -> 0 */
+    text-shadow: 0 1px 1px rgba(0,0,0,0);
 }
