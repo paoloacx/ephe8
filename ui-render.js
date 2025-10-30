@@ -1,5 +1,5 @@
 /*
- * ui-render.js (v1.1 - Añadida la vista Timeline)
+ * ui-render.js (v1.2 - Spotlight con mapas y Timeline invertido)
  * Módulo para generar el HTML dinámico de la UI (listas, calendario, etc.)
  */
 
@@ -19,7 +19,7 @@ export function initRenderModule(uiState, callbacks, uiMaps) {
     _uiState = uiState;
     _callbacks = callbacks;
     _uiMaps = uiMaps; // Guardamos la referencia al módulo de mapas
-    console.log("UI Render Module init (v1.1)");
+    console.log("UI Render Module init (v1.2)");
 }
 
 /**
@@ -104,6 +104,7 @@ function _getMemorySpotlightDetails(mem) {
 
 /**
  * Renderiza el contenido del Spotlight usando el estilo UITableView
+ * CAMBIO (Punto 1): Modificado para usar createMemoryItemHTML y renderizar mapas/artwork
  */
 export function updateSpotlight(dateString, dayName, memories) {
     const titleEl = document.getElementById('spotlight-date-header');
@@ -123,41 +124,33 @@ export function updateSpotlight(dateString, dayName, memories) {
     }
 
     const containerEl = document.createElement('div');
-    containerEl.className = 'list-view-group';
+    // CAMBIO: Usar el ID del contenedor correcto (style-views.css)
+    containerEl.id = 'spotlight-memories-container';
     listEl.appendChild(containerEl);
 
     if (!memories || memories.length === 0) {
         containerEl.innerHTML = `
-            <div class="list-view-item">
-                <div class="list-view-item-content">
-                    <div class="list-view-item-title" style="font-weight: normal; font-style: italic; color: #666;">
-                        No hay memorias destacadas.
-                    </div>
-                </div>
-            </div>
+            <p class="list-placeholder" style="color: #555; font-style: italic; padding: 15px; text-align: center;">
+                No hay memorias destacadas.
+            </p>
         `;
         return;
     }
 
+    // Ordenar por año (descendente)
     memories.sort((a, b) => {
         const dateA = a.Fecha_Original?.seconds ? new Date(a.Fecha_Original.seconds * 1000) : (a.Fecha_Original instanceof Date ? a.Fecha_Original : new Date(0));
         const dateB = b.Fecha_Original?.seconds ? new Date(b.Fecha_Original.seconds * 1000) : (b.Fecha_Original instanceof Date ? b.Fecha_Original : new Date(0));
         return dateB.getFullYear() - dateA.getFullYear();
     });
 
+    // CAMBIO: Usar el renderizador completo
     memories.forEach(mem => {
-        const details = _getMemorySpotlightDetails(mem); 
+        const itemEl = document.createElement('div');
+        itemEl.className = 'spotlight-memory-item';
 
-        const itemEl = document.createElement('a');
-        itemEl.className = 'list-view-item';
-
-        itemEl.innerHTML = `
-            <div class="list-view-item-content">
-                <div class="list-view-item-title">${details.title}</div>
-                <div class="list-view-item-subtitle">${details.subtitle}</div>
-            </div>
-            <div class="list-view-chevron"></div>
-        `;
+        // Usar el renderizador potente que crea mapas y carátulas
+        itemEl.innerHTML = createMemoryItemHTML(mem, false, 'spotlight');
 
         itemEl.addEventListener('click', () => {
             const allDaysData = _uiState.getAllDaysData();
@@ -172,6 +165,7 @@ export function updateSpotlight(dateString, dayName, memories) {
         containerEl.appendChild(itemEl);
     });
 }
+
 
 /**
  * Renderiza la lista de memorias (usada en Preview y Edit)
@@ -229,16 +223,16 @@ export function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
         case 'Lugar':
             icon = 'place';
             contentHTML += `${mem.LugarNombre || 'Lugar sin nombre'}`;
-            if (mem.LugarData && mem.LugarData.lat && mem.LugarData.lon && !showActions) {
+            if (mem.LugarData && mem.LugarData.lat && mem.LugarData.lon && (mapIdPrefix === 'spotlight' || !showActions)) { // Mostrar mapa en spotlight o preview
                 const lat = mem.LugarData.lat;
                 const lon = mem.LugarData.lon;
                 const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
                 const mapClass = (mapIdPrefix === 'spotlight' || mapIdPrefix === 'search') ? 'spotlight-map-container' : 'memoria-map-container';
                 mapHTML = `<div id="${mapContainerId}"
-                                 class="${mapClass}"
-                                 data-lat="${lat}"
-                                 data-lon="${lon}"
-                                 data-zoom="13">Cargando mapa...</div>`;
+                                       class="${mapClass}"
+                                       data-lat="${lat}"
+                                       data-lon="${lon}"
+                                       data-zoom="13">Cargando mapa...</div>`;
             }
             break;
         case 'Musica':
@@ -325,7 +319,7 @@ export function createStoreListItem(item) {
     if (item.type === 'Nombres') {
         icon = 'label';
         contentHTML = `<strong>${item.Nombre_Especial}</strong>
-                       <small>${item.Nombre_Dia}</small>`;
+                               <small>${item.Nombre_Dia}</small>`;
     } else {
         const year = item.Fecha_Original?.seconds ? (new Date(item.Fecha_Original.seconds * 1000)).getFullYear() : (item.Fecha_Original instanceof Date ? item.Fecha_Original.getFullYear() : '');
         const dayName = item.Nombre_Dia || "Día";
@@ -379,12 +373,18 @@ export function renderTimelineView(groupedByMonth) {
 
     const fragment = document.createDocumentFragment();
 
+    // CAMBIO (Punto 4): Invertir el orden de los meses (ej: Dic, Nov, Oct...)
+    groupedByMonth.reverse();
+
     // 1. Recorrer cada MES
     groupedByMonth.forEach(month => {
         const monthHeader = document.createElement('h2');
         monthHeader.className = 'timeline-month-header';
         monthHeader.textContent = month.monthName;
         fragment.appendChild(monthHeader);
+
+        // CAMBIO (Punto 4): Invertir el orden de los días (ej: 31, 30, 29...)
+        month.days.reverse();
 
         // 2. Recorrer cada DÍA de ese mes
         month.days.forEach(day => {
