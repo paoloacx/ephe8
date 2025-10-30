@@ -285,6 +285,14 @@
     text-overflow: clip;
     color: #333; /* Hacerlo un poco más oscuro que el gris por defecto */
 }
+/* CAMBIO: Punto 2 (Alinear etiqueta y texto) */
+.timeline-memories-list .list-view-item-title {
+    white-space: normal; /* Permitir que el título también se divida */
+    line-height: 1.3;
+}
+.timeline-memories-list .year-tag {
+    margin-right: 6px; /* Espacio entre tag y título */
+}
 .timeline-empty-placeholder {
     padding: 40px 20px;
     text-align: center;
