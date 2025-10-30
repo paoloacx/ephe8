@@ -245,7 +245,7 @@ function createEditModal() {
                             <select id="edit-mem-day"></select>
                             <button type="button" id="btn-name-selected-day" class="aqua-button small" title="Nombrar Día Seleccionado">Nombrar</button>
                         </div>
-                        <p id="add-name-status" class="status-message"></p>
+                        <p id="add-name-status" class="status-message style="display: none;""></p>
                     </div>
                     <div class="modal-section" id="day-name-section" style="display: none !important; margin: 0 !important; padding: 0 !important; height: 0 !important; overflow: hidden !important;">
                         <h3 id="edit-modal-title"></h3>
