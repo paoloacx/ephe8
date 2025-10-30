@@ -239,7 +239,7 @@ function createEditModal() {
             <div class="modal-content-scrollable striped-background">
                 <p class="list-placeholder edit-loading" style="display: none; padding: 20px;">Cargando...</p>
                 <div class="edit-content-wrapper">
-                    <div class="modal-section" id="day-selection-section" style="display: none;">
+                    <div class="modal-section" id="day-selection-section" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">
                         <label for="edit-mem-day">Día (MM-DD):</label>
                         <div class="day-selection-controls">
                             <select id="edit-mem-day"></select>
@@ -247,7 +247,7 @@ function createEditModal() {
                         </div>
                         <p id="add-name-status" class="status-message"></p>
                     </div>
-                    <div class="modal-section" id="day-name-section" style="display: none;">
+                    <div class="modal-section" id="day-name-section" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">
                         <h3 id="edit-modal-title"></h3>
                         <label for="nombre-especial-input">Nombrar este día:</label>
                         <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="25">
@@ -261,7 +261,7 @@ function createEditModal() {
                             <div id="edit-memorias-list"></div>
                         </div>
 
-                        <div id="add-memory-button-container" style="display: none;">
+                        <div id="add-memory-button-container" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">
                            <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button>
                         </div>
                         
@@ -801,3 +801,4 @@ export function showErrorAlert(message, title = 'Error') {
         _genericAlertResolve = resolve;
     });
 }
+
