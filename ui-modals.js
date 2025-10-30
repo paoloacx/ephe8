@@ -247,7 +247,7 @@ function createEditModal() {
                         </div>
                         <p id="add-name-status" class="status-message"></p>
                     </div>
-                    <div class="modal-section" id="day-name-section" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">
+                    <div class="modal-section" id="day-name-section" style="display: none !important; margin: 0 !important; padding: 0 !important; height: 0 !important; overflow: hidden !important;">
                         <h3 id="edit-modal-title"></h3>
                         <label for="nombre-especial-input">Nombrar este día:</label>
                         <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="25">
@@ -438,6 +438,8 @@ export function openEditModal(dia, memories) {
         dayNameSection.style.padding = '';
         dayNameSection.style.height = '';
         dayNameSection.style.overflow = '';
+        dayNameSection.style.minHeight = '0';
+        dayNameSection.style.maxHeight = '0';
         
         addMemoryButtonContainer.style.display = 'block';
         addMemoryButtonContainer.style.margin = '';
