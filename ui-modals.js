@@ -239,7 +239,7 @@ function createEditModal() {
             <div class="modal-content-scrollable striped-background">
                 <p class="list-placeholder edit-loading" style="display: none; padding: 20px;">Cargando...</p>
                 <div class="edit-content-wrapper">
-                    <div class="modal-section" id="day-selection-section" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">">
+                    <div class="modal-section" id="day-selection-section" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">
                         <label for="edit-mem-day">Día (MM-DD):</label>
                         <div class="day-selection-controls">
                             <select id="edit-mem-day"></select>
@@ -260,6 +260,8 @@ function createEditModal() {
                             <h4 style="margin-top: 0;">Memorias Existentes</h4>
                             <div id="edit-memorias-list"></div>
                         </div>
+
+                        <div class="modal-section modal-divider"></div>
 
                         <div id="add-memory-button-container" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">
                            <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button>
@@ -394,7 +396,15 @@ export function showMemoryForm(show) {
     const memoryListContainer = document.getElementById('edit-memorias-list-container');
 
     if (form) form.style.display = show ? 'block' : 'none';
-    if (addMemoryButtonContainer) addMemoryButtonContainer.style.display = show ? 'none' : 'block';
+    if (addMemoryButtonContainer) {
+        addMemoryButtonContainer.style.display = show ? 'none' : 'block';
+        if (!show) {
+            addMemoryButtonContainer.style.margin = '';
+            addMemoryButtonContainer.style.padding = '';
+            addMemoryButtonContainer.style.height = '';
+            addMemoryButtonContainer.style.overflow = '';
+        }
+    }
 
     if (memoryListContainer) {
         const currentDay = _uiState.getCurrentDay();
@@ -418,8 +428,23 @@ export function openEditModal(dia, memories) {
 
     if (dia) {
         daySelection.style.display = 'none';
+        daySelection.style.margin = '0';
+        daySelection.style.padding = '0';
+        daySelection.style.height = '0';
+        daySelection.style.overflow = 'hidden';
+        
         dayNameSection.style.display = 'block';
+        dayNameSection.style.margin = '';
+        dayNameSection.style.padding = '';
+        dayNameSection.style.height = '';
+        dayNameSection.style.overflow = '';
+        
         addMemoryButtonContainer.style.display = 'block';
+        addMemoryButtonContainer.style.margin = '';
+        addMemoryButtonContainer.style.padding = '';
+        addMemoryButtonContainer.style.height = '';
+        addMemoryButtonContainer.style.overflow = '';
+        
         memoryListContainer.style.display = 'block';
 
         if (dynamicTitleEl) dynamicTitleEl.textContent = 'Editar Día';
@@ -429,8 +454,23 @@ export function openEditModal(dia, memories) {
 
     } else {
         daySelection.style.display = 'block';
+        daySelection.style.margin = '';
+        daySelection.style.padding = '';
+        daySelection.style.height = '';
+        daySelection.style.overflow = '';
+        
         addMemoryButtonContainer.style.display = 'block';
+        addMemoryButtonContainer.style.margin = '';
+        addMemoryButtonContainer.style.padding = '';
+        addMemoryButtonContainer.style.height = '';
+        addMemoryButtonContainer.style.overflow = '';
+        
         dayNameSection.style.display = 'none';
+        dayNameSection.style.margin = '0';
+        dayNameSection.style.padding = '0';
+        dayNameSection.style.height = '0';
+        dayNameSection.style.overflow = 'hidden';
+        
         memoryListContainer.style.display = 'none';
 
         if (dynamicTitleEl) dynamicTitleEl.textContent = 'Añadir Memoria';
@@ -801,4 +841,3 @@ export function showErrorAlert(message, title = 'Error') {
         _genericAlertResolve = resolve;
     });
 }
-
