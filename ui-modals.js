@@ -239,15 +239,15 @@ function createEditModal() {
             <div class="modal-content-scrollable striped-background">
                 <p class="list-placeholder edit-loading" style="display: none; padding: 20px;">Cargando...</p>
                 <div class="edit-content-wrapper">
-                    <div class="modal-section" id="day-selection-section" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">
+                    <div class="modal-section" id="day-selection-section" style="display: none;">
                         <label for="edit-mem-day">Día (MM-DD):</label>
                         <div class="day-selection-controls">
                             <select id="edit-mem-day"></select>
                             <button type="button" id="btn-name-selected-day" class="aqua-button small" title="Nombrar Día Seleccionado">Nombrar</button>
                         </div>
-                        <p id="add-name-status" class="status-message style="display: none;""></p>
+                        <p id="add-name-status" class="status-message"></p>
                     </div>
-                    <div class="modal-section" id="day-name-section" style="display: none !important; margin: 0 !important; padding: 0 !important; height: 0 !important; overflow: hidden !important;">
+                    <div class="modal-section" id="day-name-section" style="display: none;">
                         <h3 id="edit-modal-title"></h3>
                         <label for="nombre-especial-input">Nombrar este día:</label>
                         <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="25">
@@ -256,14 +256,14 @@ function createEditModal() {
 
                     <div class="modal-section memorias-section">
                         
-                        <div id="edit-memorias-list-container" style="margin-top: 15px; display: none;">
+                        <div id="edit-memorias-list-container" style="margin-top: 15px;">
                             <h4 style="margin-top: 0;">Memorias Existentes</h4>
                             <div id="edit-memorias-list"></div>
                         </div>
 
                         <div class="modal-section modal-divider"></div>
 
-                        <div id="add-memory-button-container" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">
+                        <div id="add-memory-button-container" style="display: none;">
                            <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button>
                         </div>
                         
@@ -396,15 +396,7 @@ export function showMemoryForm(show) {
     const memoryListContainer = document.getElementById('edit-memorias-list-container');
 
     if (form) form.style.display = show ? 'block' : 'none';
-    if (addMemoryButtonContainer) {
-        addMemoryButtonContainer.style.display = show ? 'none' : 'block';
-        if (!show) {
-            addMemoryButtonContainer.style.margin = '';
-            addMemoryButtonContainer.style.padding = '';
-            addMemoryButtonContainer.style.height = '';
-            addMemoryButtonContainer.style.overflow = '';
-        }
-    }
+    if (addMemoryButtonContainer) addMemoryButtonContainer.style.display = show ? 'none' : 'block';
 
     if (memoryListContainer) {
         const currentDay = _uiState.getCurrentDay();
@@ -427,52 +419,27 @@ export function openEditModal(dia, memories) {
     const allDaysData = _uiState.getAllDaysData();
 
     if (dia) {
+        // Modo edición de día existente
         daySelection.style.display = 'none';
-        daySelection.style.margin = '0';
-        daySelection.style.padding = '0';
-        daySelection.style.height = '0';
-        daySelection.style.overflow = 'hidden';
-        
         dayNameSection.style.display = 'block';
-        dayNameSection.style.margin = '';
-        dayNameSection.style.padding = '';
-        dayNameSection.style.height = '';
-        dayNameSection.style.overflow = '';
-        dayNameSection.style.minHeight = '0';
-        dayNameSection.style.maxHeight = '0';
-        
         addMemoryButtonContainer.style.display = 'block';
-        addMemoryButtonContainer.style.margin = '';
-        addMemoryButtonContainer.style.padding = '';
-        addMemoryButtonContainer.style.height = '';
-        addMemoryButtonContainer.style.overflow = '';
-        
         memoryListContainer.style.display = 'block';
 
         if (dynamicTitleEl) dynamicTitleEl.textContent = 'Editar Día';
-        const dayName = dia.Nombre_Especial !== 'Unnamed Day' ? ` (${dia.Nombre_Especial})` : '';
-        titleEl.textContent = `${dia.Nombre_Dia}${dayName}`;
-        nameInput.value = dia.Nombre_Especial !== 'Unnamed Day' ? dia.Nombre_Especial : '';
+        
+        // Solo mostrar nombre del día en el h3 de la sección de nombrar
+        if (titleEl) titleEl.textContent = dia.Nombre_Dia;
+        
+        // Rellenar el input con el nombre especial si existe
+        if (nameInput) {
+            nameInput.value = dia.Nombre_Especial !== 'Unnamed Day' ? dia.Nombre_Especial : '';
+        }
 
     } else {
+        // Modo añadir memoria (sin día seleccionado previamente)
         daySelection.style.display = 'block';
-        daySelection.style.margin = '';
-        daySelection.style.padding = '';
-        daySelection.style.height = '';
-        daySelection.style.overflow = '';
-        
         addMemoryButtonContainer.style.display = 'block';
-        addMemoryButtonContainer.style.margin = '';
-        addMemoryButtonContainer.style.padding = '';
-        addMemoryButtonContainer.style.height = '';
-        addMemoryButtonContainer.style.overflow = '';
-        
         dayNameSection.style.display = 'none';
-        dayNameSection.style.margin = '0';
-        dayNameSection.style.padding = '0';
-        dayNameSection.style.height = '0';
-        dayNameSection.style.overflow = 'hidden';
-        
         memoryListContainer.style.display = 'none';
 
         if (dynamicTitleEl) dynamicTitleEl.textContent = 'Añadir Memoria';
