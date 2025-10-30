@@ -170,7 +170,7 @@ a:hover {
 }
 /* CAMBIO: Punto 4 (Poner en azul) y Punto 3 (texto blanco) */
 .modal-preview-notebook-paper .year-tag {
-    font-size: 14px; /* Un poco más grande para el estilo "Courier" */
+    font-size: 11px; 
     background-color: #007aff;
     color: white;
     padding: 1px 5px;
