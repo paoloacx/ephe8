@@ -1,5 +1,5 @@
 /*
- * ui-modals.js (v1.3 - Reordenado Edit Modal)
+ * ui-modals.js (v1.4 - Loading Skeletons)
  * Módulo para gestionar todos los modales, diálogos, prompts y alertas.
  */
 
@@ -44,7 +44,7 @@ export function initModalsModule(callbacks, uiState, uiMaps, forms, render) {
     createConfirmModal();
     createGenericAlertModal();
 
-    console.log("UI Modals Module init (v1.3)");
+    console.log("UI Modals Module init (v1.4)");
 }
 
 // --- Modal: Vista Previa (Preview) ---
@@ -62,7 +62,11 @@ function createPreviewModal() {
             <div class="modal-preview-notebook-paper">
                 <div class="modal-preview-memorias">
                     <div id="preview-memorias-list">
-                        <p class="list-placeholder preview-loading" style="display: none;">Cargando memorias...</p>
+                        <div class="skeleton-loader preview-loading" style="display: none;">
+                            <div class="skeleton-item"></div>
+                            <div class="skeleton-item"></div>
+                            <div class="skeleton-item"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -85,6 +89,7 @@ export function showPreviewLoading(isLoading) {
     if (loadingEl && listEl) {
         if (isLoading) {
             listEl.innerHTML = '';
+            listEl.appendChild(loadingEl);
             loadingEl.style.display = 'block';
         } else {
             loadingEl.style.display = 'none';
@@ -137,7 +142,11 @@ function createSearchResultsModal() {
                 <h3 id="search-results-title">Resultados de búsqueda</h3>
             </div>
             <div class="modal-content-scrollable striped-background" id="search-results-content">
-                <p class="list-placeholder">Buscando...</p>
+                <div class="skeleton-loader search-loading">
+                    <div class="skeleton-item"></div>
+                    <div class="skeleton-item"></div>
+                    <div class="skeleton-item"></div>
+                </div>
             </div>
             <div class="modal-main-buttons">
                 <button id="close-search-results-btn" class="aqua-button">Cerrar</button>
@@ -237,7 +246,12 @@ function createEditModal() {
                  <h3 id="edit-modal-title-dynamic">Añadir/Editar</h3>
             </div>
             <div class="modal-content-scrollable striped-background">
-                <p class="list-placeholder edit-loading" style="display: none; padding: 20px;">Cargando...</p>
+                <div class="skeleton-loader edit-loading" style="display: none;">
+                    <div class="skeleton-item"></div>
+                    <div class="skeleton-item"></div>
+                    <div class="skeleton-item"></div>
+                    <div class="skeleton-item"></div>
+                </div>
                 <div class="edit-content-wrapper">
                     <div class="modal-section" id="day-selection-section" style="display: none;">
                         <label for="edit-mem-day">Día (MM-DD):</label>
@@ -551,7 +565,13 @@ function createStoreListModal() {
                  <h3 id="store-list-modal-title">Cargando...</h3>
             </div>
             <div class="modal-content-scrollable striped-background" id="store-list-content">
-                 </div>
+                <div class="skeleton-loader">
+                    <div class="skeleton-item"></div>
+                    <div class="skeleton-item"></div>
+                    <div class="skeleton-item"></div>
+                    <div class="skeleton-item"></div>
+                </div>
+            </div>
             <div class="modal-main-buttons">
                 <button id="close-store-list-btn" class="aqua-button">Cerrar</button>
             </div>
@@ -581,7 +601,16 @@ export function openStoreListModal(title) {
     const titleEl = document.getElementById('store-list-modal-title');
     const contentEl = document.getElementById('store-list-content');
     if (titleEl) titleEl.textContent = title;
-    if (contentEl) contentEl.innerHTML = '<p class="list-placeholder" style="padding: 20px;">Cargando items...</p>';
+    if (contentEl) {
+        contentEl.innerHTML = `
+            <div class="skeleton-loader">
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+            </div>
+        `;
+    }
     storeListModal.style.display = 'flex';
     setTimeout(() => storeListModal.classList.add('visible'), 10);
 }
