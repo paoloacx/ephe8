@@ -1,5 +1,5 @@
 /*
- * ui-modals.js (v1.2 - Eliminado save-status)
+ * ui-modals.js (v1.3 - Reordenado Edit Modal)
  * Módulo para gestionar todos los modales, diálogos, prompts y alertas.
  */
 
@@ -44,7 +44,7 @@ export function initModalsModule(callbacks, uiState, uiMaps, forms, render) {
     createConfirmModal();
     createGenericAlertModal();
 
-    console.log("UI Modals Module init (v1.2)");
+    console.log("UI Modals Module init (v1.3)");
 }
 
 // --- Modal: Vista Previa (Preview) ---
@@ -252,11 +252,21 @@ function createEditModal() {
                         <label for="nombre-especial-input">Nombrar este día:</label>
                         <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="25">
                         <button id="save-name-btn" class="aqua-button">Guardar Nombre</button>
-                        </div>
+                    </div>
+
                     <div class="modal-section memorias-section">
+                        
+                        <div id="edit-memorias-list-container" style="margin-top: 15px;">
+                            <h4 style="margin-top: 0;">Memorias Existentes</h4>
+                            <div id="edit-memorias-list"></div>
+                        </div>
+
+                        <div class="modal-section modal-divider"></div>
+
                         <div id="add-memory-button-container" style="display: none;">
                            <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button>
                         </div>
+                        
                         <form id="memory-form" style="display: none;">
                              <p class="section-description" id="memory-form-title">Añadir/Editar Memoria</p>
                             <label for="memoria-year">Año Original:</label>
@@ -287,12 +297,8 @@ function createEditModal() {
                             <button type="button" id="btn-cancel-mem-edit" class="aqua-button small">Cancelar</button>
                             <p id="memoria-status" class="status-message"></p>
                         </form>
-                        <div id="edit-memorias-list-container" style="margin-top: 15px;">
-                            <h4 style="margin-top: 0;">Memorias Existentes</h4>
-                            <div id="edit-memorias-list"></div>
-                        </div>
                     </div>
-                </div>
+                    </div>
             </div>
             <div class="modal-main-buttons">
                 <button id="close-edit-add-btn" class="aqua-button">Cerrar</button>
