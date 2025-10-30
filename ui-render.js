@@ -1,5 +1,5 @@
 /*
- * ui-render.js (v1.4 - Bloque Timeline Clicable)
+ * ui-render.js (v1.5 - Year Tags)
  * Módulo para generar el HTML dinámico de la UI (listas, calendario, etc.)
  */
 
@@ -15,7 +15,7 @@ export function initRenderModule(uiState, callbacks, uiMaps) {
     _uiState = uiState;
     _callbacks = callbacks;
     _uiMaps = uiMaps; 
-    console.log("UI Render Module init (v1.4)");
+    console.log("UI Render Module init (v1.5)");
 }
 
 /**
@@ -58,16 +58,19 @@ export function drawCalendar(monthName, days, todayId) {
 }
 
 /**
- * Extrae un título y subtítulo para una memoria.
+ * Extrae un título y subtítulo para una memoria (usado por Timeline)
  */
 function _getMemorySpotlightDetails(mem) {
     let title = 'Memoria';
-    let subtitle = 'Año desc.';
+    let subtitleHTML = 'Año desc.'; // *** CAMBIO: Convertido a HTML ***
 
     if (mem.Fecha_Original) {
         try {
             const date = mem.Fecha_Original.seconds ? new Date(mem.Fecha_Original.seconds * 1000) : new Date(mem.Fecha_Original);
-            if (!isNaN(date)) subtitle = date.getFullYear().toString();
+            if (!isNaN(date)) {
+                // *** CAMBIO: Envolver el año en la etiqueta ***
+                subtitleHTML = `<span class="year-tag">${date.getFullYear()}</span>`;
+            }
         } catch (e) { /* Ignorar */ }
     }
 
@@ -95,7 +98,8 @@ function _getMemorySpotlightDetails(mem) {
             }
             break;
     }
-    return { title, subtitle };
+    // *** CAMBIO: Devolver HTML ***
+    return { title, subtitleHTML };
 }
 
 /**
@@ -203,7 +207,8 @@ export function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
     }
 
 
-    let contentHTML = `<small>${yearStr}</small>`;
+    // *** CAMBIO: Añadir clase .year-tag a <small> ***
+    let contentHTML = `<small class="year-tag">${yearStr}</small>`;
     let artworkHTML = '';
     let icon = 'article';
     let mapHTML = '';
@@ -316,21 +321,21 @@ export function createStoreListItem(item) {
         switch(item.Tipo) {
             case 'Lugar':
                 icon = 'place';
-                contentHTML = `<strong>${item.LugarNombre || 'Lugar'}</strong><small>${year} - ${dayName}</small>`;
+                contentHTML = `<strong>${item.LugarNombre || 'Lugar'}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; // *** CAMBIO: Añadida year-tag ***
                 break;
             case 'Musica':
                 icon = 'music_note';
-                contentHTML = `<strong>${item.CancionInfo || 'Canción'}</strong><small>${year} - ${dayName}</small>`;
+                contentHTML = `<strong>${item.CancionInfo || 'Canción'}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; // *** CAMBIO: Añadida year-tag ***
                 break;
             case 'Imagen':
                 icon = 'image';
-                contentHTML = `<strong>${item.Descripcion || 'Imagen'}</strong><small>${year} - ${dayName}</small>`;
+                contentHTML = `<strong>${item.Descripcion || 'Imagen'}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; // *** CAMBIO: Añadida year-tag ***
                 break;
             case 'Texto':
             default:
                 icon = 'article';
                 const desc = item.Descripcion ? item.Descripcion.substring(0, 50) + (item.Descripcion.length > 50 ? '...' : '') : 'Nota';
-                contentHTML = `<strong>${desc}</strong><small>${year} - ${dayName}</small>`;
+                contentHTML = `<strong>${desc}</strong><small><span class="year-tag">${year}</span> - ${dayName}</small>`; // *** CAMBIO: Añadida year-tag ***
                 break;
         }
     }
@@ -412,7 +417,6 @@ function appendMonthFragment(parentFragment, month) {
         const dayGroup = document.createElement('div');
         dayGroup.className = 'timeline-day-group';
 
-        // *** CAMBIO: Punto 4 - Mover el listener al dayGroup ***
         dayGroup.addEventListener('click', () => {
             const allDaysData = _uiState.getAllDaysData();
             const diaObj = allDaysData.find(d => d.id === day.diaId);
@@ -435,20 +439,19 @@ function appendMonthFragment(parentFragment, month) {
             <div class="list-view-chevron"></div>
         `;
         
-        // *** CAMBIO: Punto 4 - Listener movido al dayGroup ***
         dayGroup.appendChild(dayHeader);
 
         const memoriesList = document.createElement('div');
         memoriesList.className = 'timeline-memories-list';
         
         day.memories.forEach(mem => {
-            const details = _getMemorySpotlightDetails(mem);
+            const details = _getMemorySpotlightDetails(mem); // *** CAMBIO: Ahora devuelve subtitleHTML ***
             const memItem = document.createElement('div');
             memItem.className = 'list-view-item';
             memItem.innerHTML = `
                 <div class="list-view-item-content">
                     <div class="list-view-item-title">${details.title}</div>
-                    <div class="list-view-item-subtitle">${details.subtitle}</div>
+                    <div class="list-view-item-subtitle">${details.subtitleHTML}</div> 
                 </div>
             `;
             memoriesList.appendChild(memItem);
