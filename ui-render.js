@@ -1,5 +1,5 @@
 /*
- * ui-render.js (v1.3 - Timeline Paginado con Botón)
+ * ui-render.js (v1.4 - Bloque Timeline Clicable)
  * Módulo para generar el HTML dinámico de la UI (listas, calendario, etc.)
  */
 
@@ -15,7 +15,7 @@ export function initRenderModule(uiState, callbacks, uiMaps) {
     _uiState = uiState;
     _callbacks = callbacks;
     _uiMaps = uiMaps; 
-    console.log("UI Render Module init (v1.3)");
+    console.log("UI Render Module init (v1.4)");
 }
 
 /**
@@ -344,7 +344,6 @@ export function createStoreListItem(item) {
 
 /**
  * Renderiza la vista de Timeline en #app-content
- * @param {Array} groupedByMonth - Los datos agrupados (solo el primer mes).
  */
 export function renderTimelineView(groupedByMonth) {
     const appContent = document.getElementById('app-content');
@@ -356,29 +355,25 @@ export function renderTimelineView(groupedByMonth) {
 
     if (!groupedByMonth || groupedByMonth.length === 0) {
         appContent.innerHTML = '<p class="timeline-empty-placeholder">No se han encontrado memorias en el mes actual.</p>';
-        // Aún así, mostramos el botón para cargar meses anteriores
     }
 
     const fragment = document.createDocumentFragment();
 
     if (groupedByMonth) {
-        // Renderiza el primer mes
         groupedByMonth.forEach(month => {
-            appendMonthFragment(fragment, month); // Usar la nueva función helper
+            appendMonthFragment(fragment, month); 
         });
     }
 
     appContent.appendChild(fragment);
 
-    // *** NUEVO: Añadir el botón "Cargar más" ***
     const loadMoreButton = document.createElement('button');
     loadMoreButton.id = 'timeline-load-more-btn';
     loadMoreButton.className = 'aqua-button';
     loadMoreButton.textContent = 'Cargar mes anterior';
-    loadMoreButton.style.margin = '20px auto 65px auto'; // Margen extra abajo
+    loadMoreButton.style.margin = '20px auto 65px auto'; 
     loadMoreButton.style.display = 'block';
     
-    // Asignar el callback directamente
     loadMoreButton.addEventListener('click', () => {
         if (_callbacks.onTimelineLoadMore) {
             _callbacks.onTimelineLoadMore();
@@ -389,9 +384,7 @@ export function renderTimelineView(groupedByMonth) {
 }
 
 /**
- * *** NUEVA FUNCIÓN ***
  * Añade un nuevo mes (cargado) a la vista de Timeline, antes del botón.
- * @param {object} monthData - El objeto de mes (devuelto por loadMonthForTimeline)
  */
 export function appendTimelineMonth(monthData) {
     const appContent = document.getElementById('app-content');
@@ -399,17 +392,13 @@ export function appendTimelineMonth(monthData) {
     if (!appContent || !loadMoreButton || !monthData) return;
 
     const fragment = document.createDocumentFragment();
-    appendMonthFragment(fragment, monthData); // Usar la nueva función helper
+    appendMonthFragment(fragment, monthData); 
 
-    // Insertar el nuevo contenido *antes* del botón
     appContent.insertBefore(fragment, loadMoreButton);
 }
 
 /**
- * *** NUEVA FUNCIÓN HELPER ***
  * Construye el fragmento de HTML para un mes y lo añade a un fragmento padre.
- * @param {DocumentFragment} parentFragment - El fragmento donde se añadirá el HTML.
- * @param {object} month - El objeto de mes (con monthName y days).
  */
 function appendMonthFragment(parentFragment, month) {
     const monthHeader = document.createElement('h2');
@@ -417,13 +406,22 @@ function appendMonthFragment(parentFragment, month) {
     monthHeader.textContent = month.monthName;
     parentFragment.appendChild(monthHeader);
 
-    // Invertir el orden de los días (ej: 31, 30, 29...)
     month.days.reverse();
 
-    // 2. Recorrer cada DÍA de ese mes
     month.days.forEach(day => {
         const dayGroup = document.createElement('div');
         dayGroup.className = 'timeline-day-group';
+
+        // *** CAMBIO: Punto 4 - Mover el listener al dayGroup ***
+        dayGroup.addEventListener('click', () => {
+            const allDaysData = _uiState.getAllDaysData();
+            const diaObj = allDaysData.find(d => d.id === day.diaId);
+            if (diaObj && _callbacks.onDayClick) {
+                _callbacks.onDayClick(diaObj);
+            } else {
+                console.warn("No se encontró el objeto 'dia' para el timeline:", day.diaId);
+            }
+        });
 
         const dayHeader = document.createElement('div');
         dayHeader.className = 'timeline-day-header';
@@ -437,15 +435,7 @@ function appendMonthFragment(parentFragment, month) {
             <div class="list-view-chevron"></div>
         `;
         
-        dayHeader.addEventListener('click', () => {
-            const allDaysData = _uiState.getAllDaysData();
-            const diaObj = allDaysData.find(d => d.id === day.diaId);
-            if (diaObj && _callbacks.onDayClick) {
-                _callbacks.onDayClick(diaObj);
-            } else {
-                console.warn("No se encontró el objeto 'dia' para el timeline:", day.diaId);
-            }
-        });
+        // *** CAMBIO: Punto 4 - Listener movido al dayGroup ***
         dayGroup.appendChild(dayHeader);
 
         const memoriesList = document.createElement('div');
@@ -470,9 +460,7 @@ function appendMonthFragment(parentFragment, month) {
 }
 
 /**
- * *** NUEVA FUNCIÓN ***
  * Actualiza el estado visual del botón "Cargar más".
- * @param {boolean} isLoading - True si está cargando.
  */
 export function setTimelineButtonLoading(isLoading) {
     const loadMoreButton = document.getElementById('timeline-load-more-btn');
@@ -488,9 +476,7 @@ export function setTimelineButtonLoading(isLoading) {
 }
 
 /**
- * *** NUEVA FUNCIÓN ***
  * Oculta el botón "Cargar más" (cuando no hay más datos).
- * @param {boolean} isVisible - False para ocultar.
  */
 export function updateTimelineButtonVisibility(isVisible) {
     const loadMoreButton = document.getElementById('timeline-load-more-btn');
