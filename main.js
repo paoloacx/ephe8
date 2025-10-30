@@ -1,5 +1,5 @@
 /*
- * main.js (v2.8 - Timeline Completa)
+ * main.js (v2.9 - Timeline Paginado)
  * Controlador principal de Ephemerides.
  */
 
@@ -18,13 +18,11 @@ import {
     getMemoriesByType,
     getNamedDays,
     uploadImage,
-    getAllMemoriesForTimeline // *** LÍNEA AÑADIDA ***
+    loadMonthForTimeline // *** CAMBIO: Importar la nueva función paginada ***
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
-// *** CAMBIO: Importar initSettings ***
 import { initSettings, showSettings } from './settings.js'; 
-// *** NUEVO: Importar loadSetting ***
 import { loadSetting } from './utils.js';
 
 // --- Estado Global de la App ---
@@ -34,26 +32,29 @@ let state = {
     currentUser: null,
     todayId: '',
     dayInPreview: null,
-    // *** NUEVO: Añadir estado para el modo de vista ***
     currentViewMode: 'calendar', // 'calendar' o 'timeline'
     store: {
         currentType: null,
         lastVisible: null,
         isLoading: false,
+    },
+    // *** NUEVO: Estado para la paginación del Timeline ***
+    timeline: {
+        nextMonthToLoad: null, // (Se setea en drawTimelineView)
+        isLoading: false
     }
 };
 
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.8 (Timeline Completa)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v2.9 (Timeline Paginado)..."); // Versión actualizada
 
     try {
         ui.setLoading("Iniciando...", true); 
         initFirebase(); 
         
         ui.init(getUICallbacks()); 
-        // *** NUEVO: Inicializar el módulo de settings ***
         initSettings(getUICallbacks()); 
         
         initAuthListener(handleAuthStateChange); 
@@ -105,13 +106,11 @@ async function initializeUserSession() {
         const today = new Date();
         state.todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
 
-        // *** NUEVO: Cargar la preferencia de vista del usuario ***
         state.currentViewMode = loadSetting('viewMode', 'calendar');
         console.log("Modo de vista cargado:", state.currentViewMode);
 
         ui.updateAllDaysData(state.allDaysData); 
 
-        // *** CAMBIO: Usar el nuevo enrutador de vistas ***
         drawMainView();
         
         ui.showApp(true); 
@@ -147,7 +146,6 @@ async function loadTodaySpotlight() {
     }
 }
 
-// *** CAMBIO: Renombrada de drawCurrentMonth a drawCalendarView ***
 function drawCalendarView() {
     const monthName = new Date(2024, state.currentMonthIndex, 1).toLocaleDateString('es-ES', { month: 'long' });
     const monthNumber = state.currentMonthIndex + 1;
@@ -159,7 +157,7 @@ function drawCalendarView() {
     ui.drawCalendar(monthName, diasDelMes, state.todayId); 
 }
 
-// *** CAMBIO: Lógica de renderizado real para Timeline ***
+// *** CAMBIO: Lógica de renderizado para Timeline paginado ***
 async function drawTimelineView() {
     console.log("Dibujando la vista de Timeline...");
     if (!state.currentUser || !state.currentUser.uid) return;
@@ -168,30 +166,31 @@ async function drawTimelineView() {
     const appContent = document.getElementById('app-content');
     if (!appContent) return;
     
-    // Mostrar carga específica para el timeline
     appContent.innerHTML = `<p class="loading-message" style="color: white; text-shadow: 0 1px 1px #000;">Cargando Timeline...</p>`;
     appContent.style.display = 'block';
 
     try {
-        // 1. Obtener los datos de store.js
-        const timelineData = await getAllMemoriesForTimeline(userId);
+        // 1. Cargar solo el mes actual
+        const currentMonthIndex = new Date().getMonth(); // ej: 9 para Octubre
+        state.timeline.nextMonthToLoad = currentMonthIndex - 1; // El *próximo* a cargar será Septiembre (8)
+        state.timeline.isLoading = true;
 
-        // 2. Renderizar los datos con ui.js (que llama a ui-render.js)
-        ui.renderTimelineView(timelineData);
+        const monthData = await loadMonthForTimeline(userId, currentMonthIndex);
+        
+        state.timeline.isLoading = false;
+
+        // 2. Renderizar el primer mes (o el placeholder si está vacío)
+        // Lo pasamos como array para que renderTimelineView lo pueda iterar
+        ui.renderTimelineView(monthData ? [monthData] : null); 
 
     } catch (err) {
         console.error("Error al dibujar el Timeline:", err);
         ui.showErrorAlert(`No se pudo cargar el Timeline: ${err.message}`, "Error de Vista");
-        // Dejar el placeholder de error
         appContent.innerHTML = `<p class="timeline-empty-placeholder">Error al cargar el Timeline.</p>`;
     }
 }
 
-// *** NUEVO: Enrutador de vistas ***
-/**
- * Dibuja la vista principal (Calendario o Timeline) según el estado.
- * También gestiona la visibilidad del spotlight y la nav. del mes.
- */
+// *** Enrutador de vistas (sin cambios) ***
 function drawMainView() {
     const monthNav = document.querySelector('.month-nav');
     const spotlight = document.getElementById('spotlight-section');
@@ -201,11 +200,10 @@ function drawMainView() {
         if (spotlight) spotlight.style.display = 'none';
         drawTimelineView();
     } else {
-        // Modo Calendario (default)
         if (monthNav) monthNav.style.display = 'flex';
         if (spotlight) spotlight.style.display = 'block';
         drawCalendarView(); 
-        loadTodaySpotlight(); // El Spotlight solo se carga en la vista de calendario
+        loadTodaySpotlight();
     }
 }
 
@@ -229,12 +227,51 @@ function getUICallbacks() {
         onStoreLoadMore: handleStoreLoadMore,
         onStoreItemClick: handleStoreItemClick,
         onCrumbieClick: handleCrumbieClick,
-        // *** NUEVO: Callback para el conmutador de vista ***
         onViewModeChange: handleViewModeChange, 
+        onTimelineLoadMore: handleTimelineLoadMore, // *** NUEVO: Callback para el botón ***
     };
 }
 
-// --- Manejadores de Autenticación ---
+// *** NUEVA FUNCIÓN: Manejador para cargar más en el Timeline ***
+async function handleTimelineLoadMore() {
+    if (state.timeline.isLoading || !state.currentUser) return;
+    
+    const userId = state.currentUser.uid;
+    const monthToLoad = state.timeline.nextMonthToLoad; // ej: 8 (Septiembre)
+
+    // Si ya no hay más meses (antes de Enero), ocultamos el botón y paramos.
+    if (monthToLoad < 0) {
+        ui.updateTimelineButtonVisibility(false); // (Asume que ui.js expondrá esta función)
+        return;
+    }
+
+    console.log(`Timeline: Cargando mes ${monthToLoad}`);
+    state.timeline.isLoading = true;
+    ui.setTimelineButtonLoading(true); // (Asume que ui.js expondrá esta función)
+
+    try {
+        const monthData = await loadMonthForTimeline(userId, monthToLoad);
+
+        if (monthData) {
+            // Hay datos: se los pasamos a la UI para que los añada
+            ui.appendTimelineMonth(monthData); // (Asume que ui.js expondrá esta función)
+            // Preparamos el siguiente mes a cargar
+            state.timeline.nextMonthToLoad = monthToLoad - 1; // ej: 7 (Agosto)
+        } else {
+            // No hay más datos para este mes (ni para los anteriores), ocultar botón
+            ui.updateTimelineButtonVisibility(false); 
+        }
+    } catch (err) {
+        console.error("Error cargando más meses del timeline:", err);
+        ui.showErrorAlert(`Error al cargar el mes: ${err.message}`, "Error de Timeline");
+    } finally {
+        state.timeline.isLoading = false;
+        ui.setTimelineButtonLoading(false);
+    }
+}
+
+
+// --- Manejadores de Autenticación (Sin cambios) ---
 
 async function handleLoginClick() {
     try {
@@ -276,12 +313,11 @@ function handleAuthStateChange(user) {
     }
 }
 
-// --- Manejadores de UI ---
+// --- Manejadores de UI (Sin cambios, excepto handleViewModeChange) ---
 
 function handleMonthChange(direction) {
     if (!state.currentUser) return; 
     
-    // *** CAMBIO: La nav. de mes solo funciona en vista calendario ***
     if (state.currentViewMode !== 'calendar') return; 
 
     if (direction === 'prev') {
@@ -289,7 +325,6 @@ function handleMonthChange(direction) {
     } else {
         state.currentMonthIndex = (state.currentMonthIndex + 1) % 12;
     }
-    // *** CAMBIO: Llamar al enrutador de vistas ***
     drawMainView();
 }
 
@@ -362,7 +397,6 @@ async function handleHeaderAction(action) {
             const results = await searchMemories(userId, term); 
             ui.setLoading(null, false); 
             
-            // *** CAMBIO: Llamar al enrutador de vistas ***
             drawMainView(); 
 
             results.forEach(mem => {
@@ -375,7 +409,6 @@ async function handleHeaderAction(action) {
 
         } catch (err) {
              ui.setLoading(null, false); 
-             // *** CAMBIO: Llamar al enrutador de vistas ***
              drawMainView();
              ui.showErrorAlert(`Error al buscar: ${err.message}`, 'Error de Búsqueda');
         }
@@ -400,15 +433,12 @@ async function handleFooterAction(action) {
         case 'add':
             ui.openEditModal(null, []); 
             break;
-
         case 'store':
             ui.openStoreModal(); 
             break;
-
         case 'shuffle':
             handleShuffleClick(); 
             break;
-
         default:
             console.warn("Acción de footer desconocida:", action);
     }
@@ -423,11 +453,8 @@ function handleShuffleClick() {
 
     if (state.currentViewMode === 'calendar' && state.currentMonthIndex !== randomMonthIndex) {
         state.currentMonthIndex = randomMonthIndex;
-        // *** CAMBIO: Llamar al enrutador de vistas ***
         drawMainView();
-    } else if (state.currentViewMode === 'timeline') {
-        // En modo timeline, no cambiamos de mes, solo abrimos el día
-    }
+    } 
 
     setTimeout(() => {
         handleDayClick(randomDia); 
@@ -436,27 +463,25 @@ function handleShuffleClick() {
     window.scrollTo(0, 0);
 }
 
-// *** NUEVO: Handler para el conmutador de vista ***
-/**
- * Se llama desde settings.js cuando el usuario cambia el conmutador de vista.
- * @param {string} newViewMode - 'calendar' o 'timeline'
- */
 function handleViewModeChange(newViewMode) {
-    if (state.currentViewMode === newViewMode) return; // Sin cambios
+    if (state.currentViewMode === newViewMode) return; 
 
     console.log("Cambiando modo de vista a:", newViewMode);
     state.currentViewMode = newViewMode;
 
-    // Volver al mes actual si cambiamos a calendario
     if (newViewMode === 'calendar') {
         state.currentMonthIndex = new Date().getMonth();
     }
+    
+    // *** CAMBIO: Resetear el estado del timeline al cambiar de vista ***
+    state.timeline.isLoading = false;
+    state.timeline.nextMonthToLoad = null;
 
     drawMainView();
 }
 
 
-// --- 3. Lógica de Modales (Controlador) ---
+// --- 3. Lógica de Modales (Controlador - Sin cambios) ---
 
 async function handleSaveDayName(diaId, newName, statusElementId = 'save-status') {
     if (!state.currentUser || !state.currentUser.uid) {
@@ -477,7 +502,6 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
 
         ui.showModalStatus(statusElementId, 'Nombre guardado', false); 
         
-        // *** CAMBIO: Llamar al enrutador de vistas ***
         drawMainView(); 
 
         if (statusElementId === 'save-status' && state.dayInPreview && state.dayInPreview.id === diaId) { 
@@ -513,7 +537,6 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
     const saveBtn = document.getElementById('save-memoria-btn'); 
 
     try {
-        // ... (Validación de fecha, etc. - sin cambios)
         if (!memoryData.year || isNaN(parseInt(memoryData.year))) throw new Error('El año es obligatorio.');
         const year = parseInt(memoryData.year);
         if (year < 1900 || year > 2100) throw new Error('Año debe estar entre 1900-2100.');
@@ -530,7 +553,6 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
             memoryData.ImagenURL = await uploadImage(memoryData.file, userId, diaId); 
             ui.showModalStatus('image-upload-status', 'Imagen subida.', false); 
         }
-        // ... (Fin validación)
 
         const memoryId = isEditing ? memoryData.id : null;
         await saveMemory(userId, diaId, memoryData, memoryId); 
@@ -545,7 +567,6 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
         if (dayIndex !== -1 && !state.allDaysData[dayIndex].tieneMemorias) {
             state.allDaysData[dayIndex].tieneMemorias = true;
-            // *** CAMBIO: Llamar al enrutador de vistas ***
             drawMainView(); 
         }
 
@@ -594,7 +615,6 @@ async function handleDeleteMemory(diaId, mem) {
             const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
             if (dayIndex !== -1 && state.allDaysData[dayIndex].tieneMemorias) { 
                 state.allDaysData[dayIndex].tieneMemorias = false;
-                // *** CAMBIO: Llamar al enrutador de vistas ***
                 drawMainView(); 
             }
         }
@@ -605,7 +625,7 @@ async function handleDeleteMemory(diaId, mem) {
     }
 }
 
-// --- 4. Lógica de API Externa (Controlador) ---
+// --- 4. Lógica de API Externa (Controlador - Sin cambios) ---
 
 async function handleMusicSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
@@ -653,7 +673,7 @@ async function handlePlaceSearch(term, resultsCallback) {
     }
 }
 
-// --- 5. Lógica del "Almacén" (Controlador) ---
+// --- 5. Lógica del "Almacén" (Controlador - Sin cambios) ---
 async function handleStoreCategoryClick(type) {
     const userId = state.currentUser.uid;
     console.log(`Cargando Almacén para ${type} - Usuario: ${userId}`);
@@ -764,12 +784,8 @@ function handleStoreItemClick(diaId) {
     const monthIndex = parseInt(dia.id.substring(0, 2), 10) - 1;
     if (state.currentViewMode === 'calendar' && state.currentMonthIndex !== monthIndex) {
         state.currentMonthIndex = monthIndex;
-        // *** CAMBIO: Llamar al enrutador de vistas ***
         drawMainView();
-    } else if (state.currentViewMode === 'timeline') {
-        // En modo timeline, no cambiamos de mes, solo cerramos modales
-    }
-
+    } 
 
     setTimeout(() => {
         handleDayClick(dia); 
@@ -778,7 +794,7 @@ function handleStoreItemClick(diaId) {
     window.scrollTo(0, 0);
 }
 
-// --- 6. Lógica de Crumbie (IA) ---
+// --- 6. Lógica de Crumbie (IA - Sin cambios) ---
 
 function handleCrumbieClick() {
      if (!state.currentUser) {
