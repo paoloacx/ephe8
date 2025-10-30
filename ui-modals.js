@@ -261,8 +261,6 @@ function createEditModal() {
                             <div id="edit-memorias-list"></div>
                         </div>
 
-                        <div class="modal-section modal-divider"></div>
-
                         <div id="add-memory-button-container" style="display: none;">
                            <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button>
                         </div>
