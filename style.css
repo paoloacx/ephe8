@@ -1,4 +1,4 @@
-/* style.css - v2.80 - Smooth Animations & timeline preview */
+/* style.css - v2.81 - Modal Header/Footer Unification */
 @charset "UTF-8";
 
 /* --- Base y Fondo --- */
@@ -160,7 +160,6 @@ header h1 {
 }
 
 /* --- Botón Aqua (Estilo iOS) --- */
-/* (Tu código .aqua-button es perfecto, no se necesita tocar) */
 .aqua-button {
     background: linear-gradient(to bottom, #a7d1ef 0%, #76b6e4 50%, #58a5d9 51%, #4aa2d8 100%);
     border: 1px solid #3c82b1 !important;
@@ -226,15 +225,12 @@ main {
 }
 
 /* --- NUEVO: Estilo UITableView (iOS 3-6) --- */
-/* Clases genéricas para una lista agrupada estilo iOS.
-   Puedes usarlas en lugar de los estilos de lista
-   personalizados si quieres unificar el look. */
 .list-view-group {
     background-color: #ffffff;
     border: 1px solid #ccc;
     border-radius: 10px;
     margin: 15px 10px;
-    overflow: hidden; /* Para que los hijos respeten el border-radius */
+    overflow: hidden; 
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 .list-view-item {
@@ -249,15 +245,15 @@ main {
     cursor: pointer;
 }
 .list-view-item:last-child {
-    border-bottom: none; /* Sin borde en el último elemento */
+    border-bottom: none; 
 }
 .list-view-item:active {
-    background-color: #e0e0e0; /* Gris al pulsar */
+    background-color: #e0e0e0; 
 }
 .list-view-item-content {
     flex: 1;
     margin-right: 10px;
-    min-width: 0; /* Para que el text-overflow funcione */
+    min-width: 0; 
 }
 .list-view-item-title {
     font-size: 17px;
@@ -273,7 +269,6 @@ main {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-/* Flecha "Chevron" (>) */
 .list-view-chevron {
     width: 8px;
     height: 8px;
@@ -416,7 +411,6 @@ main {
     padding: 0;
     text-align: center;
     cursor: pointer;
-    /* --- (Refinado) Añadido 'inset' para relieve superior --- */
     box-shadow: 0 2px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.6);
     color: #333;
     width: 100%;
@@ -514,9 +508,6 @@ main {
 }
 
 /* --- NUEVO: Estilo UIAlertView (iOS 3-6) --- */
-/* Este es un nuevo modal para alertas simples (ej. ui.showAlert('...'))
-   Se añade aquí para que 'ui.js' pueda usarlo.
-   Usará un z-index más alto para mostrarse sobre otros modales si es necesario. */
 .modal-simple-alert {
     position: fixed;
     top: 0;
@@ -526,12 +517,12 @@ main {
     background-color: rgba(0,0,0,0);
     display: none;
     justify-content: center;
-    align-items: center; /* Centrado vertical y horizontal */
+    align-items: center; 
     padding: 15px;
     box-sizing: border-box;
     opacity: 0;
     transition: opacity 0.2s ease, background-color 0.2s ease;
-    z-index: 1010; /* Un poco más alto que los modales normales */
+    z-index: 1010; 
 }
 .modal-simple-alert.visible {
     display: flex;
@@ -539,7 +530,7 @@ main {
     background-color: rgba(0,0,0,0.4);
 }
 .simple-alert-content {
-    background: rgba(240, 240, 240, 0.95); /* Fondo de vidrio esmerilado */
+    background: rgba(240, 240, 240, 0.95); 
     border-radius: 14px;
     width: 100%;
     max-width: 280px;
@@ -573,27 +564,27 @@ main {
 .simple-alert-buttons {
     display: flex;
     width: 100%;
-    border-top: 1px solid #bdbdbd; /* Separador */
+    border-top: 1px solid #bdbdbd; 
 }
 .simple-alert-button {
     width: 100%;
     padding: 12px 15px;
     font-size: 17px;
     font-weight: 500;
-    color: #007aff; /* Azul iOS */
+    color: #007aff; 
     cursor: pointer;
     background: transparent;
     border: none;
     flex-grow: 1;
     border-left: 1px solid #bdbdbd;
-    margin: 0 !important; /* Sobreescribir .aqua-button */
-    border-radius: 0 !important; /* Sobreescribir .aqua-button */
+    margin: 0 !important; 
+    border-radius: 0 !important; 
 }
 .simple-alert-button:first-child {
     border-left: none;
 }
 .simple-alert-button.default-action {
-    font-weight: 600; /* Botón OK por defecto */
+    font-weight: 600; 
 }
 .simple-alert-button:active {
     background-color: rgba(0,0,0,0.05) !important;
@@ -642,7 +633,6 @@ main {
 }
 
 /* Estilo Deep Blue (Settings y Search) */
-/* (Tu código aquí es perfecto, no se toca) */
 .modal-alert-content.settings-alert,
 .modal-alert-content.search-alert {
      background: linear-gradient(to bottom, #4c5c70 0%, #303d4f 100%);
@@ -732,19 +722,14 @@ main {
 }
 
 /* --- NUEVO: Modal de Ajustes (Settings) y Conmutador iOS --- */
-
-/* El modal de Ajustes usará el genérico .modal-content, pero le daremos 
-   el fondo "Deep Blue" y contenido blanco */
 .modal-settings .modal-content {
     background: linear-gradient(to bottom, #4c5c70 0%, #303d4f 100%);
     border: 1px solid #202834;
     color: white;
     text-shadow: 0 1px 0 rgba(0,0,0,0.6);
     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    max-width: 320px; /* Ancho estándar para ajustes */
+    max-width: 320px; 
 }
-
-/* Asegura que el footer de botones tenga el estilo azul */
 .modal-settings .modal-main-buttons {
     background: none;
     border-top: 1px solid #202834;
@@ -764,10 +749,10 @@ main {
     cursor: pointer;
     margin: 0;
     border-radius: 0;
-    width: 100%; /* Botón "Cerrar" único */
+    width: 100%; 
     transition: background 0.2s ease;
-    border-bottom-left-radius: 10px; /* Ajustar a .modal-content */
-    border-bottom-right-radius: 10px; /* Ajustar a .modal-content */
+    border-bottom-left-radius: 10px; 
+    border-bottom-right-radius: 10px; 
 }
 .modal-settings .modal-main-buttons button:first-child {
     border-left: none;
@@ -779,10 +764,8 @@ main {
     background: linear-gradient(to top, #5a6a80 0%, #38485c 100%);
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
 }
-
-/* Contenedor para las opciones (lista agrupada) */
 .settings-list-group {
-    background-color: #3e4a5c; /* Color de fondo de la tabla agrupada oscura */
+    background-color: #3e4a5c; 
     border: 1px solid #2a3443;
     border-radius: 10px;
     margin: 15px;
@@ -814,9 +797,6 @@ main {
     text-align: left;
     margin: 0;
 }
-
-
-/* Conmutador (Toggle Switch) Estilo iOS */
 .ios-toggle {
     position: relative;
     display: inline-block;
@@ -829,20 +809,18 @@ main {
     width: 0;
     height: 0;
 }
-/* El fondo del conmutador */
 .ios-toggle-slider {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #39393D; /* Gris oscuro "off" */
+    background-color: #39393D; 
     border: 1px solid #2a2a2c;
     border-radius: 34px;
     transition: .4s;
     box-shadow: inset 0 0 3px rgba(0,0,0,0.3);
 }
-/* El círculo/perilla */
 .ios-toggle-slider:before {
     position: absolute;
     content: "";
@@ -855,26 +833,24 @@ main {
     transition: .4s;
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
-/* Estilo "On" (Activado) */
 .ios-toggle input:checked + .ios-toggle-slider {
-    background: linear-gradient(to bottom, #a7d1ef 0%, #4aa2d8 100%); /* Azul Aqua */
+    background: linear-gradient(to bottom, #a7d1ef 0%, #4aa2d8 100%); 
     border: 1px solid #3c82b1;
 }
 .ios-toggle input:checked + .ios-toggle-slider:before {
-    transform: translateX(20px); /* Mover la perilla */
+    transform: translateX(20px); 
 }
 /* --- FIN Modal de Ajustes --- */
 
 
 /* --- Fondo Rayado Vertical --- */
 .striped-background {
-    /* Fondo vertical azulado, basado en IMG_0363.jpeg */
-    background-color: #f7f9fc; /* Fondo casi blanco */
+    background-color: #f7f9fc; 
     background-image: repeating-linear-gradient(
         to right,
         #f7f9fc,
         #f7f9fc 10px,
-        #edf2f7 10px, /* Raya azul clara */
+        #edf2f7 10px, 
         #edf2f7 20px
     );
 }
@@ -882,13 +858,12 @@ main {
 .modal-store .modal-content-scrollable,
 .modal-store-list .modal-content-scrollable,
 .modal-search-results .modal-content-scrollable {
-    /* Hereda de .striped-background */
-    background-color: #f7f9fc; /* Fondo casi blanco */
+    background-color: #f7f9fc; 
     background-image: repeating-linear-gradient(
         to right,
         #f7f9fc,
         #f7f9fc 10px,
-        #edf2f7 10px, /* Raya azul clara */
+        #edf2f7 10px, 
         #edf2f7 20px
     );
 }
@@ -1155,7 +1130,6 @@ main {
 
 
 /* Footer Alert/Confirm (Estilo Aqua) */
-/* (Tus estilos para .modal-alert-content .modal-main-buttons son geniales, no se tocan) */
 .modal-alert-content .modal-main-buttons {
      background: rgba(0,0,0,0.03);
      border-top: 1px solid #ccc;
@@ -1228,7 +1202,6 @@ main {
 }
 
 /* Estilos .memoria-item en Modal Edición */
-/* (Tu estilo "Grouped Table" aquí es excelente, no se toca) */
 #edit-memorias-list .memoria-item {
     display: flex;
     align-items: center;
@@ -1330,8 +1303,6 @@ main {
 }
 
 /* Modal Almacén */
-/* (Tu estilo .store-category-button también es un
-   perfecto "Grouped Table", no se toca) */
 .store-category-list {
     display: flex;
     flex-direction: column;
@@ -1501,7 +1472,6 @@ main {
 }
 
 /* Footer Dock */
-/* (Tu footer-dock es perfecto, no se toca) */
 .footer-dock {
     position: fixed;
     bottom: 0;
@@ -1713,3 +1683,4 @@ a:hover {
     color: #ccc;
     text-shadow: 0 1px 1px rgba(0,0,0,0
 }
+
