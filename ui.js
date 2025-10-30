@@ -1,5 +1,5 @@
 /*
- * ui.js (v2.76 - Timeline Paginado)
+ * ui.js (v2.77 - Bugfix Spotlight Maps)
  * Módulo "CORE" de UI. Orquestador.
  */
 
@@ -35,7 +35,7 @@ let searchResultsModal = null;
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.76 - Timeline Paginado)");
+    console.log("UI Module init (v2.77 - Bugfix Spotlight Maps)");
     callbacks = mainCallbacks;
 
     // Objeto de estado y setters para inyectar en los módulos
@@ -51,9 +51,8 @@ function init(mainCallbacks) {
 
     // Inyectar dependencias en el módulo de formularios
     forms.initFormModule(callbacks, uiState, {
-        // Funciones de UI que el formulario necesita llamar
-        showPrompt: modals.showPrompt, // Pasa la función del módulo de modales
-        showMemoryForm: modals.showMemoryForm // Esta función ahora vivirá en modals
+        showPrompt: modals.showPrompt, 
+        showMemoryForm: modals.showMemoryForm 
     });
 
     // Inyectar dependencias en el módulo de renderizado
@@ -62,7 +61,7 @@ function init(mainCallbacks) {
     // Inyectar dependencias en el módulo de modales
     modals.initModalsModule(callbacks, uiState, uiMaps, forms, render);
 
-    // Bindings del "App Shell" (Header, Footer, etc.)
+    // Bindings del "App Shell"
     _bindHeaderEvents();
     _bindNavEvents();
     _bindFooterEvents();
@@ -72,7 +71,6 @@ function init(mainCallbacks) {
 }
 
 // --- Bindings ---
-// (Estos se quedan en el core pork son del "Shell")
 function _bindHeaderEvents() {
     document.getElementById('header-search-btn')?.addEventListener('click', () => {
         if (callbacks.onHeaderAction) callbacks.onHeaderAction('search');
@@ -107,7 +105,6 @@ function _bindLoginEvents() {
     });
 }
 function _bindGlobalListeners() {
-    // Los listeners globales de "click-outside" para cerrar
     document.body.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal-preview')) modals.closePreviewModal();
         if (e.target.classList.contains('modal-edit')) modals.closeEditModal();
@@ -181,18 +178,26 @@ function updateLoginUI(user) {
 
 // --- Funciones de Ayuda (Orquestación) ---
 
+// *** NUEVA FUNCIÓN para arreglar el bug del mapa del Spotlight (Punto 5) ***
+function initSpotlightMaps() {
+    const spotlightContainer = document.getElementById('today-memory-spotlight');
+    if (spotlightContainer) {
+        uiMaps.initMapsInContainer(spotlightContainer, 'spotlight');
+    } else {
+        console.warn("UI: No se encontró el contenedor del spotlight para inicializar los mapas.");
+    }
+}
+
 function updateMemoryList(memories) {
-    _currentMemories = memories || []; // Actualizar estado local
-    
-    // 1. Orquestar el renderizado
+    _currentMemories = memories || []; 
+
     const editList = document.getElementById('edit-memorias-list');
     if (editList) {
         render.renderMemoryList(editList, _currentMemories, true, 'edit');
     }
 
-    // 2. Orquestar renderizado y mapas en preview (si está abierto)
     const previewList = document.getElementById('preview-memorias-list');
-    const previewModalEl = document.getElementById('preview-modal'); // Necesitamos el contenedor del modal
+    const previewModalEl = document.getElementById('preview-modal'); 
     if (previewList && previewModalEl && previewModalEl.classList.contains('visible') && _currentDay) {
          uiMaps.destroyMapsInContainer(previewModalEl);
          render.renderMemoryList(previewList, _currentMemories, false, 'preview');
@@ -236,7 +241,6 @@ function showCrumbieAnimation(message) {
 
 
 // --- Exportaciones Públicas ---
-// El core re-exporta las funciones públicas de todos los módulos
 export const ui = {
     // --- Core Functions ---
     init,
@@ -246,12 +250,12 @@ export const ui = {
     updateLoginUI,
     updateMemoryList,
     showCrumbieAnimation,
+    initSpotlightMaps, // *** AÑADIDO: Punto 5 (Bugfix Mapa) ***
 
     // --- Render Functions (from ui-render.js) ---
     drawCalendar: render.drawCalendar,
     updateSpotlight: render.updateSpotlight,
     renderTimelineView: render.renderTimelineView,
-    // *** CAMBIO: Funciones de paginación del Timeline ***
     appendTimelineMonth: render.appendTimelineMonth,
     setTimelineButtonLoading: render.setTimelineButtonLoading,
     updateTimelineButtonVisibility: render.updateTimelineButtonVisibility,
