@@ -1,7 +1,7 @@
 /*
  * ui-modals.js (v1.3 - Reordenado Edit Modal)
  * Módulo para gestionar todos los modales, diálogos, prompts y alertas.
-*/
+ */
 
 // --- Importaciones (Inyectadas) ---
 let _callbacks = {};
@@ -27,7 +27,7 @@ let _genericAlertResolve = null;
 
 /**
  * Inicializa el módulo de modales.
-*/
+ */
 export function initModalsModule(callbacks, uiState, uiMaps, forms, render) {
     _callbacks = callbacks;
     _uiState = uiState;
@@ -261,7 +261,7 @@ function createEditModal() {
                             <div id="edit-memorias-list"></div>
                         </div>
 
-                        <div id="add-memory-button-container" style="display: none;">
+                                                <div id="add-memory-button-container" style="display: none;">
                            <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button>
                         </div>
                         
@@ -330,7 +330,7 @@ function bindEditModalEvents() {
 
     document.getElementById('btn-show-add-form')?.addEventListener('click', () => {
         _forms.resetMemoryForm(); 
-        showMemoryForm(true);s
+        showMemoryForm(true); 
     });
 
     document.getElementById('btn-cancel-mem-edit')?.addEventListener('click', () => {
@@ -590,6 +590,7 @@ export function updateStoreList(items, append = false, hasMore = false) {
     if (!listContainer) {
         listContainer = document.createElement('div');
         listContainer.className = 'store-list-container';
+ReadWrite.js
         contentEl.innerHTML = '';
         contentEl.appendChild(listContainer);
     }
@@ -692,7 +693,7 @@ export function showPrompt(message, defaultValue = '', type = 'default') {
     msgEl.textContent = message;
     inputEl.style.display = 'block';
     inputEl.value = defaultValue;
-s   cancelBtn.style.display = 'block';
+    cancelBtn.style.display = 'block';
 
     alertPromptModal.style.display = 'flex';
     setTimeout(() => alertPromptModal.classList.add('visible'), 10);
@@ -712,7 +713,7 @@ function createConfirmModal() {
             <p id="confirm-message"></p>
             <div class="modal-main-buttons">
                 <button id="confirm-cancel">Cancelar</button>
-                <button id="confirm-ok" class="delete-confirm">Confirmar</button>
+a               <button id="confirm-ok" class="delete-confirm">Confirmar</button>
             </div>
         </div>
     `;
@@ -732,7 +733,7 @@ function closeConfirmModal(isConfirmed) {
         confirmModal.style.display = 'none';
         if (_confirmResolve) {
             _confirmResolve(isConfirmed);
-s         _confirmResolve = null;
+s           _confirmResolve = null;
         }
     }, 200);
 }
@@ -746,7 +747,7 @@ export function showConfirm(message) {
     confirmModal.style.display = 'flex';
     setTimeout(() => confirmModal.classList.add('visible'), 10);
 
-    return new Promise((resolve) => {
+s   return new Promise((resolve) => {
         _confirmResolve = resolve;
     });
 }
@@ -760,17 +761,17 @@ function createGenericAlertModal() {
         <div class="simple-alert-content">
             <h3 id="generic-alert-title" class="simple-alert-title"></h3>
 s           <p id="generic-alert-message" class="simple-alert-message"></p>
-            <div class="simple-alert-buttons">
+al         <div class="simple-alert-buttons">
                 <button id="generic-alert-ok" class="simple-alert-button default-action">OK</button>
-  s       </div>
+            </div>
         </div>
     `;
     document.body.appendChild(genericAlertModal);
-    bindGenericAlertModalEvents();
+s   bindGenericAlertModalEvents();
 }
 
 function bindGenericAlertModalEvents() {
-    document.getElementById('generic-alert-ok')?.addEventListener('click', closeGenericAlertModal);
+s   document.getElementById('generic-alert-ok')?.addEventListener('click', closeGenericAlertModal);
 }
 
 function closeGenericAlertModal() {
@@ -779,7 +780,7 @@ function closeGenericAlertModal() {
     setTimeout(() => {
         genericAlertModal.style.display = 'none';
 s       if (_genericAlertResolve) {
-            _genericAlertResolve(); 
+s           _genericAlertResolve();s
             _genericAlertResolve = null;
         }
     }, 200);
@@ -792,12 +793,12 @@ s   if (!genericAlertModal) createGenericAlertModal();
     const msgEl = document.getElementById('generic-alert-message');
 
     if(titleEl) titleEl.textContent = title;
-    if(msgEl) msgEl.textContent = message;
+  s if(msgEl) msgEl.textContent = message;
 
     genericAlertModal.style.display = 'flex';
     setTimeout(() => genericAlertModal.classList.add('visible'), 10);
 
-    return new Promise((resolve) => {
-        _genericAlertResolve = resolve;
-    });
+s   return new Promise((resolve) => {
+s       _genericAlertResolve = resolve;
+s   });
 }
