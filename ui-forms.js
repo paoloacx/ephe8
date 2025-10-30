@@ -520,19 +520,25 @@ export function showModalStatus(elementId, message, isError) {
     statusEl.textContent = message;
     statusEl.className = 'status-message';
     
-    if (isError) {
-        statusEl.classList.add('error');
+    if (message) {
+        statusEl.style.display = 'block';
+        if (isError) {
+            statusEl.classList.add('error');
+        } else {
+            statusEl.classList.add('success');
+        }
+        
+        if (!isError) {
+            setTimeout(() => {
+                if (statusEl.textContent === message) {
+                    statusEl.textContent = '';
+                    statusEl.className = 'status-message';
+                    statusEl.style.display = 'none';
+                }
+            }, 3000);
+        }
     } else {
-        statusEl.classList.add('success');
-    }
-    
-    if (message && !isError) {
-        setTimeout(() => {
-            if (statusEl.textContent === message) {
-                statusEl.textContent = '';
-                statusEl.className = 'status-message';
-            }
-        }, 3000);
+        statusEl.style.display = 'none';
     }
 }
 
