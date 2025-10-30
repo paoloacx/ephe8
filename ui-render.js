@@ -1,5 +1,5 @@
 /*
- * ui-render.js (v1.0)
+ * ui-render.js (v1.1 - Añadida la vista Timeline)
  * Módulo para generar el HTML dinámico de la UI (listas, calendario, etc.)
  */
 
@@ -19,7 +19,7 @@ export function initRenderModule(uiState, callbacks, uiMaps) {
     _uiState = uiState;
     _callbacks = callbacks;
     _uiMaps = uiMaps; // Guardamos la referencia al módulo de mapas
-    console.log("UI Render Module init");
+    console.log("UI Render Module init (v1.1)");
 }
 
 /**
@@ -357,4 +357,87 @@ export function createStoreListItem(item) {
         <div class="memoria-item-content">${contentHTML}</div>
         `;
     return itemEl;
+}
+
+// *** NUEVA FUNCIÓN (Paso 6) ***
+/**
+ * Renderiza la vista de Timeline en #app-content
+ * @param {Array} groupedByMonth - Los datos agrupados de store.js
+ */
+export function renderTimelineView(groupedByMonth) {
+    const appContent = document.getElementById('app-content');
+    if (!appContent) return;
+
+    appContent.innerHTML = ''; // Limpiar
+    appContent.className = 'timeline-view'; // Asignar la clase base
+    appContent.style.display = 'block'; // Asegurar que no sea 'grid'
+
+    if (!groupedByMonth || groupedByMonth.length === 0) {
+        appContent.innerHTML = '<p class="timeline-empty-placeholder">No se han encontrado memorias en ningún día.</p>';
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    // 1. Recorrer cada MES
+    groupedByMonth.forEach(month => {
+        const monthHeader = document.createElement('h2');
+        monthHeader.className = 'timeline-month-header';
+        monthHeader.textContent = month.monthName;
+        fragment.appendChild(monthHeader);
+
+        // 2. Recorrer cada DÍA de ese mes
+        month.days.forEach(day => {
+            const dayGroup = document.createElement('div');
+            dayGroup.className = 'timeline-day-group';
+
+            // 3. Crear la cabecera del día (clickeable)
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'timeline-day-header';
+            
+            const specialName = (day.nombreEspecial && day.nombreEspecial !== 'Unnamed Day') 
+                ? `<span class="timeline-day-special">- ${day.nombreEspecial} -</span>` 
+                : '';
+            
+            dayHeader.innerHTML = `
+                <span class="timeline-day-date">${day.nombreDia} ${specialName}</span>
+                <div class="list-view-chevron"></div>
+            `;
+            
+            // Añadir evento de click para abrir el preview
+            dayHeader.addEventListener('click', () => {
+                const allDaysData = _uiState.getAllDaysData();
+                const diaObj = allDaysData.find(d => d.id === day.diaId);
+                if (diaObj && _callbacks.onDayClick) {
+                    _callbacks.onDayClick(diaObj);
+                } else {
+                    console.warn("No se encontró el objeto 'dia' para el timeline:", day.diaId);
+                }
+            });
+            dayGroup.appendChild(dayHeader);
+
+            // 4. Crear la lista de memorias para ese día
+            const memoriesList = document.createElement('div');
+            memoriesList.className = 'timeline-memories-list';
+            
+            day.memories.forEach(mem => {
+                // Usamos el .list-view-item que ya tienes (¡reutilización!)
+                const details = _getMemorySpotlightDetails(mem); // Reutilizamos el helper
+                const memItem = document.createElement('div');
+                memItem.className = 'list-view-item';
+                memItem.innerHTML = `
+                    <div class="list-view-item-content">
+                        <div class="list-view-item-title">${details.title}</div>
+                        <div class="list-view-item-subtitle">${details.subtitle}</div>
+                    </div>
+                `;
+                memoriesList.appendChild(memItem);
+            });
+            
+            dayGroup.appendChild(memoriesList);
+            fragment.appendChild(dayGroup);
+        });
+    });
+
+    appContent.appendChild(fragment);
 }
