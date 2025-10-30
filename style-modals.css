@@ -1,6 +1,7 @@
 @charset "UTF-8";
 
 /* --- Modales (Base) --- */
+/* CAMBIO: Punto 7 (Centrado vertical) */
 .modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-search-results, .modal-alert-prompt, .modal-confirm, .modal-settings {
     position: fixed;
     top: 0;
@@ -10,9 +11,9 @@
     background-color: rgba(0,0,0,0);
     display: none;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center; /* CAMBIO: De flex-start a center */
     padding: 15px;
-    padding-top: 5vh;
+    /* padding-top: 5vh; */ /* CAMBIO: Eliminado */
     box-sizing: border-box;
     opacity: 0;
     transition: opacity 0.3s ease, background-color 0.3s ease;
@@ -123,14 +124,15 @@
     max-width: 500px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     border: 1px solid #888;
-    max-height: 80vh;
+    max-height: 85vh; /* CAMBIO: Punto 7 (Ajustado) */
     display: flex;
     flex-direction: column;
     overflow: hidden;
     color: #333;
-    transform: scale(0.9) translateY(-20px);
+    /* CAMBIO: Punto 7 (Ajustada animación de entrada) */
+    transform: scale(0.95);
     opacity: 0;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
 }
 .modal-preview.visible .modal-preview-content,
 .modal-edit.visible .modal-content,
@@ -140,12 +142,25 @@
 .modal-alert-prompt.visible .modal-alert-content,
 .modal-confirm.visible .modal-alert-content,
 .modal-settings.visible .modal-content {
-    transform: scale(1) translateY(0);
+    transform: scale(1);
     opacity: 1;
 }
+/* CAMBIO: Punto 7 (max-height) */
 .modal-preview-content {
-    max-height: 75vh;
+    max-height: 80vh;
 }
+.modal-edit .modal-content,
+.modal-store-list .modal-content,
+.modal-search-results .modal-content {
+    max-height: 80vh; 
+}
+/* Modales pequeños no necesitan max-height */
+.modal-alert-content,
+.modal-settings .modal-content,
+.modal-store .modal-content {
+    max-height: none;
+}
+
 
 /* --- Modal Alerta/Confirmación Base --- */
 .modal-alert-content {
@@ -153,7 +168,6 @@
     max-height: 90vh;
     border-radius: 8px;
 }
-/* Texto y inputs de Alerta/Confirmación (Simple) */
 .modal-alert-content p {
      padding: 20px;
      margin: 0;
@@ -270,7 +284,6 @@
     outline: none;
     border-color: #4a8fb7;
 }
-/* Botones Deep Blue */
 .modal-alert-content.settings-alert .modal-main-buttons,
 .modal-alert-content.search-alert .modal-main-buttons {
     background: none;
@@ -422,18 +435,25 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
     flex-shrink: 0;
 }
+/* CAMBIO: Punto 4 (Botones de preview más altos) */
 .modal-preview-footer .aqua-button {
     margin: 5px;
     flex-grow: 1;
     max-width: 45%;
-    padding: 5px 12px !important;
-    font-size: 13px !important;
-    border-radius: 10px !important;
+    padding: 8px 12px !important; /* Aumentado de 5px */
+    font-size: 15px !important; /* Aumentado de 13px */
+    border-radius: 15px !important; /* Aumentado de 10px */
 }
 .modal-main-buttons .aqua-button {
     margin: 5px;
     flex-grow: 1;
     max-width: 100%;
+}
+/* CAMBIO: Punto 5 (Botón "Cerrar" en modal Edit) */
+.modal-edit .modal-main-buttons .aqua-button {
+    max-width: 250px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* --- Fondo Rayado Vertical --- */
@@ -559,7 +579,6 @@
 .day-selection-controls input {
     width: auto;
 }
-/* Ocultar grupos de formulario por defecto */
 .add-memory-input-group {
     display: none;
 }
@@ -576,6 +595,7 @@
     color: #000000; 
     font-size: 18px; 
     font-style: normal; 
+    font-weight: bold; /* CAMBIO: Punto 4 */
     background-image:
         linear-gradient( to right, transparent 0px, transparent 39px, #ff6666 39px, #ff6666 40px, transparent 40px ),
         repeating-linear-gradient( to bottom, transparent 0px, transparent 23px, #e8f0ff 23px, #e8f0ff 24px );
@@ -675,16 +695,19 @@
 }
 
 /* --- Estilos .memoria-item en Modal Edición --- */
+/* CAMBIO: Punto 6 (Nuevo layout) */
 #edit-memorias-list .memoria-item {
     display: flex;
-    align-items: center;
-    padding: 8px 5px;
+    flex-direction: column; /* Apilado vertical */
+    align-items: stretch; /* Ocupar todo el ancho */
+    padding: 10px;
     border-bottom: 1px solid #ddd;
     background-color: #fff;
     font-size: 14px;
     border-left: 1px solid #ddd;
     border-right: 1px solid #ddd;
     transition: background-color 0.2s ease;
+    position: relative; /* Para posicionar los botones de acción */
 }
 #edit-memorias-list .memoria-item:hover {
     background-color: #f9f9f9;
@@ -697,36 +720,39 @@
     border-radius: 0 0 8px 8px;
     border-bottom: none;
 }
-#edit-memorias-list .memoria-item small { /* Año */
-    color: #555;
-    font-weight: bold;
-    font-size: 12px;
-    margin-right: 8px;
-    min-width: 45px;
-    text-align: right;
+#edit-memorias-list .memoria-item small {
+    display: none; /* Ocultamos el 'small' por defecto, usamos .year-tag */
+}
+#edit-memorias-list .memoria-item .memoria-item-main-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
 }
 #edit-memorias-list .memoria-item .memoria-artwork {
-    width: 25px;
-    height: 25px;
+    width: 30px; /* Un poco más grande */
+    height: 30px;
     flex-shrink: 0;
     border-radius: 3px;
     object-fit: cover;
-    margin-right: 8px;
-    margin-left: 5px;
+    margin-right: 0;
+    margin-left: 0;
 }
 #edit-memorias-list .memoria-item .memoria-icon {
     font-size: 20px;
     color: #666;
     flex-shrink: 0;
-    margin-right: 8px;
-    margin-left: 5px;
-    width: 25px;
+    margin-right: 0;
+    margin-left: 0;
+    width: 30px; /* Coherente con artwork */
     text-align: center;
 }
 #edit-memorias-list .memoria-item .memoria-item-content {
     flex-grow: 1;
     color: #333;
     line-height: 1.3;
+    /* Dejar espacio para los botones de acción */
+    padding-right: 60px;
 }
 #edit-memorias-list .memoria-item .artist-name {
     color: #555;
@@ -736,7 +762,10 @@
 #edit-memorias-list .memoria-actions {
     display: flex;
     flex-shrink: 0;
-    margin-left: 10px;
+    /* CAMBIO: Punto 6 (Posicionar en esquina) */
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
 }
 #edit-memorias-list .edit-btn,
 #edit-memorias-list .delete-btn {
@@ -767,10 +796,15 @@
     border: 1px solid #ddd;
     border-radius: 8px;
 }
+/* CAMBIO: Punto 5 (Botón estrecho y centrado) */
 #btn-show-add-form {
     margin-top: 15px;
-    width: 100%;
+    width: auto; /* No 100% */
+    max-width: 250px;
     box-sizing: border-box;
+    display: block; /* Para centrar con margin */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* --- Modal Almacén (Store) --- */
