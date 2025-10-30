@@ -25,6 +25,29 @@ import { ui } from './ui.js';
 import { initSettings, showSettings } from './settings.js'; 
 import { loadSetting } from './utils.js';
 
+// --- Detección de Conexión Offline ---
+let isOnline = navigator.onLine;
+
+window.addEventListener('online', () => {
+    if (!isOnline) {
+        isOnline = true;
+        console.log('[Offline] Conexión restaurada');
+        if (ui && ui.showToast) {
+            ui.showToast('Conexión restaurada');
+        }
+    }
+});
+
+window.addEventListener('offline', () => {
+    if (isOnline) {
+        isOnline = false;
+        console.log('[Offline] Sin conexión a Internet');
+        if (ui && ui.showToast) {
+            ui.showToast('Sin conexión. Algunas funciones limitadas.', true);
+        }
+    }
+});
+
 // --- Estado Global de la App ---
 let state = {
     allDaysData: [],
