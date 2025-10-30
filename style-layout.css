@@ -1,0 +1,197 @@
+@charset "UTF-8";
+
+/* --- Header (Barra Superior) --- */
+header {
+    background: linear-gradient(to bottom, #bcc6d1 0%, #a4b0bd 50%, #909dad 51%, #a4b0bd 100%);
+    border-bottom: 1px solid #6d6d6d;
+    padding: 5px 10px;
+    text-align: center;
+    /* --- (Refinado) Añadido 'inset' para efecto "glossy" superior --- */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 45px;
+}
+header h1 {
+    margin: 0;
+    font-size: 20px;
+    color: #333333;
+    font-weight: bold;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+    flex-grow: 1;
+    text-align: center;
+    padding-left: 50px;
+    padding-right: 50px;
+    text-transform: uppercase;
+}
+#header-search-btn {
+    flex-shrink: 0;
+    margin: 0 5px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 10px;
+    background: none;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    color: white;
+    opacity: 0.8;
+    line-height: 0;
+    text-shadow: 0 -1px 0 rgba(0,0,0,0.5);
+    transition: opacity 0.3s ease;
+}
+#header-search-btn:hover {
+    opacity: 1;
+}
+#header-search-btn .material-icons-outlined {
+    font-size: 24px;
+}
+
+#login-section {
+     flex-shrink: 0;
+    margin: 0 5px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 10px;
+    display: flex;
+    align-items: center;
+}
+#user-info {
+    display: none;
+    align-items: center;
+    margin-right: 5px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+#user-info:hover {
+    background-color: rgba(0,0,0,0.1);
+}
+#user-img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 0;
+    border: 1px solid rgba(255,255,255,0.5);
+}
+#user-name {
+    display: none;
+}
+#login-btn-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#user-info[style*="flex"] + #login-btn-container {
+    display: none;
+}
+.header-login-btn {
+    background: none;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    color: white;
+    opacity: 0.8;
+    line-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease;
+}
+.header-login-btn:hover { opacity: 1; }
+.header-login-btn .material-icons-outlined {
+    font-size: 24px;
+}
+.header-login-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+
+/* --- Navegación Mes (Aqua) --- */
+.month-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 15px;
+    background-color: #555c64;
+    border-bottom: 1px solid #222;
+    position: sticky;
+    top: 55px;
+    z-index: 9;
+    background-image: repeating-linear-gradient(rgba(0,0,0,0.1) 0, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px),
+                      repeating-linear-gradient(to right, rgba(0,0,0,0.1) 0, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px);
+}
+#month-name-display {
+    font-size: 17px;
+    font-weight: bold;
+    color: #ffffff;
+    text-align: center;
+    flex-grow: 1;
+    text-transform: capitalize;
+}
+
+/* --- Contenido Principal (Spotlight y Grid) --- */
+main {
+    padding: 10px;
+    max-width: 960px;
+    margin: 0 auto;
+    background-color: transparent;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+/* Footer Dock */
+.footer-dock {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 90px;
+    background: linear-gradient(to bottom, #d8d8d8 0%, #c8c8c8 5%, #b8b8b8 50%, #c8c8c8 95%, #d8d8d8 100%);
+    background-color: #c8c8c8;
+    border-top: 1px solid #777;
+    box-shadow: 0 -1px 3px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 5px 10px;
+    z-index: 20;
+    box-sizing: border-box;
+}
+.dock-button {
+    background: none;
+    border: none;
+    color: #333;
+    text-align: center;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0.9;
+    transition: opacity 0.3s ease, transform 0.2s ease;
+    flex-basis: 0;
+    flex-grow: 1;
+    max-width: 25%;
+}
+.dock-button:hover, .dock-button:active {
+    opacity: 1;
+    transform: scale(1.08);
+}
+.dock-button .material-icons-outlined {
+    margin-bottom: 5px;
+    color: #333;
+    font-size: 32px;
+}
+.dock-button span {
+    font-size: 13px;
+    text-shadow: 0 1px 1px rgba(255,255,255,0.6);
+}
