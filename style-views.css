@@ -14,10 +14,10 @@
     color: #fff;
     text-shadow: 0 1px 1px rgba(0,0,0,0.5);
     margin: 10px 0 8px 10px;
-    text-transform: none; /* CAMBIO: Punto 2 */
+    text-transform: none; 
 }
 #today-memory-spotlight {
-    background-color: #f5f5ff; /* Un poco más claro */
+    background-color: #f5f5ff; 
     border: 1px solid #ccc;
     border-radius: 10px;
     padding: 10px;
@@ -202,7 +202,6 @@
     position: relative; 
     z-index: 1; 
 }
-/* CAMBIO: Punto 1 (Línea blanca DASHED de fondo) */
 .timeline-view::before {
     content: '';
     position: absolute;
@@ -212,13 +211,12 @@
     width: 5px; 
     transform: translateX(-50%);
     z-index: -1; 
-    /* Usar gradiente para simular línea discontinua */
     background: repeating-linear-gradient(
         to bottom,
-        #fff,          /* Color de la línea */
-        #fff 10px,     /* Longitud del guion (10px) */
-        transparent 10px, /* Espacio (10px) */
-        transparent 20px  /* Fin del ciclo (10px dash + 10px gap) */
+        #fff,
+        #fff 10px,
+        transparent 10px,
+        transparent 20px
     );
 }
 .timeline-month-header {
@@ -226,23 +224,22 @@
     font-weight: bold;
     color: #fff;
     text-shadow: 0 1px 1px rgba(0,0,0,0.6);
-    padding: 15px 10px 10px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    margin-bottom: 15px;
-    text-transform: none; /* CAMBIO: Punto 2 */
+    padding: 0 10px 10px 10px; /* CAMBIO: Punto 1 */
+    border-bottom: none; /* CAMBIO: Punto 1 */
+    margin-bottom: 5px; /* CAMBIO: Punto 1 */
+    text-transform: none; 
 }
 .timeline-day-group {
     background-color: #ffffff;
     border: 1px solid #ccc;
     border-radius: 10px;
-    margin: 0 0 50px 0; /* CAMBIO: Punto 1 (Espacio 50px) */
-    overflow: hidden; /* CAMBIO: De 'visible' a 'hidden' (mejor con bordes redondeados) */
+    margin: 0 0 50px 0; 
+    overflow: hidden; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     color: #333;
     position: relative; 
     cursor: pointer; 
 }
-/* CAMBIO: Punto 1 (Eliminada la línea '::after' individual) */
 .timeline-day-header {
     display: flex;
     justify-content: space-between;
@@ -260,18 +257,17 @@
 .timeline-day-date {
     font-size: 17px;
     font-weight: bold;
-    color: #000; /* CAMBIO: Punto 3 (Negro) */
-    text-shadow: none; /* CAMBIO: Punto 3 (Sin sombra) */
-    text-transform: none; /* CAMBIO: Punto 2 */
+    color: #000; 
+    text-shadow: none; 
+    text-transform: none; 
 }
 .timeline-day-special {
     font-size: 14px;
     font-weight: normal;
-    color: #000; /* CAMBIO: Punto 3 (Negro) */
+    color: #000; 
     margin-left: 8px;
-    text-shadow: none; /* CAMBIO: Punto 3 (Sin sombra) */
+    text-shadow: none; 
 }
-/* CAMBIO: Punto 3 (Chevron blanco) */
 .timeline-day-header .list-view-chevron {
     border-top: 2px solid #fff;
     border-right: 2px solid #fff;
@@ -281,6 +277,13 @@
 }
 .timeline-memories-list .list-view-item {
     background-color: transparent;
+}
+/* CAMBIO: Punto 2 (Permitir multi-línea) */
+.timeline-memories-list .list-view-item-subtitle {
+    white-space: normal; /* Permitir que el texto se divida */
+    overflow: visible;
+    text-overflow: clip;
+    color: #333; /* Hacerlo un poco más oscuro que el gris por defecto */
 }
 .timeline-empty-placeholder {
     padding: 40px 20px;
