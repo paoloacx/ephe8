@@ -1,0 +1,26 @@
+{
+  "name": "Ephemerides",
+  "short_name": "Ephemerides",
+  "description": "Tu diario personal de memorias y efemérides",
+  "start_url": "/ephe8/",
+  "display": "standalone",
+  "background_color": "#c5ccd3",
+  "theme_color": "#4aa2d8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/ephe8/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/ephe8/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "productivity"],
+  "screenshots": []
+}
