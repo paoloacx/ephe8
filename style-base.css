@@ -108,3 +108,67 @@ a:hover {
     80% { transform: translateY(-40px); opacity: 1; }
     100% { transform: translateY(-50px); opacity: 0; }
 }
+
+/* --- NUEVO: Toast Notification --- */
+.toast-notification {
+    position: fixed;
+    top: 60px; /* Debajo del header */
+    left: 50%;
+    transform: translate(-50%, -20px);
+    padding: 10px 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+}
+.toast-notification.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+.toast-notification.error {
+    background: rgba(200, 50, 50, 0.85); /* Tono rojo oscuro */
+}
+
+/* --- NUEVO: Etiqueta de Año (.year-tag) --- */
+.year-tag {
+    display: inline-block;
+    background-color: #007aff; /* Azul iOS */
+    color: #fff;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+    vertical-align: middle;
+    margin-right: 4px;
+}
+/* En la lista de edición, hacerla un poco más pequeña */
+#edit-memorias-list .year-tag {
+    font-size: 10px;
+    padding: 1px 5px;
+}
+/* En el spotlight, mantenerla */
+.spotlight-memory-item .year-tag {
+    font-size: 11px;
+    padding: 2px 6px;
+    margin-bottom: 3px;
+    margin-right: 0;
+    display: inline-block;
+    width: auto;
+}
+/* En el preview notebook */
+.modal-preview-notebook-paper .year-tag {
+    font-size: 14px; /* Un poco más grande para el estilo "Courier" */
+    background-color: #333;
+    color: white;
+    padding: 1px 5px;
+    border-radius: 3px;
+}
