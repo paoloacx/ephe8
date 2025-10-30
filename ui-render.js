@@ -1,25 +1,21 @@
 /*
- * ui-render.js (v1.2 - Spotlight con mapas y Timeline invertido)
+ * ui-render.js (v1.3 - Timeline Paginado con Botón)
  * Módulo para generar el HTML dinámico de la UI (listas, calendario, etc.)
  */
 
 // --- Variables privadas (dependencias) ---
-// Estas se inyectan desde ui.js (el core)
 let _uiState = {};
 let _callbacks = {};
 let _uiMaps = null;
 
 /**
  * Inicializa el módulo de renderizado.
- * @param {object} uiState - Getters para el estado de ui.js
- * @param {object} callbacks - Callbacks de main.js
- * @param {object} uiMaps - El módulo importado de ui-maps
  */
 export function initRenderModule(uiState, callbacks, uiMaps) {
     _uiState = uiState;
     _callbacks = callbacks;
-    _uiMaps = uiMaps; // Guardamos la referencia al módulo de mapas
-    console.log("UI Render Module init (v1.2)");
+    _uiMaps = uiMaps; 
+    console.log("UI Render Module init (v1.3)");
 }
 
 /**
@@ -103,8 +99,7 @@ function _getMemorySpotlightDetails(mem) {
 }
 
 /**
- * Renderiza el contenido del Spotlight usando el estilo UITableView
- * CAMBIO (Punto 1): Modificado para usar createMemoryItemHTML y renderizar mapas/artwork
+ * Renderiza el contenido del Spotlight
  */
 export function updateSpotlight(dateString, dayName, memories) {
     const titleEl = document.getElementById('spotlight-date-header');
@@ -124,7 +119,6 @@ export function updateSpotlight(dateString, dayName, memories) {
     }
 
     const containerEl = document.createElement('div');
-    // CAMBIO: Usar el ID del contenedor correcto (style-views.css)
     containerEl.id = 'spotlight-memories-container';
     listEl.appendChild(containerEl);
 
@@ -137,19 +131,15 @@ export function updateSpotlight(dateString, dayName, memories) {
         return;
     }
 
-    // Ordenar por año (descendente)
     memories.sort((a, b) => {
         const dateA = a.Fecha_Original?.seconds ? new Date(a.Fecha_Original.seconds * 1000) : (a.Fecha_Original instanceof Date ? a.Fecha_Original : new Date(0));
         const dateB = b.Fecha_Original?.seconds ? new Date(b.Fecha_Original.seconds * 1000) : (b.Fecha_Original instanceof Date ? b.Fecha_Original : new Date(0));
         return dateB.getFullYear() - dateA.getFullYear();
     });
 
-    // CAMBIO: Usar el renderizador completo
     memories.forEach(mem => {
         const itemEl = document.createElement('div');
         itemEl.className = 'spotlight-memory-item';
-
-        // Usar el renderizador potente que crea mapas y carátulas
         itemEl.innerHTML = createMemoryItemHTML(mem, false, 'spotlight');
 
         itemEl.addEventListener('click', () => {
@@ -161,7 +151,6 @@ export function updateSpotlight(dateString, dayName, memories) {
                 console.warn("No se encontró el objeto 'dia' para el spotlight:", mem.diaId);
             }
         });
-
         containerEl.appendChild(itemEl);
     });
 }
@@ -223,7 +212,7 @@ export function createMemoryItemHTML(mem, showActions, mapIdPrefix = 'map') {
         case 'Lugar':
             icon = 'place';
             contentHTML += `${mem.LugarNombre || 'Lugar sin nombre'}`;
-            if (mem.LugarData && mem.LugarData.lat && mem.LugarData.lon && (mapIdPrefix === 'spotlight' || !showActions)) { // Mostrar mapa en spotlight o preview
+            if (mem.LugarData && mem.LugarData.lat && mem.LugarData.lon && (mapIdPrefix === 'spotlight' || !showActions)) {
                 const lat = mem.LugarData.lat;
                 const lon = mem.LugarData.lon;
                 const mapContainerId = `${mapIdPrefix}-map-${memId || Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
@@ -353,91 +342,159 @@ export function createStoreListItem(item) {
     return itemEl;
 }
 
-// *** NUEVA FUNCIÓN (Paso 6) ***
 /**
  * Renderiza la vista de Timeline en #app-content
- * @param {Array} groupedByMonth - Los datos agrupados de store.js
+ * @param {Array} groupedByMonth - Los datos agrupados (solo el primer mes).
  */
 export function renderTimelineView(groupedByMonth) {
     const appContent = document.getElementById('app-content');
     if (!appContent) return;
 
     appContent.innerHTML = ''; // Limpiar
-    appContent.className = 'timeline-view'; // Asignar la clase base
-    appContent.style.display = 'block'; // Asegurar que no sea 'grid'
+    appContent.className = 'timeline-view'; 
+    appContent.style.display = 'block'; 
 
     if (!groupedByMonth || groupedByMonth.length === 0) {
-        appContent.innerHTML = '<p class="timeline-empty-placeholder">No se han encontrado memorias en ningún día.</p>';
-        return;
+        appContent.innerHTML = '<p class="timeline-empty-placeholder">No se han encontrado memorias en el mes actual.</p>';
+        // Aún así, mostramos el botón para cargar meses anteriores
     }
 
     const fragment = document.createDocumentFragment();
 
-    // CAMBIO (Punto 4): Invertir el orden de los meses (ej: Dic, Nov, Oct...)
-    groupedByMonth.reverse();
-
-    // 1. Recorrer cada MES
-    groupedByMonth.forEach(month => {
-        const monthHeader = document.createElement('h2');
-        monthHeader.className = 'timeline-month-header';
-        monthHeader.textContent = month.monthName;
-        fragment.appendChild(monthHeader);
-
-        // CAMBIO (Punto 4): Invertir el orden de los días (ej: 31, 30, 29...)
-        month.days.reverse();
-
-        // 2. Recorrer cada DÍA de ese mes
-        month.days.forEach(day => {
-            const dayGroup = document.createElement('div');
-            dayGroup.className = 'timeline-day-group';
-
-            // 3. Crear la cabecera del día (clickeable)
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'timeline-day-header';
-            
-            const specialName = (day.nombreEspecial && day.nombreEspecial !== 'Unnamed Day') 
-                ? `<span class="timeline-day-special">- ${day.nombreEspecial} -</span>` 
-                : '';
-            
-            dayHeader.innerHTML = `
-                <span class="timeline-day-date">${day.nombreDia} ${specialName}</span>
-                <div class="list-view-chevron"></div>
-            `;
-            
-            // Añadir evento de click para abrir el preview
-            dayHeader.addEventListener('click', () => {
-                const allDaysData = _uiState.getAllDaysData();
-                const diaObj = allDaysData.find(d => d.id === day.diaId);
-                if (diaObj && _callbacks.onDayClick) {
-                    _callbacks.onDayClick(diaObj);
-                } else {
-                    console.warn("No se encontró el objeto 'dia' para el timeline:", day.diaId);
-                }
-            });
-            dayGroup.appendChild(dayHeader);
-
-            // 4. Crear la lista de memorias para ese día
-            const memoriesList = document.createElement('div');
-            memoriesList.className = 'timeline-memories-list';
-            
-            day.memories.forEach(mem => {
-                // Usamos el .list-view-item que ya tienes (¡reutilización!)
-                const details = _getMemorySpotlightDetails(mem); // Reutilizamos el helper
-                const memItem = document.createElement('div');
-                memItem.className = 'list-view-item';
-                memItem.innerHTML = `
-                    <div class="list-view-item-content">
-                        <div class="list-view-item-title">${details.title}</div>
-                        <div class="list-view-item-subtitle">${details.subtitle}</div>
-                    </div>
-                `;
-                memoriesList.appendChild(memItem);
-            });
-            
-            dayGroup.appendChild(memoriesList);
-            fragment.appendChild(dayGroup);
+    if (groupedByMonth) {
+        // Renderiza el primer mes
+        groupedByMonth.forEach(month => {
+            appendMonthFragment(fragment, month); // Usar la nueva función helper
         });
-    });
+    }
 
     appContent.appendChild(fragment);
+
+    // *** NUEVO: Añadir el botón "Cargar más" ***
+    const loadMoreButton = document.createElement('button');
+    loadMoreButton.id = 'timeline-load-more-btn';
+    loadMoreButton.className = 'aqua-button';
+    loadMoreButton.textContent = 'Cargar mes anterior';
+    loadMoreButton.style.margin = '20px auto 65px auto'; // Margen extra abajo
+    loadMoreButton.style.display = 'block';
+    
+    // Asignar el callback directamente
+    loadMoreButton.addEventListener('click', () => {
+        if (_callbacks.onTimelineLoadMore) {
+            _callbacks.onTimelineLoadMore();
+        }
+    });
+    
+    appContent.appendChild(loadMoreButton);
+}
+
+/**
+ * *** NUEVA FUNCIÓN ***
+ * Añade un nuevo mes (cargado) a la vista de Timeline, antes del botón.
+ * @param {object} monthData - El objeto de mes (devuelto por loadMonthForTimeline)
+ */
+export function appendTimelineMonth(monthData) {
+    const appContent = document.getElementById('app-content');
+    const loadMoreButton = document.getElementById('timeline-load-more-btn');
+    if (!appContent || !loadMoreButton || !monthData) return;
+
+    const fragment = document.createDocumentFragment();
+    appendMonthFragment(fragment, monthData); // Usar la nueva función helper
+
+    // Insertar el nuevo contenido *antes* del botón
+    appContent.insertBefore(fragment, loadMoreButton);
+}
+
+/**
+ * *** NUEVA FUNCIÓN HELPER ***
+ * Construye el fragmento de HTML para un mes y lo añade a un fragmento padre.
+ * @param {DocumentFragment} parentFragment - El fragmento donde se añadirá el HTML.
+ * @param {object} month - El objeto de mes (con monthName y days).
+ */
+function appendMonthFragment(parentFragment, month) {
+    const monthHeader = document.createElement('h2');
+    monthHeader.className = 'timeline-month-header';
+    monthHeader.textContent = month.monthName;
+    parentFragment.appendChild(monthHeader);
+
+    // Invertir el orden de los días (ej: 31, 30, 29...)
+    month.days.reverse();
+
+    // 2. Recorrer cada DÍA de ese mes
+    month.days.forEach(day => {
+        const dayGroup = document.createElement('div');
+        dayGroup.className = 'timeline-day-group';
+
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'timeline-day-header';
+        
+        const specialName = (day.nombreEspecial && day.nombreEspecial !== 'Unnamed Day') 
+            ? `<span class="timeline-day-special">- ${day.nombreEspecial} -</span>` 
+            : '';
+        
+        dayHeader.innerHTML = `
+            <span class="timeline-day-date">${day.nombreDia} ${specialName}</span>
+            <div class="list-view-chevron"></div>
+        `;
+        
+        dayHeader.addEventListener('click', () => {
+            const allDaysData = _uiState.getAllDaysData();
+            const diaObj = allDaysData.find(d => d.id === day.diaId);
+            if (diaObj && _callbacks.onDayClick) {
+                _callbacks.onDayClick(diaObj);
+            } else {
+                console.warn("No se encontró el objeto 'dia' para el timeline:", day.diaId);
+            }
+        });
+        dayGroup.appendChild(dayHeader);
+
+        const memoriesList = document.createElement('div');
+        memoriesList.className = 'timeline-memories-list';
+        
+        day.memories.forEach(mem => {
+            const details = _getMemorySpotlightDetails(mem);
+            const memItem = document.createElement('div');
+            memItem.className = 'list-view-item';
+            memItem.innerHTML = `
+                <div class="list-view-item-content">
+                    <div class="list-view-item-title">${details.title}</div>
+                    <div class="list-view-item-subtitle">${details.subtitle}</div>
+                </div>
+            `;
+            memoriesList.appendChild(memItem);
+        });
+        
+        dayGroup.appendChild(memoriesList);
+        parentFragment.appendChild(dayGroup);
+    });
+}
+
+/**
+ * *** NUEVA FUNCIÓN ***
+ * Actualiza el estado visual del botón "Cargar más".
+ * @param {boolean} isLoading - True si está cargando.
+ */
+export function setTimelineButtonLoading(isLoading) {
+    const loadMoreButton = document.getElementById('timeline-load-more-btn');
+    if (!loadMoreButton) return;
+
+    if (isLoading) {
+        loadMoreButton.disabled = true;
+        loadMoreButton.textContent = 'Cargando...';
+    } else {
+        loadMoreButton.disabled = false;
+        loadMoreButton.textContent = 'Cargar mes anterior';
+    }
+}
+
+/**
+ * *** NUEVA FUNCIÓN ***
+ * Oculta el botón "Cargar más" (cuando no hay más datos).
+ * @param {boolean} isVisible - False para ocultar.
+ */
+export function updateTimelineButtonVisibility(isVisible) {
+    const loadMoreButton = document.getElementById('timeline-load-more-btn');
+    if (!loadMoreButton) return;
+
+    loadMoreButton.style.display = isVisible ? 'block' : 'none';
 }
