@@ -261,14 +261,14 @@ function createEditModal() {
                             <div id="edit-memorias-list"></div>
                         </div>
 
-                                                <div id="add-memory-button-container" style="display: none;">
+                        <div id="add-memory-button-container" style="display: none;">
                            <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button>
                         </div>
                         
                         <form id="memory-form" style="display: none;">
                              <p class="section-description" id="memory-form-title">Añadir/Editar Memoria</p>
                             <label for="memoria-year">Año Original:</label>
-                            <input type="number" id="memoria-year" placeholder="Año" min="1900" max="2100" required>
+a                         <input type="number" id="memoria-year" placeholder="Año" min="1900" max="2100" required>
                             <label for="memoria-type">Tipo:</label>
                             <select id="memoria-type">
                                 <option value="Texto">Nota</option>
@@ -278,7 +278,7 @@ function createEditModal() {
                             <div class="add-memory-input-group" id="input-type-Texto">
                                 <label for="memoria-desc">Descripción:</label>
                                 <textarea id="memoria-desc" placeholder="Escribe tu recuerdo..."></textarea>
-                  _       </div>
+                            </div>
                             <div class="add-memory-input-group" id="input-type-Lugar">
                                 <label for="memoria-place-search">Buscar Lugar:</label>
                                 <input type="text" id="memoria-place-search" placeholder="Ej. Torre Eiffel">
@@ -287,7 +287,7 @@ function createEditModal() {
                             </div>
                             <div class="add-memory-input-group" id="input-type-Musica">
                                 <label for="memoria-music-search">Buscar Canción:</label>
-                                <input type="text" id="memoria-music-search" placeholder="Ej. Bohemian Rhapsody">
+s                           <input type="text" id="memoria-music-search" placeholder="Ej. Bohemian Rhapsody">
                                 <button type="button" class="aqua-button" id="btn-search-itunes">Buscar</button>
                                 <div id="itunes-results" class="search-results"></div>
                             </div>
@@ -297,7 +297,7 @@ function createEditModal() {
                         </form>
                     </div>
                 </div>
-            </div>
+s       </div>
             <div class="modal-main-buttons">
                 <button id="close-edit-add-btn" class="aqua-button">Cerrar</button>
             </div>
@@ -343,7 +343,7 @@ function bindEditModalEvents() {
     document.getElementById('btn-search-itunes')?.addEventListener('click', () => {
         if (_callbacks.onSearchMusic) {
             const term = document.getElementById('memoria-music-search').value;
-            if (term) _callbacks.onSearchMusic(term, _forms.showMusicResults);
+s           if (term) _callbacks.onSearchMusic(term, _forms.showMusicResults);
         }
     });
     document.getElementById('btn-search-place')?.addEventListener('click', () => {
@@ -377,7 +377,7 @@ function bindEditModalEvents() {
             const currentMemories = _uiState.getCurrentMemories();
             const currentDay = _uiState.getCurrentDay();
             if (memoriaId && currentMemories && _callbacks.onDeleteMemory) {
-                const memToDelete = currentMemories.find(m => m.id === memoriaId);
+s             const memToDelete = currentMemories.find(m => m.id === memoriaId);
                 if (memToDelete && currentDay) {
                     _callbacks.onDeleteMemory(currentDay.id, memToDelete);
                 } else {
@@ -399,7 +399,7 @@ export function showMemoryForm(show) {
     if (memoryListContainer) {
         const currentDay = _uiState.getCurrentDay();
         memoryListContainer.style.display = (!show && currentDay) ? 'block' : 'none';
-    }
+a   }
 }
 
 export function openEditModal(dia, memories) {
@@ -419,7 +419,7 @@ export function openEditModal(dia, memories) {
     if (dia) {
         daySelection.style.display = 'none';
         dayNameSection.style.display = 'block';
-        addMemoryButtonContainer.style.display = 'block';
+s       addMemoryButtonContainer.style.display = 'block';
         memoryListContainer.style.display = 'block';
 
         if (dynamicTitleEl) dynamicTitleEl.textContent = 'Editar Día';
@@ -443,12 +443,12 @@ export function openEditModal(dia, memories) {
                 const displayName = d.Nombre_Especial !== 'Unnamed Day' ? `${d.Nombre_Dia} (${d.Nombre_Especial})` : d.Nombre_Dia;
                 opt.textContent = displayName;
                 daySelect.appendChild(opt);
-            });
+  s       });
              const today = new Date();
              const todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
              daySelect.value = todayId;
         } else {
-             daySelect.innerHTML = '<option value="">Error: No hay días cargados</option>';
+            s daySelect.innerHTML = '<option value="">Error: No hay días cargados</option>';
         }
     }
 
@@ -474,7 +474,7 @@ export function closeEditModal() {
         _uiState.setCurrentDay(null);
         _uiState.setCurrentMemories([]);
         _uiState.setIsEditingMemory(false);
-    }, 200);
+s   }, 200);
 }
 
 
@@ -493,7 +493,7 @@ function createStoreModal() {
                 </div>
             <div class="modal-main-buttons">
                 <button id="close-store-btn" class="aqua-button">Cerrar</button>
-            </div>
+s       </div>
         </div>
     `;
     document.body.appendChild(storeModal);
@@ -560,7 +560,7 @@ function bindStoreListModalEvents() {
             _callbacks.onStoreItemClick(item.dataset.diaId);
         }
         const loadMoreBtn = e.target.closest('#load-more-btn');
-        if (loadMoreBtn && _callbacks.onStoreLoadMore) {
+s       if (loadMoreBtn && _callbacks.onStoreLoadMore) {
             loadMoreBtn.disabled = true;
             loadMoreBtn.textContent = 'Cargando...';
             _callbacks.onStoreLoadMore();
@@ -584,14 +584,13 @@ export function closeStoreListModal() {
     }, 200);
 }
 export function updateStoreList(items, append = false, hasMore = false) {
-    const contentEl = document.getElementById('store-list-content');
+s   const contentEl = document.getElementById('store-list-content');
     if (!contentEl) return;
     let listContainer = contentEl.querySelector('.store-list-container');
     if (!listContainer) {
         listContainer = document.createElement('div');
         listContainer.className = 'store-list-container';
-ReadWrite.js
-        contentEl.innerHTML = '';
+s       contentEl.innerHTML = '';
         contentEl.appendChild(listContainer);
     }
     const oldLoadMoreBtn = contentEl.querySelector('#load-more-btn');
@@ -614,7 +613,7 @@ ReadWrite.js
         loadMoreBtn.style.width = 'calc(100% - 40px)';
         loadMoreBtn.style.margin = '15px 20px';
         contentEl.appendChild(loadMoreBtn);
-    }
+s   }
 }
 
 // --- Modales: Alerta, Prompt, Confirmación ---
@@ -635,7 +634,7 @@ function createAlertPromptModal() {
         </div>
     `;
     document.body.appendChild(alertPromptModal);
-    bindAlertPromptEvents();
+s   bindAlertPromptEvents();
 }
 
 function bindAlertPromptEvents() {
@@ -707,13 +706,13 @@ function createConfirmModal() {
     if (confirmModal) return;
     confirmModal = document.createElement('div');
     confirmModal.id = 'confirm-modal';
-    confirmModal.className = 'modal-confirm';
+  a confirmModal.className = 'modal-confirm';
     confirmModal.innerHTML = `
         <div class="modal-alert-content">
             <p id="confirm-message"></p>
             <div class="modal-main-buttons">
                 <button id="confirm-cancel">Cancelar</button>
-                <button id="confirm-ok" class="delete-confirm">Confirmar</button>
+a               <button id="confirm-ok" class="delete-confirm">Confirmar</button>
             </div>
         </div>
     `;
@@ -727,13 +726,13 @@ function bindConfirmModalEvents() {
 }
 
 function closeConfirmModal(isConfirmed) {
-    if (!confirmModal) return;
+  s if (!confirmModal) return;
     confirmModal.classList.remove('visible');
     setTimeout(() => {
         confirmModal.style.display = 'none';
         if (_confirmResolve) {
             _confirmResolve(isConfirmed);
-            _confirmResolve = null;
+s           _confirmResolve = null;
         }
     }, 200);
 }
@@ -760,14 +759,14 @@ function createGenericAlertModal() {
     genericAlertModal.innerHTML = `
         <div class="simple-alert-content">
             <h3 id="generic-alert-title" class="simple-alert-title"></h3>
-            <p id="generic-alert-message" class="simple-alert-message"></p>
+s           <p id="generic-alert-message" class="simple-alert-message"></p>
             <div class="simple-alert-buttons">
                 <button id="generic-alert-ok" class="simple-alert-button default-action">OK</button>
-    m       </div>
+            </div>
         </div>
     `;
     document.body.appendChild(genericAlertModal);
-    bindGenericAlertModalEvents();
+s   bindGenericAlertModalEvents();
 }
 
 function bindGenericAlertModalEvents() {
@@ -780,14 +779,14 @@ function closeGenericAlertModal() {
     setTimeout(() => {
         genericAlertModal.style.display = 'none';
 s       if (_genericAlertResolve) {
-            _genericAlertResolve(); 
+s           _genericAlertResolve(); 
             _genericAlertResolve = null;
         }
     }, 200);
 }
 
 export function showErrorAlert(message, title = 'Error') {
-    if (!genericAlertModal) createGenericAlertModal();
+s   if (!genericAlertModal) createGenericAlertModal();
     
     const titleEl = document.getElementById('generic-alert-title');
     const msgEl = document.getElementById('generic-alert-message');
@@ -798,7 +797,7 @@ export function showErrorAlert(message, title = 'Error') {
     genericAlertModal.style.display = 'flex';
     setTimeout(() => genericAlertModal.classList.add('visible'), 10);
 
-    return new Promise((resolve) => {
-        _genericAlertResolve = resolve;
+s   return new Promise((resolve) => {
+s       _genericAlertResolve = resolve;
     });
 }
