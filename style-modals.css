@@ -1,0 +1,936 @@
+@charset "UTF-8";
+
+/* --- Modales (Base) --- */
+.modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-search-results, .modal-alert-prompt, .modal-confirm, .modal-settings {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0);
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 15px;
+    padding-top: 5vh;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.3s ease, background-color 0.3s ease;
+    z-index: 1000;
+}
+.modal-preview.visible,
+.modal-edit.visible,
+.modal-store.visible,
+.modal-store-list.visible,
+.modal-search-results.visible,
+.modal-alert-prompt.visible,
+.modal-confirm.visible,
+.modal-settings.visible {
+    display: flex;
+    opacity: 1;
+    background-color: rgba(0,0,0,0.5);
+}
+
+/* --- Estilo UIAlertView (iOS 3-6) --- */
+.modal-simple-alert {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0);
+    display: none;
+    justify-content: center;
+    align-items: center; 
+    padding: 15px;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+    z-index: 1010; 
+}
+.modal-simple-alert.visible {
+    display: flex;
+    opacity: 1;
+    background-color: rgba(0,0,0,0.4);
+}
+.simple-alert-content {
+    background: rgba(240, 240, 240, 0.95); 
+    border-radius: 14px;
+    width: 100%;
+    max-width: 280px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    border: 1px solid rgba(0,0,0,0.2);
+    text-align: center;
+    overflow: hidden;
+    transform: scale(1.1);
+    opacity: 0;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+.modal-simple-alert.visible .simple-alert-content {
+    transform: scale(1);
+    opacity: 1;
+}
+.simple-alert-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #000;
+    padding: 20px 20px 0 20px;
+    margin: 0;
+}
+.simple-alert-message {
+    font-size: 14px;
+    color: #000;
+    padding: 10px 20px 20px 20px;
+    white-space: pre-line;
+    line-height: 1.4;
+    margin: 0;
+}
+.simple-alert-buttons {
+    display: flex;
+    width: 100%;
+    border-top: 1px solid #bdbdbd; 
+}
+.simple-alert-button {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 17px;
+    font-weight: 500;
+    color: #007aff; 
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    flex-grow: 1;
+    border-left: 1px solid #bdbdbd;
+    margin: 0 !important; 
+    border-radius: 0 !important; 
+}
+.simple-alert-button:first-child {
+    border-left: none;
+}
+.simple-alert-button.default-action {
+    font-weight: 600; 
+}
+.simple-alert-button:active {
+    background-color: rgba(0,0,0,0.05) !important;
+}
+
+/* --- Contenido del Modal (Genérico) --- */
+.modal-content, .modal-preview-content, .modal-alert-content {
+    background: #f0f0f0;
+    padding: 0;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    border: 1px solid #888;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #333;
+    transform: scale(0.9) translateY(-20px);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+.modal-preview.visible .modal-preview-content,
+.modal-edit.visible .modal-content,
+.modal-store.visible .modal-content,
+.modal-store-list.visible .modal-content,
+.modal-search-results.visible .modal-content,
+.modal-alert-prompt.visible .modal-alert-content,
+.modal-confirm.visible .modal-alert-content,
+.modal-settings.visible .modal-content {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+.modal-preview-content {
+    max-height: 75vh;
+}
+
+/* --- Modal Alerta/Confirmación Base --- */
+.modal-alert-content {
+    max-width: 300px;
+    max-height: 90vh;
+    border-radius: 8px;
+}
+/* Texto y inputs de Alerta/Confirmación (Simple) */
+.modal-alert-content p {
+     padding: 20px;
+     margin: 0;
+     text-align: center;
+     font-size: 15px;
+     line-height: 1.4;
+     white-space: pre-wrap;
+     color: #333;
+     text-shadow: none;
+}
+.modal-alert-content input {
+    margin: 0 20px 15px 20px;
+    width: calc(100% - 40px);
+    box-sizing: border-box;
+    border-radius: 5px;
+    padding: 8px;
+    border: 1px solid #888;
+    transition: border-color 0.3s ease;
+}
+.modal-alert-content input:focus {
+    outline: none;
+    border-color: #4a8fb7;
+}
+
+/* Footer Alert/Confirm (Estilo Aqua) */
+.modal-alert-content .modal-main-buttons {
+     background: rgba(0,0,0,0.03);
+     border-top: 1px solid #ccc;
+     padding: 10px;
+     display: flex;
+     justify-content: space-around;
+}
+.modal-alert-content .modal-main-buttons button {
+    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e0e0e0 100%) !important;
+    color: #333 !important;
+    border: 1px solid #999 !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6) !important;
+    border-radius: 8px !important;
+    padding: 10px 15px !important;
+    font-size: 15px !important;
+    font-weight: bold !important;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.4) !important;
+    margin: 5px !important;
+    flex-grow: 1;
+    line-height: normal !important;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 40%;
+    transition: all 0.2s ease;
+}
+.modal-alert-content .modal-main-buttons button:hover {
+    background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 50%, #d8d8d8 51%, #e8e8e8 100%) !important;
+}
+.modal-alert-content .modal-main-buttons button:active {
+    background: linear-gradient(to top, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e0e0e0 100%) !important;
+    box-shadow: inset 0 2px 3px rgba(0,0,0,0.2) !important;
+}
+.modal-alert-content .modal-main-buttons button#confirm-ok {
+     background: linear-gradient(to bottom, #a7d1ef 0%, #76b6e4 50%, #58a5d9 51%, #4aa2d8 100%) !important;
+     border: 1px solid #3c82b1 !important;
+     color: #fff !important;
+     text-shadow: 0 -1px 0 rgba(0,0,0,0.3) !important;
+}
+.delete-confirm {
+    background: linear-gradient(to bottom, #f48a84 0%, #e55c56 50%, #d94c45 51%, #d9534f 100%) !important;
+    border: 1px solid #b83e39 !important;
+    color: #fff !important;
+    text-shadow: 0 -1px 0 rgba(0,0,0,0.3) !important;
+}
+
+/* Estilo Deep Blue (Settings-Alert y Search-Alert) */
+.modal-alert-content.settings-alert,
+.modal-alert-content.search-alert {
+     background: linear-gradient(to bottom, #4c5c70 0%, #303d4f 100%);
+     border: 1px solid #202834;
+     color: white;
+     text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+.modal-alert-content.settings-alert p,
+.modal-alert-content.search-alert p {
+    padding: 20px 20px 10px 20px;
+    color: white;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    font-weight: bold;
+    font-size: 16px;
+    white-space: pre-wrap;
+    margin: 0;
+    text-align: center;
+}
+.modal-alert-content.settings-alert p small,
+.modal-alert-content.search-alert p small {
+    display: block;
+    font-weight: normal;
+    font-size: 13px;
+    margin-top: 8px;
+    color: #ccc;
+}
+.modal-alert-content.search-alert input {
+    background-color: #fff;
+    border: 1px solid #202834;
+    border-radius: 5px;
+    color: #000;
+    padding: 8px;
+    margin: 10px 20px 15px 20px;
+    width: calc(100% - 40px);
+    box-sizing: border-box;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+    font-size: 15px;
+    transition: border-color 0.3s ease;
+}
+.modal-alert-content.search-alert input:focus {
+    outline: none;
+    border-color: #4a8fb7;
+}
+/* Botones Deep Blue */
+.modal-alert-content.settings-alert .modal-main-buttons,
+.modal-alert-content.search-alert .modal-main-buttons {
+    background: none;
+    border-top: 1px solid #202834;
+    padding: 0;
+    display: flex;
+}
+.modal-alert-content.settings-alert .modal-main-buttons button,
+.modal-alert-content.search-alert .modal-main-buttons button {
+    color: white;
+    border: none;
+    border-left: 1px solid #202834;
+    font-weight: bold;
+    background: linear-gradient(to bottom, #5a6a80 0%, #38485c 100%);
+    padding: 12px;
+    font-size: 16px;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    flex-grow: 1;
+    cursor: pointer;
+    margin: 0;
+    border-radius: 0;
+    width: 50%;
+    transition: background 0.2s ease;
+}
+.modal-alert-content.settings-alert .modal-main-buttons button:first-child,
+.modal-alert-content.search-alert .modal-main-buttons button:first-child {
+    border-left: none;
+    border-bottom-left-radius: 8px;
+}
+.modal-alert-content.settings-alert .modal-main-buttons button:last-child,
+.modal-alert-content.search-alert .modal-main-buttons button:last-child {
+    border-bottom-right-radius: 8px;
+}
+.modal-alert-content.settings-alert .modal-main-buttons button:hover,
+.modal-alert-content.search-alert .modal-main-buttons button:hover {
+    background: linear-gradient(to bottom, #6a7a90 0%, #48586c 100%);
+}
+.modal-alert-content.settings-alert .modal-main-buttons button:active,
+.modal-alert-content.search-alert .modal-main-buttons button:active {
+    background: linear-gradient(to top, #5a6a80 0%, #38485c 100%);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* --- Modal de Ajustes (Settings) --- */
+.modal-settings .modal-content {
+    background: linear-gradient(to bottom, #4c5c70 0%, #303d4f 100%);
+    border: 1px solid #202834;
+    color: white;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    max-width: 320px; 
+}
+.modal-settings .modal-main-buttons {
+    background: none;
+    border-top: 1px solid #202834;
+    padding: 0;
+    display: flex;
+}
+.modal-settings .modal-main-buttons button {
+    color: white;
+    border: none;
+    border-left: 1px solid #202834;
+    font-weight: bold;
+    background: linear-gradient(to bottom, #5a6a80 0%, #38485c 100%);
+    padding: 12px;
+    font-size: 16px;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    flex-grow: 1;
+    cursor: pointer;
+    margin: 0;
+    border-radius: 0;
+    width: 100%; 
+    transition: background 0.2s ease;
+    border-bottom-left-radius: 10px; 
+    border-bottom-right-radius: 10px; 
+}
+.modal-settings .modal-main-buttons button:first-child {
+    border-left: none;
+}
+.modal-settings .modal-main-buttons button:hover {
+    background: linear-gradient(to bottom, #6a7a90 0%, #48586c 100%);
+}
+.modal-settings .modal-main-buttons button:active {
+    background: linear-gradient(to top, #5a6a80 0%, #38485c 100%);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+.settings-list-group {
+    background-color: #3e4a5c; 
+    border: 1px solid #2a3443;
+    border-radius: 10px;
+    margin: 15px;
+    overflow: hidden;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.settings-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid #303d4f;
+    text-decoration: none;
+    color: #fff;
+    background: linear-gradient(to bottom, #4c5c70 0%, #425061 100%);
+}
+.settings-list-item:last-child {
+    border-bottom: none;
+}
+.settings-list-item-label {
+    font-size: 16px;
+    font-weight: bold;
+}
+.settings-list-group-footer {
+    font-size: 13px;
+    color: #aaa;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    padding: 10px 15px 0 15px;
+    text-align: left;
+    margin: 0;
+}
+
+/* --- Cabecera de Modal Unificada (Preview, Edit, Store, etc.) --- */
+.modal-preview-header {
+    display: flex;
+    justify-content: center; /* Centrado como pediste */
+    align-items: center;
+    /* Copiado de .modal-alert-content.settings-alert */
+    background: linear-gradient(to bottom, #4c5c70 0%, #303d4f 100%);
+    border-bottom: 1px solid #202834;
+    padding: 15px 20px 10px 20px;
+    flex-shrink: 0;
+}
+.modal-preview-header h3 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: bold;
+    /* Copiado de .modal-alert-content.settings-alert p */
+    color: white;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    text-align: center; /* Centrado */
+    flex-grow: 1;
+}
+
+/* --- Footer de Modal Unificado (Preview, Edit, Store, etc.) --- */
+.modal-preview-footer,
+.modal-main-buttons {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 15px; /* Un poco menos de padding para que se parezca más al dock */
+    /* Estilo "casi negro" del footer-dock (un poco más oscuro) */
+    background: linear-gradient(to bottom, #3c3c3c 0%, #222222 100%);
+    border-top: 1px solid #111;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    flex-shrink: 0;
+}
+.modal-preview-footer .aqua-button {
+    margin: 5px;
+    flex-grow: 1;
+    max-width: 45%;
+    padding: 5px 12px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+}
+.modal-main-buttons .aqua-button {
+    margin: 5px;
+    flex-grow: 1;
+    max-width: 100%;
+}
+
+/* --- Fondo Rayado Vertical --- */
+.striped-background {
+    background-color: #f7f9fc; 
+    background-image: repeating-linear-gradient(
+        to right,
+        #f7f9fc,
+        #f7f9fc 10px,
+        #edf2f7 10px, 
+        #edf2f7 20px
+    );
+}
+.modal-edit .modal-content-scrollable,
+.modal-store .modal-content-scrollable,
+.modal-store-list .modal-content-scrollable,
+.modal-search-results .modal-content-scrollable {
+    background-color: #f7f9fc; 
+    background-image: repeating-linear-gradient(
+        to right,
+        #f7f9fc,
+        #f7f9fc 10px,
+        #edf2f7 10px, 
+        #edf2f7 20px
+    );
+}
+
+/* Scrollable dentro del modal (Genérico) */
+.modal-content-scrollable {
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 0;
+}
+
+/* --- Secciones y Formularios del Modal --- */
+.modal-section {
+    padding: 10px 15px 15px 15px;
+    border-bottom: 1px solid #ccc;
+    background: transparent;
+    color: #333;
+    text-shadow: none;
+    border-radius: 0;
+    margin-bottom: 0;
+}
+.modal-section h3, .modal-section h4 {
+    color: #4a5462;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+.modal-section label {
+    color: #555;
+    font-weight: bold;
+    font-size: 15px;
+    display: block;
+    margin-bottom: 2px;
+}
+.memorias-section {
+    border-top: none;
+    padding-top: 10px;
+}
+.modal-section:last-child {
+    border-bottom: none;
+    padding-bottom: 20px;
+}
+.day-selection-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    min-width: 0;
+}
+#edit-mem-day {
+    flex-grow: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#btn-name-selected-day {
+    flex-shrink: 0;
+}
+
+/* Estilos de Formulario (iOS-like) */
+.modal-section input[type="text"],
+.modal-section input[type="number"],
+.modal-section input[type="file"],
+.modal-section select,
+.modal-section textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0 15px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
+    background-color: #fff;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.modal-section input:focus,
+.modal-section select:focus,
+.modal-section textarea:focus {
+    outline: none;
+    border-color: #4a8fb7;
+    box-shadow: 0 0 0 3px rgba(74, 143, 183, 0.1);
+}
+.modal-section textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+.day-selection-controls select,
+.day-selection-controls input {
+    width: auto;
+}
+/* Ocultar grupos de formulario por defecto */
+.add-memory-input-group {
+    display: none;
+}
+
+/* --- Modal Preview (Estilo Cuaderno) --- */
+.modal-preview-notebook-paper {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: #ffffff;
+    padding: 20px 20px 20px 50px;
+    position: relative;
+    line-height: 24px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #000000;
+    background-image:
+        linear-gradient( to right, transparent 0px, transparent 39px, #ff6666 39px, #ff6666 40px, transparent 40px ),
+        repeating-linear-gradient( to bottom, transparent 0px, transparent 23px, #aaccff 23px, #aaccff 24px );
+    background-repeat: repeat-y, repeat;
+    background-position: 0 0, 0 10px;
+    background-size: auto, 100% 24px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+}
+.modal-preview-notebook-paper::before {
+    content: none;
+}
+.modal-preview-memorias {
+    padding: 0;
+    border: none;
+    background: none;
+    min-height: 0;
+    position: relative;
+}
+#preview-memorias-list {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    min-height: auto;
+}
+.modal-preview-notebook-paper .memoria-item {
+    background-color: transparent;
+    border-bottom: 2px dashed #aaaaaa;
+    padding: 10px 0;
+    margin-bottom: 10px;
+    line-height: 24px;
+    min-height: 24px;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+}
+.modal-preview-notebook-paper .memoria-item:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 5px;
+}
+.modal-preview-notebook-paper .memoria-item-main-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.modal-preview-notebook-paper .memoria-item small { /* Año */
+    color: #000000;
+    margin-bottom: 3px;
+    display: block;
+    font-size: 11px;
+    min-width: 0;
+    text-align: left;
+    flex-shrink: 1;
+    font-weight: bold;
+}
+.modal-preview-notebook-paper .memoria-item-content {
+    display: block;
+    flex-grow: 1;
+    word-break: break-word;
+    color: #000000;
+}
+.modal-preview-notebook-paper .memoria-artwork {
+    width: 30px;
+    height: 30px;
+    vertical-align: middle;
+    margin-right: 0;
+    flex-shrink: 0;
+    border-radius: 3px;
+}
+.modal-preview-notebook-paper .memoria-icon {
+    font-size: 20px;
+    vertical-align: middle;
+    margin-right: 0;
+    flex-shrink: 0;
+    color: #000000;
+}
+.modal-preview-notebook-paper .artist-name {
+    color: #333333;
+    font-size: 0.9em;
+}
+.modal-preview-notebook-paper .list-placeholder {
+     color: #888;
+     font-style: italic;
+     padding: 10px 0;
+}
+.memoria-map-container {
+    height: 150px;
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    background-color: #eee;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    z-index: 1;
+    position: relative;
+}
+
+/* --- Estilos .memoria-item en Modal Edición --- */
+#edit-memorias-list .memoria-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 5px;
+    border-bottom: 1px solid #ddd;
+    background-color: #fff;
+    font-size: 14px;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+    transition: background-color 0.2s ease;
+}
+#edit-memorias-list .memoria-item:hover {
+    background-color: #f9f9f9;
+}
+#edit-memorias-list .memoria-item:first-child {
+    border-top: 1px solid #ddd;
+    border-radius: 8px 8px 0 0;
+}
+#edit-memorias-list .memoria-item:last-child {
+    border-radius: 0 0 8px 8px;
+    border-bottom: none;
+}
+#edit-memorias-list .memoria-item small { /* Año */
+    color: #555;
+    font-weight: bold;
+    font-size: 12px;
+    margin-right: 8px;
+    min-width: 45px;
+    text-align: right;
+}
+#edit-memorias-list .memoria-item .memoria-artwork {
+    width: 25px;
+    height: 25px;
+    flex-shrink: 0;
+    border-radius: 3px;
+    object-fit: cover;
+    margin-right: 8px;
+    margin-left: 5px;
+}
+#edit-memorias-list .memoria-item .memoria-icon {
+    font-size: 20px;
+    color: #666;
+    flex-shrink: 0;
+    margin-right: 8px;
+    margin-left: 5px;
+    width: 25px;
+    text-align: center;
+}
+#edit-memorias-list .memoria-item .memoria-item-content {
+    flex-grow: 1;
+    color: #333;
+    line-height: 1.3;
+}
+#edit-memorias-list .memoria-item .artist-name {
+    color: #555;
+    font-size: 0.9em;
+}
+/* Acciones Editar/Borrar memoria */
+#edit-memorias-list .memoria-actions {
+    display: flex;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+#edit-memorias-list .edit-btn,
+#edit-memorias-list .delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 0;
+    transition: transform 0.2s ease;
+}
+#edit-memorias-list .edit-btn:hover,
+#edit-memorias-list .delete-btn:hover {
+    transform: scale(1.1);
+}
+#edit-memorias-list .edit-btn .material-icons-outlined {
+    color: #007aff;
+    font-size: 22px;
+}
+#edit-memorias-list .delete-btn .material-icons-outlined {
+    color: #d15047;
+    font-size: 22px;
+}
+#edit-memorias-list .list-placeholder {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+#btn-show-add-form {
+    margin-top: 15px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* --- Modal Almacén (Store) --- */
+.store-category-list {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 8px;
+}
+.store-category-button {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(to bottom, #fdfdfd 0%, #f0f0f0 100%);
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 12px 15px;
+    font-size: 16px;
+    color: #333;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+}
+.store-category-button:hover { 
+    background: #f8f8f8; 
+    transform: translateX(3px);
+}
+.store-category-button:active { 
+    background: #e0e0e0; 
+}
+.store-category-button .material-icons-outlined:first-child {
+    margin-right: 15px;
+    color: #555;
+    font-size: 24px;
+}
+.store-category-button span:nth-of-type(1) { /* Texto */
+    font-weight: bold;
+}
+.store-category-button .material-icons-outlined:last-child { /* Chevron */
+    color: #aaa;
+    font-size: 24px;
+    margin-left: auto;
+    transition: transform 0.2s ease;
+}
+.store-category-button:hover .material-icons-outlined:last-child {
+    transform: translateX(3px);
+}
+
+/* Estilos Lista Almacén (Store List) */
+.store-list-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+    background-color: #fff;
+    transition: background-color 0.2s ease;
+}
+.store-list-item:hover {
+    background-color: #f5f5f5;
+}
+.store-list-item:last-child {
+    border-bottom: none;
+}
+.store-list-item .memoria-icon {
+    font-size: 24px;
+    color: #666;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+.store-list-item .memoria-item-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    font-size: 14px;
+    min-width: 0;
+}
+.store-list-item .memoria-item-content strong {
+    font-weight: bold;
+    color: #333;
+}
+.store-list-item .memoria-item-content small {
+    font-size: 12px;
+    color: #777;
+    margin-top: 2px;
+}
+
+/* --- Modal Search Results --- */
+.search-result-memory-item {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+    background-color: #fff;
+    transition: background-color 0.2s ease;
+}
+.search-result-memory-item:hover {
+    background-color: #f5f5f5;
+}
+.search-result-memory-item:last-child {
+    border-bottom: none;
+}
+.search-result-day-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+.search-result-day-label .material-icons-outlined {
+    font-size: 16px;
+    color: #999;
+}
+
+/* --- Resultados Búsqueda Música/Lugar (En formulario) --- */
+.search-results {
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #fff;
+}
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background-color: #f0f0f0; }
+.search-result-item .memoria-artwork {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+.search-result-item .memoria-item-content {
+    flex-grow: 1;
+    line-height: 1.3;
+    font-size: 14px;
+    min-width: 0;
+}
+.search-result-item .memoria-item-content small {
+    font-size: 12px;
+    color: #555;
+    display: block;
+}
+.search-result-item .material-icons-outlined {
+    font-size: 24px;
+    color: #007aff;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+.search-result-selected {
+    padding: 12px;
+    font-weight: bold;
+    color: #333;
+    background-color: #e9f5ff;
+    border: 1px solid #b3d7ff;
+    border-radius: 8px;
+    margin-top: 10px;
+}
