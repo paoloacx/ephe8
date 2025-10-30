@@ -1,5 +1,5 @@
 /*
- * ui.js (v2.75 - Exporta Timeline Render)
+ * ui.js (v2.76 - Timeline Paginado)
  * Módulo "CORE" de UI. Orquestador.
  */
 
@@ -35,7 +35,7 @@ let searchResultsModal = null;
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.75 - Core Orchestrator)");
+    console.log("UI Module init (v2.76 - Timeline Paginado)");
     callbacks = mainCallbacks;
 
     // Objeto de estado y setters para inyectar en los módulos
@@ -250,7 +250,11 @@ export const ui = {
     // --- Render Functions (from ui-render.js) ---
     drawCalendar: render.drawCalendar,
     updateSpotlight: render.updateSpotlight,
-    renderTimelineView: render.renderTimelineView, // *** LÍNEA AÑADIDA ***
+    renderTimelineView: render.renderTimelineView,
+    // *** CAMBIO: Funciones de paginación del Timeline ***
+    appendTimelineMonth: render.appendTimelineMonth,
+    setTimelineButtonLoading: render.setTimelineButtonLoading,
+    updateTimelineButtonVisibility: render.updateTimelineButtonVisibility,
     
     // --- Modal Functions (from ui-modals.js) ---
     openPreviewModal: modals.openPreviewModal,
@@ -281,4 +285,3 @@ export const ui = {
     showModalStatus: forms.showModalStatus,
     handleMemoryTypeChange: forms.handleMemoryTypeChange,
 };
-
