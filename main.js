@@ -1,5 +1,5 @@
 /*
- * main.js (v2.8 - Integración de Timeline View Mode)
+ * main.js (v2.8 - Timeline Completa)
  * Controlador principal de Ephemerides.
  */
 
@@ -17,7 +17,8 @@ import {
     getTodaySpotlight,
     getMemoriesByType,
     getNamedDays,
-    uploadImage
+    uploadImage,
+    getAllMemoriesForTimeline // *** LÍNEA AÑADIDA ***
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
@@ -45,7 +46,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.8 (Timeline View Mode)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v2.8 (Timeline Completa)..."); // Versión actualizada
 
     try {
         ui.setLoading("Iniciando...", true); 
@@ -158,16 +159,32 @@ function drawCalendarView() {
     ui.drawCalendar(monthName, diasDelMes, state.todayId); 
 }
 
-// *** NUEVO: Marcador de posición para la vista de Timeline ***
-function drawTimelineView() {
+// *** CAMBIO: Lógica de renderizado real para Timeline ***
+async function drawTimelineView() {
     console.log("Dibujando la vista de Timeline...");
+    if (!state.currentUser || !state.currentUser.uid) return;
+    const userId = state.currentUser.uid;
+
     const appContent = document.getElementById('app-content');
     if (!appContent) return;
     
-    // Dejamos un placeholder
-    appContent.innerHTML = `<p class="loading-message" style="color: white; text-shadow: 0 1px 1px #000;">Vista de Timeline (¡Próximamente!)</p>`;
-    // La vista timeline no debe ser un grid
+    // Mostrar carga específica para el timeline
+    appContent.innerHTML = `<p class="loading-message" style="color: white; text-shadow: 0 1px 1px #000;">Cargando Timeline...</p>`;
     appContent.style.display = 'block';
+
+    try {
+        // 1. Obtener los datos de store.js
+        const timelineData = await getAllMemoriesForTimeline(userId);
+
+        // 2. Renderizar los datos con ui.js (que llama a ui-render.js)
+        ui.renderTimelineView(timelineData);
+
+    } catch (err) {
+        console.error("Error al dibujar el Timeline:", err);
+        ui.showErrorAlert(`No se pudo cargar el Timeline: ${err.message}`, "Error de Vista");
+        // Dejar el placeholder de error
+        appContent.innerHTML = `<p class="timeline-empty-placeholder">Error al cargar el Timeline.</p>`;
+    }
 }
 
 // *** NUEVO: Enrutador de vistas ***
@@ -590,11 +607,9 @@ async function handleDeleteMemory(diaId, mem) {
 
 // --- 4. Lógica de API Externa (Controlador) ---
 
-// *** CAMBIO: Aceptar el 'resultsCallback' que pasa ui.js ***
 async function handleMusicSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
     
-    // *** CAMBIO: Comprobar que el callback es una función ***
     if (typeof resultsCallback !== 'function') {
         console.error("handleMusicSearch: resultsCallback no es una función.");
         return;
@@ -607,21 +622,17 @@ async function handleMusicSearch(term, resultsCallback) {
             throw new Error('No se pudo conectar al servicio de música. Revisa tu conexión.');
         }
         
-        // *** CAMBIO: Usar el callback en lugar de ui.showMusicResults ***
         resultsCallback(results); 
     } catch (error) {
         console.error("Error en handleMusicSearch:", error);
         ui.showModalStatus('memoria-status', `Error al buscar música: ${error.message}`, true); 
-        // *** CAMBIO: Usar el callback en lugar de ui.showMusicResults ***
         resultsCallback([]); 
     }
 }
 
-// *** CAMBIO: Aceptar el 'resultsCallback' que pasa ui.js ***
 async function handlePlaceSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
 
-    // *** CAMBIO: Comprobar que el callback es una función ***
     if (typeof resultsCallback !== 'function') {
         console.error("handlePlaceSearch: resultsCallback no es una función.");
         return;
@@ -634,12 +645,10 @@ async function handlePlaceSearch(term, resultsCallback) {
             throw new Error('No se pudo conectar al servicio de mapas. Revisa tu conexión.');
         }
 
-        // *** CAMBIO: Usar el callback en lugar de ui.showPlaceResults ***
         resultsCallback(results); 
     } catch (error) {
         console.error("Error en handlePlaceSearch:", error);
         ui.showModalStatus('memoria-status', `Error al buscar lugares: ${error.message}`, true); 
-        // *** CAMBIO: Usar el callback en lugar de ui.showPlaceResults ***
         resultsCallback([]); 
     }
 }
@@ -792,3 +801,4 @@ function handleCrumbieClick() {
 
 // --- 7. Ejecución Inicial ---
 checkAndRunApp();
+
