@@ -239,7 +239,7 @@ function createEditModal() {
             <div class="modal-content-scrollable striped-background">
                 <p class="list-placeholder edit-loading" style="display: none; padding: 20px;">Cargando...</p>
                 <div class="edit-content-wrapper">
-                    <div class="modal-section" id="day-selection-section" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">
+                    <div class="modal-section" id="day-selection-section" style="display: none; margin: 0; padding: 0; height: 0; overflow: hidden;">">
                         <label for="edit-mem-day">Día (MM-DD):</label>
                         <div class="day-selection-controls">
                             <select id="edit-mem-day"></select>
