@@ -558,9 +558,9 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
         }
     } finally {
          if (saveBtn && saveBtn.disabled) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
-        }
+             saveBtn.disabled = false;
+             saveBtn.textContent = isEditing ? 'Actualizar Memoria' : 'Añadir Memoria';
+         }
     }
 }
 
@@ -710,8 +710,8 @@ async function handleStoreLoadMore() {
 
      const loadMoreBtn = document.getElementById('load-more-btn'); 
      if (loadMoreBtn) {
-           loadMoreBtn.disabled = true;
-           loadMoreBtn.textContent = 'Cargando...';
+         loadMoreBtn.disabled = true;
+         loadMoreBtn.textContent = 'Cargando...';
      }
 
     try {
@@ -801,4 +801,3 @@ function handleCrumbieClick() {
 
 // --- 7. Ejecución Inicial ---
 checkAndRunApp();
-
