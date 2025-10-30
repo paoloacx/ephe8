@@ -1,5 +1,5 @@
 /*
- * ui.js (v2.77 - Bugfix Spotlight Maps)
+ * ui.js (v2.78 - Bugfix Visibilidad Timeline)
  * Módulo "CORE" de UI. Orquestador.
  */
 
@@ -35,7 +35,7 @@ let searchResultsModal = null;
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.77 - Bugfix Spotlight Maps)");
+    console.log("UI Module init (v2.78 - Bugfix Visibilidad Timeline)");
     callbacks = mainCallbacks;
 
     // Objeto de estado y setters para inyectar en los módulos
@@ -130,22 +130,25 @@ function setLoading(message, show) {
     }
 }
 
+/**
+ * Muestra/oculta el contenedor principal de la app.
+ * CAMBIO: Esta función ya NO controla el nav ni el spotlight.
+ * Esa lógica ahora vive 100% en drawMainView (main.js).
+ */
 function showApp(show) {
-    const display = show ? 'block' : 'none';
-    const flexDisplay = show ? 'flex' : 'none';
-    const nav = document.querySelector('.month-nav');
-    const spotlight = document.getElementById('spotlight-section');
     const appContent = document.getElementById('app-content');
+    if (!appContent) return;
 
-    if (nav) nav.style.display = flexDisplay;
-    if (spotlight) spotlight.style.display = display;
-    if (appContent) appContent.style.display = show ? 'grid' : 'none';
-
+    // Solo gestiona el app-content
     if (show) {
-        const loading = appContent?.querySelector('.loading-message');
+        // Asumimos que drawMainView ya ha seteado el display (grid o block)
+        const loading = appContent.querySelector('.loading-message');
         if (loading) loading.remove();
+    } else {
+        appContent.style.display = 'none';
     }
 }
+
 
 function updateAllDaysData(allDays) {
     if (allDays && allDays.length > 0) {
@@ -178,7 +181,6 @@ function updateLoginUI(user) {
 
 // --- Funciones de Ayuda (Orquestación) ---
 
-// *** NUEVA FUNCIÓN para arreglar el bug del mapa del Spotlight (Punto 5) ***
 function initSpotlightMaps() {
     const spotlightContainer = document.getElementById('today-memory-spotlight');
     if (spotlightContainer) {
@@ -250,7 +252,7 @@ export const ui = {
     updateLoginUI,
     updateMemoryList,
     showCrumbieAnimation,
-    initSpotlightMaps, // *** AÑADIDO: Punto 5 (Bugfix Mapa) ***
+    initSpotlightMaps, 
 
     // --- Render Functions (from ui-render.js) ---
     drawCalendar: render.drawCalendar,
