@@ -247,7 +247,7 @@ function createEditModal() {
                         </div>
                         <p id="add-name-status" class="status-message"></p>
                     </div>
-          _           <div class="modal-section" id="day-name-section" style="display: none;">
+                    <div class="modal-section" id="day-name-section" style="display: none;">
                         <h3 id="edit-modal-title"></h3>
                         <label for="nombre-especial-input">Nombrar este día:</label>
                         <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="25">
@@ -278,14 +278,14 @@ function createEditModal() {
                             <div class="add-memory-input-group" id="input-type-Texto">
                                 <label for="memoria-desc">Descripción:</label>
                                 <textarea id="memoria-desc" placeholder="Escribe tu recuerdo..."></textarea>
-                            </div>
+                  _       </div>
                             <div class="add-memory-input-group" id="input-type-Lugar">
                                 <label for="memoria-place-search">Buscar Lugar:</label>
                                 <input type="text" id="memoria-place-search" placeholder="Ej. Torre Eiffel">
                                 <button type="button" class="aqua-button" id="btn-search-place">Buscar</button>
                                 <div id="place-results" class="search-results"></div>
                             </div>
-              t         <div class="add-memory-input-group" id="input-type-Musica">
+                            <div class="add-memory-input-group" id="input-type-Musica">
                                 <label for="memoria-music-search">Buscar Canción:</label>
                                 <input type="text" id="memoria-music-search" placeholder="Ej. Bohemian Rhapsody">
                                 <button type="button" class="aqua-button" id="btn-search-itunes">Buscar</button>
@@ -513,7 +513,7 @@ function createStoreModal() {
         });
     } else {
         console.error("Error al crear modal de almacén: no se encontró '.store-category-list'");
-I   }
+    }
 
     document.getElementById('close-store-btn')?.addEventListener('click', closeStoreModal);
 }
@@ -590,6 +590,7 @@ export function updateStoreList(items, append = false, hasMore = false) {
     if (!listContainer) {
         listContainer = document.createElement('div');
         listContainer.className = 'store-list-container';
+ReadWrite.js
         contentEl.innerHTML = '';
         contentEl.appendChild(listContainer);
     }
@@ -726,13 +727,13 @@ function bindConfirmModalEvents() {
 }
 
 function closeConfirmModal(isConfirmed) {
-  t if (!confirmModal) return;
+    if (!confirmModal) return;
     confirmModal.classList.remove('visible');
     setTimeout(() => {
         confirmModal.style.display = 'none';
         if (_confirmResolve) {
             _confirmResolve(isConfirmed);
-s           _confirmResolve = null;
+            _confirmResolve = null;
         }
     }, 200);
 }
@@ -746,7 +747,7 @@ export function showConfirm(message) {
     confirmModal.style.display = 'flex';
     setTimeout(() => confirmModal.classList.add('visible'), 10);
 
-i   return new Promise((resolve) => {
+s   return new Promise((resolve) => {
         _confirmResolve = resolve;
     });
 }
@@ -759,10 +760,10 @@ function createGenericAlertModal() {
     genericAlertModal.innerHTML = `
         <div class="simple-alert-content">
             <h3 id="generic-alert-title" class="simple-alert-title"></h3>
-s           <p id="generic-alert-message" class="simple-alert-message"></p>
+            <p id="generic-alert-message" class="simple-alert-message"></p>
             <div class="simple-alert-buttons">
                 <button id="generic-alert-ok" class="simple-alert-button default-action">OK</button>
-            </div>
+    m       </div>
         </div>
     `;
     document.body.appendChild(genericAlertModal);
@@ -786,7 +787,7 @@ s       if (_genericAlertResolve) {
 }
 
 export function showErrorAlert(message, title = 'Error') {
-s   if (!genericAlertModal) createGenericAlertModal();
+    if (!genericAlertModal) createGenericAlertModal();
     
     const titleEl = document.getElementById('generic-alert-title');
     const msgEl = document.getElementById('generic-alert-message');
@@ -797,7 +798,7 @@ s   if (!genericAlertModal) createGenericAlertModal();
     genericAlertModal.style.display = 'flex';
     setTimeout(() => genericAlertModal.classList.add('visible'), 10);
 
-s   return new Promise((resolve) => {
+    return new Promise((resolve) => {
         _genericAlertResolve = resolve;
     });
 }
