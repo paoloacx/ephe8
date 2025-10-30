@@ -1,5 +1,5 @@
 /*
- * main.js (v2.9 - Timeline Paginado)
+ * main.js (v2.9.1 - Bugfix Spotlight Maps)
  * Controlador principal de Ephemerides.
  */
 
@@ -18,7 +18,7 @@ import {
     getMemoriesByType,
     getNamedDays,
     uploadImage,
-    loadMonthForTimeline // *** CAMBIO: Importar la nueva función paginada ***
+    loadMonthForTimeline 
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
@@ -32,15 +32,14 @@ let state = {
     currentUser: null,
     todayId: '',
     dayInPreview: null,
-    currentViewMode: 'calendar', // 'calendar' o 'timeline'
+    currentViewMode: 'calendar', 
     store: {
         currentType: null,
         lastVisible: null,
         isLoading: false,
     },
-    // *** NUEVO: Estado para la paginación del Timeline ***
     timeline: {
-        nextMonthToLoad: null, // (Se setea en drawTimelineView)
+        nextMonthToLoad: null, 
         isLoading: false
     }
 };
@@ -48,7 +47,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.9 (Timeline Paginado)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v2.9.1 (Bugfix Spotlight Maps)..."); // Versión actualizada
 
     try {
         ui.setLoading("Iniciando...", true); 
@@ -143,6 +142,12 @@ async function loadTodaySpotlight() {
 
         const dayName = spotlightData.dayName !== 'Unnamed Day' ? spotlightData.dayName : null;
         ui.updateSpotlight(dateString, dayName, spotlightData.memories); 
+
+        // *** CAMBIO: Punto 5 (Bugfix Mapa) ***
+        // Inicializar los mapas *después* de que el HTML haya sido renderizado
+        setTimeout(() => {
+            ui.initSpotlightMaps(); 
+        }, 10); // 10ms es suficiente para que el DOM se actualice
     }
 }
 
@@ -157,7 +162,6 @@ function drawCalendarView() {
     ui.drawCalendar(monthName, diasDelMes, state.todayId); 
 }
 
-// *** CAMBIO: Lógica de renderizado para Timeline paginado ***
 async function drawTimelineView() {
     console.log("Dibujando la vista de Timeline...");
     if (!state.currentUser || !state.currentUser.uid) return;
@@ -170,17 +174,14 @@ async function drawTimelineView() {
     appContent.style.display = 'block';
 
     try {
-        // 1. Cargar solo el mes actual
-        const currentMonthIndex = new Date().getMonth(); // ej: 9 para Octubre
-        state.timeline.nextMonthToLoad = currentMonthIndex - 1; // El *próximo* a cargar será Septiembre (8)
+        const currentMonthIndex = new Date().getMonth(); 
+        state.timeline.nextMonthToLoad = currentMonthIndex - 1; 
         state.timeline.isLoading = true;
 
         const monthData = await loadMonthForTimeline(userId, currentMonthIndex);
         
         state.timeline.isLoading = false;
 
-        // 2. Renderizar el primer mes (o el placeholder si está vacío)
-        // Lo pasamos como array para que renderTimelineView lo pueda iterar
         ui.renderTimelineView(monthData ? [monthData] : null); 
 
     } catch (err) {
@@ -190,7 +191,6 @@ async function drawTimelineView() {
     }
 }
 
-// *** Enrutador de vistas (sin cambios) ***
 function drawMainView() {
     const monthNav = document.querySelector('.month-nav');
     const spotlight = document.getElementById('spotlight-section');
@@ -228,45 +228,52 @@ function getUICallbacks() {
         onStoreItemClick: handleStoreItemClick,
         onCrumbieClick: handleCrumbieClick,
         onViewModeChange: handleViewModeChange, 
-        onTimelineLoadMore: handleTimelineLoadMore, // *** NUEVO: Callback para el botón ***
+        onTimelineLoadMore: handleTimelineLoadMore, 
     };
 }
 
-// *** NUEVA FUNCIÓN: Manejador para cargar más en el Timeline ***
 async function handleTimelineLoadMore() {
     if (state.timeline.isLoading || !state.currentUser) return;
     
     const userId = state.currentUser.uid;
-    const monthToLoad = state.timeline.nextMonthToLoad; // ej: 8 (Septiembre)
+    const monthToLoad = state.timeline.nextMonthToLoad; 
 
-    // Si ya no hay más meses (antes de Enero), ocultamos el botón y paramos.
     if (monthToLoad < 0) {
-        ui.updateTimelineButtonVisibility(false); // (Asume que ui.js expondrá esta función)
+        ui.updateTimelineButtonVisibility(false); 
         return;
     }
 
     console.log(`Timeline: Cargando mes ${monthToLoad}`);
     state.timeline.isLoading = true;
-    ui.setTimelineButtonLoading(true); // (Asume que ui.js expondrá esta función)
+    ui.setTimelineButtonLoading(true); 
 
     try {
         const monthData = await loadMonthForTimeline(userId, monthToLoad);
 
         if (monthData) {
-            // Hay datos: se los pasamos a la UI para que los añada
-            ui.appendTimelineMonth(monthData); // (Asume que ui.js expondrá esta función)
-            // Preparamos el siguiente mes a cargar
-            state.timeline.nextMonthToLoad = monthToLoad - 1; // ej: 7 (Agosto)
+            ui.appendTimelineMonth(monthData); 
+            state.timeline.nextMonthToLoad = monthToLoad - 1; 
         } else {
-            // No hay más datos para este mes (ni para los anteriores), ocultar botón
-            ui.updateTimelineButtonVisibility(false); 
+            // Si el mes no tiene datos, sigue intentando con el anterior
+            // hasta que uno tenga datos o se acaben los meses.
+            // Para evitar bucles infinitos si Enero-Septiembre están vacíos,
+            // vamos a cargar el siguiente mes directamente.
+            state.timeline.nextMonthToLoad = monthToLoad - 1;
+            if (state.timeline.nextMonthToLoad >= 0) {
+                handleTimelineLoadMore(); // Llama recursivamente al siguiente
+            } else {
+                ui.updateTimelineButtonVisibility(false); // Se acabaron los meses
+            }
         }
     } catch (err) {
         console.error("Error cargando más meses del timeline:", err);
         ui.showErrorAlert(`Error al cargar el mes: ${err.message}`, "Error de Timeline");
     } finally {
-        state.timeline.isLoading = false;
-        ui.setTimelineButtonLoading(false);
+        // Solo seteamos isLoading a false si no estamos en la llamada recursiva
+        if (state.timeline.nextMonthToLoad === monthToLoad - 1) {
+            state.timeline.isLoading = false;
+            ui.setTimelineButtonLoading(false);
+        }
     }
 }
 
@@ -473,7 +480,6 @@ function handleViewModeChange(newViewMode) {
         state.currentMonthIndex = new Date().getMonth();
     }
     
-    // *** CAMBIO: Resetear el estado del timeline al cambiar de vista ***
     state.timeline.isLoading = false;
     state.timeline.nextMonthToLoad = null;
 
