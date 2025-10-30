@@ -457,7 +457,8 @@ async function getNamedDays(userId, pageSize = 10, lastVisibleDoc = null) {
  * @returns {Promise<Array>} Un array de objetos de mes.
  * Ej: [{ monthName: "Enero", days: [{ diaId: "01-01", ... memories: [...] }] }]
  */
-export async function getAllMemoriesForTimeline(userId) {
+// *** CORRECCIÓN: Quitar 'export' de aquí ***
+async function getAllMemoriesForTimeline(userId) {
     if (!userId) throw new Error("getAllMemoriesForTimeline requiere un userId.");
 
     console.log("Store: Cargando datos de Timeline para", userId);
@@ -554,4 +555,6 @@ export {
     getTodaySpotlight,
     getMemoriesByType,
     getNamedDays,
+    // *** CORRECCIÓN: Añadido aquí, sin 'export' inline ***
+    getAllMemoriesForTimeline 
 };
