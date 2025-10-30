@@ -1,10 +1,9 @@
 /*
- * ui-modals.js (v1.1 - Bugfix de edición y limpieza de Almacén)
+ * ui-modals.js (v1.2 - Eliminado save-status)
  * Módulo para gestionar todos los modales, diálogos, prompts y alertas.
  */
 
 // --- Importaciones (Inyectadas) ---
-// Estos se llenan mediante initModalsModule() desde ui.js
 let _callbacks = {};
 let _uiState = {};
 let _uiMaps = null;
@@ -13,14 +12,12 @@ let _render = null;
 
 // --- Estado Interno del Módulo ---
 
-// Referencias a los modales principales
 let previewModal = null;
 let editModal = null;
 let storeModal = null;
 let storeListModal = null;
 let searchResultsModal = null;
 
-// Variables para modales de diálogo
 let alertPromptModal = null;
 let _promptResolve = null;
 let confirmModal = null;
@@ -30,7 +27,6 @@ let _genericAlertResolve = null;
 
 /**
  * Inicializa el módulo de modales.
- * ui.js llama a esta función 1 vez para inyectar dependencias.
  */
 export function initModalsModule(callbacks, uiState, uiMaps, forms, render) {
     _callbacks = callbacks;
@@ -39,7 +35,6 @@ export function initModalsModule(callbacks, uiState, uiMaps, forms, render) {
     _forms = forms;
     _render = render;
 
-    // Pre-crear todos los modales al iniciar
     createPreviewModal();
     createEditModal();
     createStoreModal();
@@ -49,7 +44,7 @@ export function initModalsModule(callbacks, uiState, uiMaps, forms, render) {
     createConfirmModal();
     createGenericAlertModal();
 
-    console.log("UI Modals Module init (v1.1)");
+    console.log("UI Modals Module init (v1.2)");
 }
 
 // --- Modal: Vista Previa (Preview) ---
@@ -98,7 +93,7 @@ export function showPreviewLoading(isLoading) {
 }
 
 export function openPreviewModal(dia, memories) {
-    _uiState.setCurrentDay(dia); // Actualizar estado central
+    _uiState.setCurrentDay(dia); 
 
     const titleEl = document.getElementById('preview-title');
     const listEl = document.getElementById('preview-memorias-list');
@@ -124,7 +119,7 @@ export function closePreviewModal() {
 
     setTimeout(() => {
         previewModal.style.display = 'none';
-        _uiState.setCurrentDay(null); // Limpiar estado central
+        _uiState.setCurrentDay(null); 
     }, 200);
 }
 
@@ -257,8 +252,7 @@ function createEditModal() {
                         <label for="nombre-especial-input">Nombrar este día:</label>
                         <input type="text" id="nombre-especial-input" placeholder="Ej. Día de la Pizza" maxlength="25">
                         <button id="save-name-btn" class="aqua-button">Guardar Nombre</button>
-                        <p id="save-status" class="status-message"></p>
-                    </div>
+                        </div>
                     <div class="modal-section memorias-section">
                         <div id="add-memory-button-container" style="display: none;">
                            <button type="button" id="btn-show-add-form" class="aqua-button">Añadir Nueva Memoria</button>
@@ -332,11 +326,11 @@ function bindEditModalEvents() {
 
     document.getElementById('btn-show-add-form')?.addEventListener('click', () => {
         _forms.resetMemoryForm(); 
-        showMemoryForm(true); // Esta es la función local de este módulo
+        showMemoryForm(true); 
     });
 
     document.getElementById('btn-cancel-mem-edit')?.addEventListener('click', () => {
-        showMemoryForm(false); // Esta es la función local de este módulo
+        showMemoryForm(false); 
     });
 
     document.getElementById('memory-form')?.addEventListener('submit', _forms.handleFormSubmit);
@@ -390,10 +384,6 @@ function bindEditModalEvents() {
     });
 }
 
-/**
- * Función privada de este módulo para mostrar/ocultar el formulario
- * *** CAMBIO: Añadido 'export' para que ui.js (core) pueda verla ***
- */
 export function showMemoryForm(show) {
     const form = document.getElementById('memory-form');
     const addMemoryButtonContainer = document.getElementById('add-memory-button-container');
@@ -463,7 +453,6 @@ export function openEditModal(dia, memories) {
 
     _render.renderMemoryList(document.getElementById('edit-memorias-list'), _uiState.getCurrentMemories(), true, 'edit');
 
-    _forms.showModalStatus('save-status', '', false);
     _forms.showModalStatus('memoria-status', '', false);
     _forms.showModalStatus('add-name-status', '', false);
     showEditLoading(false);
@@ -511,8 +500,6 @@ function createStoreModal() {
         categoryList.appendChild(_render.createStoreCategoryButton('Texto', 'article', 'Notas'));
         categoryList.appendChild(_render.createStoreCategoryButton('Lugar', 'place', 'Lugares'));
         categoryList.appendChild(_render.createStoreCategoryButton('Musica', 'music_note', 'Canciones'));
-        // *** LÍNEA ELIMINADA (Punto 1) ***
-        // categoryList.appendChild(_render.createStoreCategoryButton('Imagen', 'image', 'Imágenes'));
 
         categoryList.addEventListener('click', (e) => {
             const btn = e.target.closest('.store-category-button');
@@ -810,4 +797,3 @@ export function showErrorAlert(message, title = 'Error') {
         _genericAlertResolve = resolve;
     });
 }
-
