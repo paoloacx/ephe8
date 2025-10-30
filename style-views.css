@@ -1,0 +1,258 @@
+@charset "UTF-8";
+
+/* Spotlight "Today" */
+#spotlight-section {
+    padding: 0 10px;
+    max-width: 960px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+#spotlight-date-header {
+    font-size: 19px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+    margin: 10px 0 8px 10px;
+    text-transform: capitalize;
+}
+#today-memory-spotlight {
+    background-color: #f5f5f5;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    color: #333;
+}
+.spotlight-day-name {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #555;
+    margin: 5px 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #ccc;
+}
+#spotlight-memories-container {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 5px;
+    padding: 5px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+    border-top: 1px solid rgba(0,0,0,0.1);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.spotlight-memory-item {
+    font-size: 14px;
+    padding: 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    background-color: transparent;
+    color: #333;
+    margin-bottom: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+#spotlight-memories-container .spotlight-memory-item:last-child {
+    border-bottom: none;
+}
+#spotlight-memories-container .spotlight-memory-item:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+#spotlight-memories-container .list-placeholder {
+    color: #555;
+    font-style: italic;
+    padding: 15px;
+    text-align: center;
+}
+.spotlight-item-main-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+.spotlight-memory-item small {
+    display: block;
+    color: #777;
+    margin-bottom: 3px;
+    font-weight: bold;
+    font-size: 11px;
+}
+.spotlight-memory-item .memoria-item-content {
+    flex-grow: 1;
+    line-height: 1.3;
+    min-width: 0;
+}
+.spotlight-memory-item .memoria-artwork {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 3px;
+    object-fit: cover;
+}
+.spotlight-memory-item .memoria-icon {
+    font-size: 20px;
+    color: #666;
+    flex-shrink: 0;
+}
+.spotlight-item-text .memoria-item-content {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.4;
+}
+.spotlight-map-container {
+    height: 120px;
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid rgba(0,0,0,0.2);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    background-color: #eee;
+    margin-top: 5px;
+}
+
+/* --- Grid del Calendario --- */
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    padding-bottom: 20px;
+}
+.dia-btn {
+    background-color: #fdfdfd;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 0;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.6);
+    color: #333;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.dia-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.dia-btn:active {
+    background-color: #eee;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    transform: translateY(1px);
+}
+.dia-numero {
+    font-size: 28px;
+    font-weight: bold;
+    color: #444;
+    line-height: 1;
+    margin-top: 10px;
+    z-index: 2;
+    position: relative;
+}
+.dia-btn .nombre-especial { display: none; }
+.dia-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background-color: #e57373;
+    border-bottom: 1px solid #c62828;
+    border-radius: 8px 8px 0 0;
+}
+.dia-btn-today .dia-numero {
+    color: #c62828;
+}
+.dia-btn.tiene-memorias::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 12px 12px;
+    border-color: transparent transparent #bbb transparent;
+    z-index: 3;
+    filter: drop-shadow(-1px 1px 1px rgba(0,0,0,0.15));
+    background: linear-gradient(-135deg, transparent 50%, white 50%);
+}
+.dia-btn-today.tiene-memorias::after {
+    border-color: transparent transparent #ff9e9e transparent;
+    background: linear-gradient(-135deg, transparent 50%, #d9534f 50%);
+}
+
+/* --- Vista Timeline --- */
+.timeline-view {
+    padding: 10px;
+    box-sizing: border-box;
+}
+.timeline-month-header {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.6);
+    padding: 15px 10px 10px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 15px;
+    text-transform: capitalize;
+}
+.timeline-day-group {
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    margin: 0 0 20px 0; /* Espacio entre días */
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    color: #333;
+}
+.timeline-day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: linear-gradient(to bottom, #fdfdfd 0%, #f0f0f0 100%);
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+.timeline-day-header:active {
+    background: #e0e0e0;
+}
+.timeline-day-date {
+    font-size: 17px;
+    font-weight: bold;
+    color: #000;
+    text-transform: capitalize;
+}
+.timeline-day-special {
+    font-size: 14px;
+    font-weight: normal;
+    color: #4a5462;
+    margin-left: 8px;
+}
+.timeline-memories-list {
+    /* No se necesita padding, los .list-view-item ya lo tienen */
+}
+.timeline-memories-list .list-view-item {
+    background-color: transparent;
+}
+.timeline-empty-placeholder {
+    padding: 40px 20px;
+    text-align: center;
+    font-size: 18px;
+    color: #ccc;
+    text-shadow: 0 1px 1px rgba(0,0,0,0); /* Fix de typo, 0.0 -> 0 */
+}
