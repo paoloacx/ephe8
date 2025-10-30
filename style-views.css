@@ -87,8 +87,8 @@
     min-width: 0;
 }
 .spotlight-memory-item .memoria-artwork {
-    width: 60px; /* CAMBIO: Punto 2 */
-    height: 60px; /* CAMBIO: Punto 2 */
+    width: 60px;
+    height: 60px;
     flex-shrink: 0;
     border-radius: 3px;
     object-fit: cover;
@@ -199,20 +199,27 @@
 .timeline-view {
     padding: 10px;
     box-sizing: border-box;
-    position: relative; /* CAMBIO: Punto 1 (Para la línea) */
-    z-index: 1; /* Asegura que el contenido esté sobre la línea */
+    position: relative; 
+    z-index: 1; 
 }
-/* CAMBIO: Punto 1 (Línea blanca continua de fondo) */
+/* CAMBIO: Punto 1 (Línea blanca DASHED de fondo) */
 .timeline-view::before {
     content: '';
     position: absolute;
     left: 50%;
     top: 0;
     bottom: 0;
-    width: 5px; /* CAMBIO: 5px */
-    background: #fff; /* CAMBIO: blanca */
+    width: 5px; 
     transform: translateX(-50%);
-    z-index: -1; /* Detrás del contenido */
+    z-index: -1; 
+    /* Usar gradiente para simular línea discontinua */
+    background: repeating-linear-gradient(
+        to bottom,
+        #fff,          /* Color de la línea */
+        #fff 10px,     /* Longitud del guion (10px) */
+        transparent 10px, /* Espacio (10px) */
+        transparent 20px  /* Fin del ciclo (10px dash + 10px gap) */
+    );
 }
 .timeline-month-header {
     font-size: 22px;
@@ -229,12 +236,13 @@
     border: 1px solid #ccc;
     border-radius: 10px;
     margin: 0 0 50px 0; /* CAMBIO: Punto 1 (Espacio 50px) */
+    overflow: hidden; /* CAMBIO: De 'visible' a 'hidden' (mejor con bordes redondeados) */
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     color: #333;
-    position: relative;
-    cursor: pointer; /* CAMBIO: Punto 4 (Todo el bloque clicable) */
+    position: relative; 
+    cursor: pointer; 
 }
-/* CAMBIO: Punto 1 (Eliminada la línea dashed '::after') */
+/* CAMBIO: Punto 1 (Eliminada la línea '::after' individual) */
 .timeline-day-header {
     display: flex;
     justify-content: space-between;
@@ -242,7 +250,7 @@
     padding: 10px 15px;
     background: linear-gradient(to bottom, #bcc6d1 0%, #a4b0bd 50%, #909dad 51%, #a4b0bd 100%);
     border-bottom: 1px solid #6d6d6d;
-    cursor: inherit; /* CAMBIO: Punto 4 (Hereda el cursor del padre) */
+    cursor: inherit; 
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
 }
@@ -269,7 +277,7 @@
     border-right: 2px solid #fff;
 }
 .timeline-memories-list {
-    /* No se necesita padding, los .list-view-item ya lo tienen */
+    /* No se necesita padding */
 }
 .timeline-memories-list .list-view-item {
     background-color: transparent;
