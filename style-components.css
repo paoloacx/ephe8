@@ -1,5 +1,31 @@
 @charset "UTF-8";
 
+/* --- Validación de Inputs (Estilo iOS) --- */
+input.input-error,
+textarea.input-error,
+select.input-error {
+    border-color: #ff3b30 !important;
+    background-color: #fff5f5 !important;
+    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.1) !important;
+}
+
+.input-error-message {
+    color: #ff3b30;
+    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    padding-left: 5px;
+    font-weight: 500;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: #4aa2d8 !important;
+    box-shadow: 0 0 0 3px rgba(74, 162, 216, 0.15) !important;
+}
+
 /* --- Botón Aqua (Estilo iOS) --- */
 .aqua-button {
     background: linear-gradient(to bottom, #a7d1ef 0%, #76b6e4 50%, #58a5d9 51%, #4aa2d8 100%);
