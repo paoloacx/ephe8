@@ -1,5 +1,5 @@
 /*
- * ui.js (v2.74 - Modulo de Modales Extraído - CORE)
+ * ui.js (v2.75 - Exporta Timeline Render)
  * Módulo "CORE" de UI. Orquestador.
  */
 
@@ -7,7 +7,7 @@
 import { uiMaps } from './ui-maps.js';
 import * as forms from './ui-forms.js'; 
 import * as render from './ui-render.js'; 
-import * as modals from './ui-modals.js'; // *** NUEVO: Importar el módulo de modales ***
+import * as modals from './ui-modals.js'; 
 
 // --- Variables privadas del módulo (Estado de la UI) ---
 let callbacks = {}; 
@@ -16,10 +16,26 @@ let _currentMemories = [];
 let _allDaysData = []; 
 let _isEditingMemory = false; 
 
+// Variables para modales de diálogo
+let alertPromptModal = null;
+let _promptResolve = null;
+let confirmModal = null;
+let _confirmResolve = null;
+let genericAlertModal = null;
+let _genericAlertResolve = null;
+
+// Referencias a los modales principales
+let previewModal = null;
+let editModal = null;
+let storeModal = null;
+let storeListModal = null;
+let searchResultsModal = null;
+
+
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.74 - Core Orchestrator)");
+    console.log("UI Module init (v2.75 - Core Orchestrator)");
     callbacks = mainCallbacks;
 
     // Objeto de estado y setters para inyectar en los módulos
@@ -43,7 +59,7 @@ function init(mainCallbacks) {
     // Inyectar dependencias en el módulo de renderizado
     render.initRenderModule(uiState, callbacks, uiMaps);
 
-    // *** NUEVO: Inyectar dependencias en el módulo de modales ***
+    // Inyectar dependencias en el módulo de modales
     modals.initModalsModule(callbacks, uiState, uiMaps, forms, render);
 
     // Bindings del "App Shell" (Header, Footer, etc.)
@@ -163,12 +179,6 @@ function updateLoginUI(user) {
     }
 }
 
-// --- ELIMINADO ---
-// Todas las funciones de create/open/close Modal
-// Todas las funciones de create/show Alert/Prompt/Confirm
-// (Movidas a ui-modals.js)
-
-
 // --- Funciones de Ayuda (Orquestación) ---
 
 function updateMemoryList(memories) {
@@ -240,6 +250,7 @@ export const ui = {
     // --- Render Functions (from ui-render.js) ---
     drawCalendar: render.drawCalendar,
     updateSpotlight: render.updateSpotlight,
+    renderTimelineView: render.renderTimelineView, // *** LÍNEA AÑADIDA ***
     
     // --- Modal Functions (from ui-modals.js) ---
     openPreviewModal: modals.openPreviewModal,
@@ -270,3 +281,4 @@ export const ui = {
     showModalStatus: forms.showModalStatus,
     handleMemoryTypeChange: forms.handleMemoryTypeChange,
 };
+
