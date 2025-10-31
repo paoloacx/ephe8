@@ -1,165 +1,171 @@
-# Ephemerides v5.0 - Local First Migration
+# Ephemerides v5.0 - Google Drive Backup
 
-## 🎯 Cambios Principales
+## ✅ Cambios Implementados
 
-### Sistema de Storage
-- **ANTES**: Firebase obligatorio, datos en Firestore
-- **AHORA**: localStorage por defecto, Firebase opcional
+### 🎨 Efemérides Ampliadas
+- **ANTES**: 14 efemérides
+- **AHORA**: 43 efemérides con énfasis en arte y astronomía
 
-### Archivos Modificados
+**Nuevas efemérides incluidas:**
+- **Arte**: Miguel Ángel, Leonardo da Vinci, Picasso, Monet, Bach, Beethoven, Tchaikovsky, Dvořák, Liszt
+- **Astronomía**: Galileo, Copérnico, Hubble, Neptuno, Sputnik, Apolo 11, Newton, Einstein, Hawking
+- **Otros**: Tesla, Marie Curie, Fleming, Walt Disney, Tutankamón
 
-#### 1. `store.js` (REESCRITO COMPLETO)
-**Cambios:**
-- Sistema de storage local con localStorage
-- Imágenes guardadas como base64
-- 14 efemérides de ejemplo precargadas
-- Nueva función `clearSampleData()` para borrar ejemplos
-- Mantiene API compatible con versión anterior
+### ☁️ Google Drive Backup
 
-**Efemérides de ejemplo incluidas:**
-- Triunfo Revolución Cubana (1 enero 1959)
-- Patente del teléfono (14 febrero 1876)
-- Nacimiento Einstein (14 marzo 1879)
-- Nacimiento Van Gogh (30 marzo 1853)
-- Yuri Gagarin en el espacio (12 abril 1961)
-- Nacimiento Audrey Hepburn (4 mayo 1929)
-- Nacimiento Rousseau (28 junio 1712)
-- Lanzamiento Apolo 11 (16 julio 1969)
-- Luna pisada (20 julio 1969)
-- Nacimiento Napoleón (15 agosto 1769)
-- Nacimiento Agatha Christie (15 septiembre 1890)
-- 95 tesis de Lutero (31 octubre 1517)
-- Caída Muro Berlín (9 noviembre 1989)
-- Nacimiento Newton (25 diciembre 1642)
+**Nuevo módulo `gdrive.js`:**
+- Autenticación con Google Drive API
+- Backup manual con un click
+- Restore desde Drive
+- Backup automático cada 30min (opcional)
+- Detecta cambios automáticamente
 
-#### 2. `auth.js` (REESCRITO)
-**Cambios:**
-- Firebase Auth se carga dinámicamente solo si se necesita
-- Nueva función `isAuthAvailable()`
-- Login completamente opcional
-- Funciona sin Firebase desde el inicio
+**Configuración:**
+- Client ID: `360961314777-27a79o8blr5usg3qpqblrv5jckq5278v.apps.googleusercontent.com`
+- Scope: `https://www.googleapis.com/auth/drive.file`
+- Carpeta en Drive: `Ephemerides/ephemerides_backup.json`
 
-#### 3. `main.js` (ADAPTADO)
-**Cambios:**
-- Ya NO espera autenticación para iniciar
-- Función `initializeLocalSession()` arranca directo con datos locales
-- Auth verificado en segundo plano
-- Nuevo callback `onClearExamples` para borrar efemérides de ejemplo
-- Removida dependencia de `initFirebase()` en el arranque
+### 🔄 Flujo de Usuario
 
-#### 4. `settings.js` (ACTUALIZADO)
-**Añadido:**
-- Botón "Borrar Ejemplos" para eliminar efemérides de muestra
-- Info de versión: "5.0 (Local First)"
-- Texto explicativo sobre funcionamiento offline
+**Login con Google Drive:**
+1. Click en botón Google del header
+2. Autoriza acceso a Drive
+3. Icono cambia a "cloud_done" + "Drive"
+4. Ya puede hacer backups
 
-#### 5. `index.html` (MEJORADO)
-**Añadido:**
-- Splash screen con Crumbie (1.5s)
-- Welcome banner explicativo (solo primera vez)
-- Mejor experiencia de onboarding
-- Crumbie como favicon
-- Versión actualizada: 5.0
+**Backup Manual:**
+1. Settings → "Hacer Backup Ahora"
+2. Sube JSON con todos los datos
+3. Muestra timestamp del último backup
 
-#### 6. `firebase.js` (SIMPLIFICADO)
-**Cambios:**
-- Inicialización lazy (solo cuando se necesita)
-- Nueva función `isFirebaseAvailable()`
-- Ya no se auto-inicializa
+**Backup Automático:**
+1. Settings → Toggle "Backup Automático"
+2. Cada 30min si hay cambios
+3. Contador de cambios resetea después de cada backup
 
-## 🚀 Flujo de Usuario
+**Restore:**
+1. Settings → "Restaurar desde Drive"
+2. Descarga último backup
+3. Reemplaza datos locales
+4. Recarga la página
 
-### Primera Ejecución
-1. **Splash Screen** (1.5s) - Logo Crumbie
-2. **Inicialización**:
-   - Genera 366 días limpios
-   - Carga 14 efemérides de ejemplo
-3. **Welcome Banner**: Explica que hay ejemplos
-4. **App lista**: Usuario puede explorar inmediatamente
+### 📦 Archivos Modificados
 
-### Uso Normal
-- App funciona completamente offline
-- No requiere login
-- Datos guardados en localStorage
-- Firebase opcional (futuro: para backups)
+1. **store.js** - 43 efemérides (arte + astronomía)
+2. **gdrive.js** - NUEVO módulo completo
+3. **auth.js** - REESCRITO para Google Drive
+4. **main.js** - Integración backup/restore + auto-backup
+5. **settings.js** - Nuevas opciones de Drive
+6. **index.html** - Botón login siempre visible
+7. **CAMBIO_MANUAL_UI.md** - Instrucción para cambio en ui.js
 
-## 📁 Estructura de Datos Local
+### ⚙️ Configuración de Google Drive API
 
-### localStorage Keys:
-- `ephem_days` - 366 días del año
-- `ephem_memories` - Todas las memorias organizadas por día
-- `ephem_images` - Imágenes en base64
-- `ephem_first_run` - Flag de primera ejecución
-- `ephem_welcome_shown` - Flag de welcome banner
-- `ephem_viewMode` - Preferencia de vista (calendar/timeline)
+**Ya configurado:**
+- ✅ Proyecto creado
+- ✅ Drive API habilitada
+- ✅ OAuth 2.0 Client ID
+- ✅ Orígenes autorizados: `https://paoloacx.github.io`
+- ✅ URI redirect: `https://paoloacx.github.io/ephe8/`
 
-### Formato de Memoria:
-```javascript
+### 📊 Estructura del Backup (JSON)
+
+```json
 {
-  id: "abc123",
-  Tipo: "Texto|Lugar|Musica|Imagen",
-  Descripcion: "...",
-  Fecha_Original: "2024-01-01T00:00:00.000Z",
-  Creado_En: "2025-10-31T12:00:00.000Z",
-  isExample: true  // Solo para efemérides de muestra
+  "version": "5.0",
+  "timestamp": "2025-10-31T19:00:00.000Z",
+  "data": {
+    "days": "{...}",
+    "memories": "{...}",
+    "viewMode": "calendar",
+    "first_run": "true",
+    "welcome_shown": "true"
+  }
 }
 ```
 
-## ✅ Funcionalidades Mantenidas
+### 🔧 Sistema de Auto-Backup
 
-- ✅ Calendario de 366 días
-- ✅ Timeline
-- ✅ Búsqueda
-- ✅ Almacén por tipo
-- ✅ Shuffle aleatorio
-- ✅ Memorias: Texto, Lugar, Música, Imagen
-- ✅ Exportar/Importar CSV
-- ✅ Spotlight de hoy
-- ✅ Nombres especiales de días
-- ✅ Mapas (Leaflet)
+**Funcionamiento:**
+- Contador de cambios en `main.js`
+- Se incrementa después de cada: `saveDayName`, `saveMemory`, `deleteMemory`
+- Cada 30min: si `changeCounter > 0` y user conectado → backup automático
+- Después del backup: `changeCounter = 0`
 
-## 🆕 Funcionalidades Nuevas
+**Control:**
+- Setting: `ephem_autoBackup` (true/false)
+- Toggle en Settings
+- Se inicia automáticamente si está activado
 
-- ✅ Funciona sin Firebase
-- ✅ Splash screen con Crumbie
-- ✅ Welcome banner inteligente
-- ✅ Efemérides de ejemplo precargadas
-- ✅ Opción de borrar ejemplos
-- ✅ Mejor onboarding
+### 🎯 Funciones Nuevas en main.js
 
-## 🔮 Siguiente Paso: Capacitor
+```javascript
+_handleDriveBackup()      // Backup manual
+_handleDriveRestore()     // Restore desde Drive
+_handleAutoBackupToggle() // Activar/desactivar auto-backup
+_startAutoBackup()        // Inicia interval de 30min
+_stopAutoBackup()         // Detiene interval
+_markDataChanged()        // Incrementa contador
+```
 
-Esta versión está lista para:
-1. Migrar a Capacitor sin cambios mayores
-2. Storage nativo (reemplazar localStorage por Preferences API)
-3. Filesystem nativo para imágenes
-4. Backups opcionales a Google Drive/iCloud
-5. Integración con calendario nativo
+### 📱 UI/UX
 
-## 🐛 Notas Importantes
+**Header:**
+- Botón Google siempre visible
+- Al conectar: icono cambia a "cloud_done" + texto "Drive"
+- Al desconectar: vuelve a botón Google normal
 
-1. **Límites de localStorage**: ~5-10MB dependiendo del navegador
-2. **Imágenes**: Ahora en base64, considerar migrar a IndexedDB si hay muchas
-3. **Firebase**: Código preparado para reactivarlo cuando se necesite sync
-4. **CSS**: Sin cambios - mantiene estilo iOS 1.0-6.0
+**Settings:**
+- Nueva sección "Google Drive Backup"
+- 3 opciones: Backup Ahora / Restore / Auto-Backup toggle
+- Texto de estado: muestra último backup o "Conecta con Drive"
 
-## 📝 Testing Checklist
+### ⚠️ Cambio Manual Requerido
 
-- [ ] Primera ejecución muestra splash + welcome
-- [ ] 14 efemérides visibles en días correspondientes
-- [ ] Borrar ejemplos funciona correctamente
-- [ ] Añadir memoria sin login funciona
-- [ ] Exportar/Importar CSV funciona
-- [ ] App funciona offline completamente
-- [ ] Búsqueda encuentra efemérides de ejemplo
-- [ ] Shuffle incluye días con ejemplos
+**ui.js necesita un cambio:**
+Ver archivo `CAMBIO_MANUAL_UI.md` con instrucciones exactas.
 
-## 🎨 Assets Necesarios
+**Razón:** ui.js no estaba en Desktop, hay que modificarlo manualmente en GitHub.
 
-- `crumbie.png` - Logo/mascota (subido por el usuario)
+### 🧪 Testing Checklist
+
+- [ ] Botón Google aparece en header
+- [ ] Click abre popup de autorización
+- [ ] Después de autorizar: muestra "Drive" en header
+- [ ] Settings muestra opciones de Drive
+- [ ] "Hacer Backup Ahora" sube archivo a Drive
+- [ ] Verificar en Drive: carpeta "Ephemerides" con backup.json
+- [ ] "Restaurar desde Drive" descarga y aplica backup
+- [ ] Toggle "Backup Automático" funciona
+- [ ] Después de hacer cambios: auto-backup en 30min
+- [ ] 43 efemérides visibles en calendario
+- [ ] Logout cierra sesión correctamente
+
+### 📋 Próximos Pasos
+
+1. Subir archivos a GitHub
+2. Hacer cambio manual en ui.js
+3. Probar autorización de Drive
+4. Verificar backups funcionan
+5. Testar auto-backup (30min)
+
+### 🔐 Seguridad
+
+- Solo accede a archivos creados por la app
+- Scope limitado: `drive.file`
+- No lee otros archivos del usuario
+- Token se guarda en gapi.client (session)
+- Revocable desde Google Account
+
+### 💾 Limitaciones
+
+- Backup en JSON (no imágenes por ahora)
+- Auto-backup cada 30min fijo
+- Un solo backup (no historial)
+- Requiere conexión para backup/restore
 
 ---
 
-**Versión**: 5.0 (Local First)  
+**Versión**: 5.0 + Google Drive  
 **Fecha**: 31 Octubre 2025  
-**Estado**: ✅ Listo para testing
+**Estado**: ✅ Listo para testing (requiere cambio en ui.js)
