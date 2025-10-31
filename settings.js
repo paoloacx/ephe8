@@ -66,16 +66,38 @@ function _createSettingsModal() {
                     </div>
                 </div>
                 
-                <p class="settings-list-group-footer">Datos</p>
+                <p class="settings-list-group-footer">Google Drive Backup</p>
+                <div class="settings-list-group">
+                    <div class="settings-list-item settings-list-item-button" id="drive-backup-btn">
+                        <span class="material-icons-outlined">cloud_upload</span>
+                        <label class="settings-list-item-label">Hacer Backup Ahora</label>
+                        <div class="list-view-chevron"></div>
+                    </div>
+                    <div class="settings-list-item settings-list-item-button" id="drive-restore-btn">
+                        <span class="material-icons-outlined">cloud_download</span>
+                        <label class="settings-list-item-label">Restaurar desde Drive</label>
+                        <div class="list-view-chevron"></div>
+                    </div>
+                    <div class="settings-list-item">
+                        <label class="settings-list-item-label" for="auto-backup-toggle">Backup Automático</label>
+                        <label class="ios-toggle">
+                            <input type="checkbox" id="auto-backup-toggle">
+                            <span class="ios-toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <p class="settings-list-group-footer" id="backup-status-text">Conecta con Google Drive para hacer backups de tus memorias</p>
+                
+                <p class="settings-list-group-footer">Datos Locales</p>
                 <div class="settings-list-group">
                     <div class="settings-list-item settings-list-item-button" id="export-data-btn">
                         <span class="material-icons-outlined">download</span>
-                        <label class="settings-list-item-label">Exportar Memorias</label>
+                        <label class="settings-list-item-label">Exportar a CSV</label>
                         <div class="list-view-chevron"></div>
                     </div>
                     <div class="settings-list-item settings-list-item-button" id="import-data-btn">
                         <span class="material-icons-outlined">upload</span>
-                        <label class="settings-list-item-label">Importar Memorias</label>
+                        <label class="settings-list-item-label">Importar desde CSV</label>
                         <div class="list-view-chevron"></div>
                     </div>
                     <div class="settings-list-item settings-list-item-button" id="clear-examples-btn">
@@ -107,6 +129,9 @@ function _createSettingsModal() {
     // Binds de eventos
     document.getElementById('close-settings-btn')?.addEventListener('click', _closeSettingsModal);
     document.getElementById('view-mode-toggle')?.addEventListener('change', _handleToggleChange);
+    document.getElementById('drive-backup-btn')?.addEventListener('click', _handleDriveBackupClick);
+    document.getElementById('drive-restore-btn')?.addEventListener('click', _handleDriveRestoreClick);
+    document.getElementById('auto-backup-toggle')?.addEventListener('change', _handleAutoBackupToggle);
     document.getElementById('export-data-btn')?.addEventListener('click', _handleExportClick);
     document.getElementById('import-data-btn')?.addEventListener('click', _handleImportClick);
     document.getElementById('clear-examples-btn')?.addEventListener('click', _handleClearExamplesClick);
@@ -170,5 +195,45 @@ function _handleImportClick() {
 function _handleClearExamplesClick() {
     if (_callbacks.onClearExamples) {
         _callbacks.onClearExamples();
+    }
+}
+
+/**
+ * Maneja el click en "Hacer Backup Ahora"
+ */
+function _handleDriveBackupClick() {
+    if (_callbacks.onDriveBackup) {
+        _callbacks.onDriveBackup();
+    }
+}
+
+/**
+ * Maneja el click en "Restaurar desde Drive"
+ */
+function _handleDriveRestoreClick() {
+    if (_callbacks.onDriveRestore) {
+        _callbacks.onDriveRestore();
+    }
+}
+
+/**
+ * Maneja el cambio del toggle de backup automático
+ */
+function _handleAutoBackupToggle(e) {
+    const enabled = e.target.checked;
+    saveSetting('autoBackup', enabled);
+    
+    if (_callbacks.onAutoBackupToggle) {
+        _callbacks.onAutoBackupToggle(enabled);
+    }
+}
+
+/**
+ * Actualiza el estado del backup en la UI
+ */
+export function updateBackupStatus(status) {
+    const statusText = document.getElementById('backup-status-text');
+    if (statusText) {
+        statusText.textContent = status;
     }
 }
