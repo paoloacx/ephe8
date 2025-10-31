@@ -399,6 +399,43 @@
     margin: 0;
 }
 
+/* --- Botones de Importar/Exportar CSV --- */
+.settings-import-export-buttons {
+    display: flex;
+    gap: 10px;
+    padding: 0 15px 15px 15px;
+}
+.settings-import-export-buttons button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #202834;
+    background: linear-gradient(to bottom, #5a6a80 0%, #38485c 100%);
+    color: white;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+.settings-import-export-buttons button:hover {
+    background: linear-gradient(to bottom, #6a7a90 0%, #48586c 100%);
+}
+.settings-import-export-buttons button:active {
+    background: linear-gradient(to top, #5a6a80 0%, #38485c 100%);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    transform: scale(0.98);
+}
+.settings-import-export-buttons button .material-icons-outlined {
+    vertical-align: middle;
+    margin-right: 5px;
+    font-size: 18px;
+}
+#csv-file-input {
+    display: none;
+}
+
 /* --- Cabecera de Modal Unificada (Preview, Edit, Store, etc.) --- */
 .modal-preview-header {
     display: flex;
@@ -414,7 +451,7 @@
     font-size: 19px;
     font-weight: bold;
     color: #333333; 
-    text-shadow: none; 
+    text-shadow: none; /* CAMBIO: Sombra eliminada */
     text-align: center;
     flex-grow: 1;
 }
@@ -486,20 +523,26 @@
 /* --- Secciones y Formularios del Modal --- */
 .modal-section {
     padding: 10px 15px 15px 15px;
-    border-bottom: 2px solid #ccc;
+    border-bottom: 1px solid #ccc;
     background: transparent;
     color: #333;
     text-shadow: none;
     border-radius: 0;
     margin-bottom: 0;
 }
+.modal-section.modal-divider {
+    padding: 0;
+    height: 1px;
+    border-bottom: 1px solid #b0b0b0; 
+    box-shadow: 0 1px 1px rgba(0,0,0,0.15); 
+    margin: 10px 0 15px 0; 
+}
 .modal-section h3, .modal-section h4 {
     color: #4a5462;
     text-shadow: 0 1px 0 rgba(255,255,255,0.6);
     padding-bottom: 5px;
-    border-bottom: 0px solid #ddd;
+    border-bottom: 1px solid #ddd;
     margin-top: 0;
-    margin: 5px;
     margin-bottom: 10px;
 }
 .modal-section label {
@@ -744,25 +787,25 @@
     flex-grow: 1;
     color: #333;
     line-height: 1.3;
-    padding-right: 30px;
+    padding-right: 60px;
 }
 #edit-memorias-list .memoria-item .artist-name {
     color: #555;
     font-size: 0.9em;
 }
 #edit-memorias-list .memoria-actions {
-    display: block;
+    display: flex;
     flex-shrink: 0;
     position: absolute;
     bottom: 8px;
-    right: 5px;
+    right: 8px;
 }
 #edit-memorias-list .edit-btn,
 #edit-memorias-list .delete-btn {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0px;
+    padding: 5px;
     line-height: 0;
     transition: transform 0.2s ease;
 }
