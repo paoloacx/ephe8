@@ -1,5 +1,5 @@
 /*
- * ui-modals.js (v1.5 - Progress Modal)
+ * ui-modals.js (v1.6 - Fix Botón Cancelar)
  * Módulo para gestionar todos los modales, diálogos, prompts y alertas.
  */
 
@@ -24,7 +24,7 @@ let confirmModal = null;
 let _confirmResolve = null;
 let genericAlertModal = null;
 let _genericAlertResolve = null;
-let progressModal = null; // <-- NUEVO
+let progressModal = null; 
 
 /**
  * Inicializa el módulo de modales.
@@ -44,9 +44,9 @@ export function initModalsModule(callbacks, uiState, uiMaps, forms, render) {
     createAlertPromptModal();
     createConfirmModal();
     createGenericAlertModal();
-    createProgressModal(); // <-- NUEVO
+    createProgressModal(); 
 
-    console.log("UI Modals Module init (v1.5)");
+    console.log("UI Modals Module init (v1.6)");
 }
 
 // --- Modal: Vista Previa (Preview) ---
@@ -310,7 +310,6 @@ function createEditModal() {
                                 <div id="itunes-results" class="search-results"></div>
                             </div>
                             <button type="submit" id="save-memoria-btn" class="aqua-button">Añadir Memoria</button>
-                            <button type="button" id="btn-cancel-mem-edit" class="aqua-button small">Cancelar</button>
                             <p id="memoria-status" class="status-message"></p>
                         </form>
                     </div>
@@ -351,9 +350,11 @@ function bindEditModalEvents() {
         showMemoryForm(true); 
     });
 
-    document.getElementById('btn-cancel-mem-edit')?.addEventListener('click', () => {
-        showMemoryForm(false); 
-    });
+    // --- CORRECCIÓN: Este botón ya no existe, pero si existiera, daría error. Lo comento por si acaso.
+    // document.getElementById('btn-cancel-mem-edit')?.addEventListener('click', () => {
+    //     showMemoryForm(false); 
+    // });
+    // --- FIN CORRECCIÓN ---
 
     document.getElementById('memory-form')?.addEventListener('submit', _forms.handleFormSubmit);
     document.getElementById('memoria-type')?.addEventListener('change', _forms.handleMemoryTypeChange);
