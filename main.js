@@ -862,7 +862,135 @@ function handleCrumbieClick() {
     
     console.log("Crumbie clickeado. Listo para IA.");
 }
+// --- NUEVO: 7. Lógica de Importar/Exportar ---
 
+/**
+ * Maneja la solicitud de exportar datos desde settings.js
+ */
+async function _handleExportData() {
+    if (!state.currentUser || !state.currentUser.uid) {
+        ui.showToast('Debes estar logueado para exportar', true);
+        return;
+    }
+    const userId = state.currentUser.uid;
+
+    ui.showProgressModal("Exportando memorias...");
+
+    try {
+        const csvContent = await exportToCSV(userId);
+        
+        // Crear y descargar el archivo
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        link.setAttribute('href', url);
+        link.setAttribute('download', `ephemerides_export_${timestamp}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        ui.closeProgressModal();
+        ui.showToast('Exportación completada');
+
+    } catch (err) {
+        console.error("Error al exportar datos:", err);
+        ui.closeProgressModal();
+        ui.showErrorAlert('Error de Exportación', `No se pudo generar el archivo: ${err.message}`);
+    }
+}
+
+/**
+ * Maneja la solicitud de importar datos desde settings.js
+ * @param {File} file - El archivo CSV seleccionado por el usuario.
+ */
+async function _handleImportData(file) {
+    if (!state.currentUser || !state.currentUser.uid) {
+        ui.showToast('Debes estar logueado para importar', true);
+        return;
+    }
+    if (!file) {
+        ui.showToast('No se seleccionó ningún archivo', true);
+        return;
+    }
+    if (!file.name.endsWith('.csv')) {
+        ui.showErrorAlert('Archivo no válido', 'Por favor, selecciona un archivo .csv');
+        return;
+    }
+
+    const confirmed = await ui.showConfirm(
+        `¿Importar desde "${file.name}"? Esto añadirá las memorias y nombres de días del archivo. Los datos existentes no se borrarán.`
+    );
+    if (!confirmed) return;
+
+    ui.showProgressModal("Procesando archivo...");
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const csvContent = e.target.result;
+        const userId = state.currentUser.uid;
+
+        try {
+            const onProgress = (message) => {
+                ui.showProgressModal(message);
+            };
+
+            const { imported, errors } = await importFromCSV(userId, csvContent, onProgress);
+            
+            ui.closeProgressModal();
+            
+            await ui.showErrorAlert( // Usamos "showErrorAlert" porque tiene un botón "OK"
+                'Importación Completada',
+                `Se importaron ${imported} elementos. Hubo ${errors} filas con errores.`
+            );
+            
+            // Recargar datos de la app
+            await _reloadDataAfterImport();
+
+        } catch (err) {
+            console.error("Error durante la importación:", err);
+            ui.closeProgressModal();
+            ui.showErrorAlert('Error de Importación', `Ocurrió un error: ${err.message}`);
+        }
+    };
+
+    reader.onerror = () => {
+        console.error("Error al leer el archivo:", reader.error);
+        ui.closeProgressModal();
+        ui.showErrorAlert('Error de Lectura', 'No se pudo leer el archivo seleccionado.');
+    };
+
+    reader.readAsText(file);
+}
+
+/**
+ * Recarga los datos principales de la app después de una importación.
+ */
+async function _reloadDataAfterImport() {
+    if (!state.currentUser || !state.currentUser.uid) return;
+
+    ui.setLoading("Actualizando datos...", true);
+    
+    try {
+        // Recargar allDaysData
+        state.allDaysData = await loadAllDaysData(state.currentUser.uid);
+        ui.updateAllDaysData(state.allDaysData);
+        
+        // Redibujar la vista principal (calendario y spotlight)
+        drawMainView();
+        
+        ui.setLoading(null, false);
+        ui.showToast("Datos actualizados");
+
+    } catch (err) {
+        console.error("Error recargando datos post-importación:", err);
+        ui.setLoading(null, false);
+        ui.showErrorAlert('Error de Actualización', 'No se pudieron recargar los datos. Por favor, refresca la página.');
+    }
+}
 
 // --- 7. Ejecución Inicial ---
 checkAndRunApp();
