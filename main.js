@@ -254,11 +254,11 @@ function getUICallbacks() {
         onStoreCategoryClick: handleStoreCategoryClick,
         onStoreLoadMore: handleStoreLoadMore,
         onStoreItemClick: handleStoreItemClick,
+        // onCrumbieClick: handleCrumbieClick, // Eliminado
         onViewModeChange: handleViewModeChange, 
         onTimelineLoadMore: handleTimelineLoadMore, 
         onExportData: _handleExportData,
         onImportData: _handleImportData
-        // onCrumbieClick: handleCrumbieClick, // Eliminado (botón oculto)
     };
 }
 
@@ -273,6 +273,7 @@ async function handleTimelineLoadMore() {
         return;
     }
 
+    console.log(`Timeline: Cargando mes ${monthToLoad}`);
     state.timeline.isLoading = true;
     ui.setTimelineButtonLoading(true); 
 
@@ -294,7 +295,6 @@ async function handleTimelineLoadMore() {
         console.error("Error cargando más meses del timeline:", err);
         ui.showErrorAlert(`Error al cargar el mes: ${err.message}`, "Error de Timeline");
     } finally {
-        // Solo actualiza si este es el callback que esperábamos
         if (state.timeline.nextMonthToLoad === monthToLoad - 1) {
             state.timeline.isLoading = false;
             ui.setTimelineButtonLoading(false);
@@ -497,6 +497,7 @@ function handleShuffleClick() {
 function handleViewModeChange(newViewMode) {
     if (state.currentViewMode === newViewMode) return; 
 
+    console.log("Cambiando modo de vista a:", newViewMode);
     state.currentViewMode = newViewMode;
 
     if (newViewMode === 'calendar') {
@@ -721,7 +722,7 @@ async function handleStoreCategoryClick(type) {
          return;
     }
     const userId = state.currentUser.uid;
-    console.log(`Cargando Almacén para ${type} - Usuario: ${userId}`);
+    console.log(`Cargando Almacén para ${type}`);
 
     state.store.currentType = type;
     state.store.lastVisible = null;
@@ -770,7 +771,7 @@ async function handleStoreLoadMore() {
     if (isLoading || !currentType || !state.currentUser) return; 
 
     const userId = state.currentUser.uid;
-    console.log(`Cargando más ${currentType} para ${userId}...`);
+    console.log(`Cargando más ${currentType}...`);
     state.store.isLoading = true;
 
      const loadMoreBtn = document.getElementById('load-more-btn'); 
@@ -799,7 +800,9 @@ async function handleStoreLoadMore() {
         ui.updateStoreList(result.items, true, result.hasMore); 
 
     } catch (err) {
+        // --- INICIO DE LA CORRECCIÓN ---
         console.error(`Error cargando más ${state.store.currentType} para ${userId}:`, err);
+        // --- FIN DE LA CORRECCIÓN ---
         state.store.isLoading = false;
         if(loadMoreBtn) {
              loadMoreBtn.textContent = "Error al cargar";
