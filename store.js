@@ -1,5 +1,5 @@
 /*
- * store.js (v4.15 - Fix Importar/Exportar CSV)
+ * store.js (v4.16 - Fix Timeline ID)
  * Módulo de Lógica de Firestore y Storage.
  */
 
@@ -476,7 +476,10 @@ async function loadMonthForTimeline(userId, monthIndex) {
 
     for (const diaDoc of diasSnapshot.docs) {
         const diaData = diaDoc.data();
-        const diaId = diaDoc.id();
+        
+        // --- INICIO DE LA CORRECCIÓN ---
+        const diaId = diaDoc.id; // ANTES: diaDoc.id()
+        // --- FIN DE LA CORRECCIÓN ---
 
         const memoriasRef = getUserMemoriesRef(userId, diaId);
         const qMems = query(memoriasRef, orderBy("Fecha_Original", "desc"));
