@@ -414,7 +414,7 @@
     font-size: 19px;
     font-weight: bold;
     color: #333333; 
-    text-shadow: none; /* CAMBIO: Sombra eliminada */
+    text-shadow: none; 
     text-align: center;
     flex-grow: 1;
 }
