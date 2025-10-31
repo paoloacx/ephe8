@@ -1,5 +1,5 @@
 /*
- * store.js (v4.14 - Importar/Exportar CSV)
+ * store.js (v4.15 - Fix Importar/Exportar CSV)
  * Módulo de Lógica de Firestore y Storage.
  */
 
@@ -59,10 +59,10 @@ async function checkAndRunApp(userId, onProgress) {
     } catch (e) {
          console.error("Error al verificar la base de datos (puede ser por permisos o doc no existe):", e);
          try {
-           await _generateCleanDatabase(userId, onProgress); 
+          await _generateCleanDatabase(userId, onProgress); 
          } catch (genError) {
-           console.error("Store: Fallo crítico al regenerar la base de datos del usuario.", genError);
-           throw genError;
+          console.error("Store: Fallo crítico al regenerar la base de datos del usuario.", genError);
+          throw genError;
          }
     }
 }
@@ -416,9 +416,9 @@ async function getNamedDays(userId, pageSize = 10, lastVisibleDoc = null) {
 
     let q;
     const baseQuery = query(userDiasRef,
-                               where("Nombre_Especial", "!=", "Unnamed Day"),
-                               orderBy("Nombre_Especial", "asc"), 
-                               limit(pageSize));
+                                where("Nombre_Especial", "!=", "Unnamed Day"),
+                                orderBy("Nombre_Especial", "asc"), 
+                                limit(pageSize));
 
     if (lastVisibleDoc) {
         q = query(baseQuery, startAfter(lastVisibleDoc));
@@ -617,7 +617,9 @@ async function importFromCSV(userId, csvContent, onProgress) {
     onProgress("Procesando archivo...");
     
     // Parsear CSV
-    const lines = csvContent.split('\n');
+    // --- INICIO DEL CAMBIO 1: Manejar \r\n (Windows) y \n (Mac/Unix) ---
+    const lines = csvContent.split(/\r\n|\n/);
+    // --- FIN DEL CAMBIO 1 ---
     const rows = [];
     
     for (let i = 1; i < lines.length; i++) { // Saltar header
@@ -639,7 +641,17 @@ async function importFromCSV(userId, csvContent, onProgress) {
     
     for (const row of rows) {
         try {
-            const [year, mes, dia, tipo, contenido, datosExtra] = row;
+            // --- INICIO DEL CAMBIO 3: Aplicar trim() a todos los campos ---
+            // Esto es crucial porque _parseCSVLine ahora los limpia
+            const [
+                year, 
+                mes, 
+                dia, 
+                tipo, 
+                contenido, 
+                datosExtra
+            ] = row.map(cell => cell.trim());
+            // --- FIN DEL CAMBIO 3 ---
             
             if (!mes || !dia || !tipo || !contenido) {
                 console.warn("Fila incompleta, saltando:", row);
@@ -659,16 +671,16 @@ async function importFromCSV(userId, csvContent, onProgress) {
             const diaId = `${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
             
             // Importar nombre de día
-            if (tipo === 'Nombre' && !year.trim()) {
+            if (tipo === 'Nombre' && !year) { // Comprobación más robusta
                 const diaRef = getUserDayRef(userId, diaId);
                 batch.update(diaRef, {
-                    Nombre_Especial: contenido.trim()
+                    Nombre_Especial: contenido
                 });
                 batchOps++;
                 imported++;
             }
             // Importar memoria
-            else if (year.trim()) {
+            else if (year) { // Comprobación más robusta
                 const yearNum = parseInt(year);
                 if (yearNum < 1900 || yearNum > 2100) {
                     console.warn("Año inválido, saltando:", row);
@@ -772,14 +784,18 @@ function _parseCSVLine(line) {
                 inQuotes = !inQuotes;
             }
         } else if (char === ',' && !inQuotes) {
-            result.push(current);
+            // --- INICIO DEL CAMBIO 2: Aplicar trim() al guardar celda ---
+            result.push(current.trim());
+            // --- FIN DEL CAMBIO 2 ---
             current = '';
         } else {
             current += char;
         }
     }
     
-    result.push(current);
+    // --- INICIO DEL CAMBIO 2 (bis): Aplicar trim() a la última celda ---
+    result.push(current.trim());
+    // --- FIN DEL CAMBIO 2 (bis) ---
     return result;
 }
 
