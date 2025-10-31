@@ -1,5 +1,7 @@
-/* firebase.js */
-/* Este módulo se encarga de inicializar Firebase y exportar las instancias */
+/* 
+ * firebase.js (v5.0 - Opcional)
+ * Firebase se inicializa solo si se necesita para backups/sync
+ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
@@ -17,28 +19,43 @@ const firebaseConfig = {
   measurementId: "G-BZC9FRYCJW"
 };
 
-// --- Inicialización ---
-let app;
-try {
-    app = initializeApp(firebaseConfig);
-} catch (e) {
-    console.error("Error inicializando Firebase:", e);
-}
-
-
-// --- Exportaciones ---
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
+// --- Inicialización Lazy ---
+let app = null;
+let db = null;
+let auth = null;
+let storage = null;
+let initialized = false;
 
 /**
- * Función de inicialización (ahora solo confirma).
+ * Inicializa Firebase solo cuando se necesita
  */
 export function initFirebase() {
-    if (app) {
-        console.log("Firebase inicializado correctamente.");
-    } else {
-        console.error("Firebase NO se pudo inicializar.");
+    if (initialized) {
+        console.log("Firebase ya inicializado");
+        return true;
+    }
+    
+    try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        storage = getStorage(app);
+        initialized = true;
+        
+        console.log("Firebase inicializado correctamente (modo opcional)");
+        return true;
+    } catch (e) {
+        console.error("Error inicializando Firebase:", e);
+        return false;
     }
 }
-// (La llave extra que estaba aquí se ha borrado)
+
+/**
+ * Verifica si Firebase está disponible
+ */
+export function isFirebaseAvailable() {
+    return initialized;
+}
+
+// Exportaciones
+export { db, auth, storage };
