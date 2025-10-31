@@ -197,9 +197,11 @@
 
 /* --- Vista Timeline --- */
 .timeline-view {
-    padding: 10px;
+    padding right: 10px;
+    padding-left: 10px;
+    padding-top: 0px;
     box-sizing: border-box;
-    position: relative; 
+    position: absolute; 
     z-index: 1; 
 }
 .timeline-view::before {
@@ -224,9 +226,9 @@
     font-weight: bold;
     color: #fff;
     text-shadow: 0 1px 1px rgba(0,0,0,0.6);
-    padding: 0 10px 10px 10px; /* CAMBIO: Punto 1 */
-    border-bottom: none; /* CAMBIO: Punto 1 */
-    margin-bottom: 5px; /* CAMBIO: Punto 1 */
+    padding: 0 10px 10px 10px; 
+    border-bottom: none; 
+    margin-bottom: 5px; 
     text-transform: none; 
 }
 .timeline-day-group {
