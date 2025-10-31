@@ -11,8 +11,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Ephemerides">
 
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="icon" type="image/png" href="crumbie.png">
+    <link rel="apple-touch-icon" href="crumbie.png">
     <link rel="manifest" href="manifest.json">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -20,11 +20,11 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Outlined" rel="stylesheet">
 
-    <link rel="stylesheet" href="style-base.css?v=2.93">
-    <link rel="stylesheet" href="style-layout.css?v=2.93">
-    <link rel="stylesheet" href="style-components.css?v=2.93">
-    <link rel="stylesheet" href="style-views.css?v=2.93">
-    <link rel="stylesheet" href="style-modals.css?v=2.93">
+    <link rel="stylesheet" href="style-base.css?v=5.0">
+    <link rel="stylesheet" href="style-layout.css?v=5.0">
+    <link rel="stylesheet" href="style-components.css?v=5.0">
+    <link rel="stylesheet" href="style-views.css?v=5.0">
+    <link rel="stylesheet" href="style-modals.css?v=5.0">
 
     <style>
         .aqua-button .material-icons-outlined {
@@ -33,9 +33,129 @@
             vertical-align: middle;
             margin-top: -2px;
         }
+        
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        
+        #splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .splash-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 27px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: splashPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes splashPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .splash-title {
+            font-size: 32px;
+            font-weight: 600;
+            color: white;
+            margin: 0 0 10px 0;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .splash-subtitle {
+            font-size: 16px;
+            color: rgba(255,255,255,0.8);
+            margin: 0;
+        }
+        
+        /* Welcome Banner */
+        .welcome-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            margin: 10px 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            animation: slideDown 0.5s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .welcome-banner.visible {
+            display: block;
+        }
+        
+        .welcome-banner h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .welcome-banner p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+        
+        .welcome-banner button {
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .welcome-banner button:hover {
+            background: rgba(255,255,255,0.3);
+        }
     </style>
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img src="crumbie.png" alt="Crumbie" class="splash-logo">
+        <h1 class="splash-title">Ephemerides</h1>
+        <p class="splash-subtitle">Tu diario de recuerdos</p>
+    </div>
+
+    <!-- Welcome Banner (se muestra solo primera vez) -->
+    <div id="welcome-banner" class="welcome-banner">
+        <h3>¡Bienvenido! 👋</h3>
+        <p>Hemos añadido algunas efemérides de ejemplo para que veas cómo funciona la app. Puedes borrarlas cuando quieras desde Ajustes.</p>
+        <button onclick="document.getElementById('welcome-banner').classList.remove('visible'); localStorage.setItem('ephem_welcome_shown', 'true');">Entendido</button>
+    </div>
 
     <header>
         <button id="header-search-btn" title="Buscar">
@@ -48,7 +168,7 @@
                 <span id="user-name"></span>
             </div>
             <div id="login-btn-container">
-                 <button id="login-btn" class="header-login-btn" title="Login with Google">
+                 <button id="login-btn" class="header-login-btn" title="Login with Google" style="display: none;">
                       <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.20455c0-.63864-.05727-1.25182-.16909-1.84091H9v3.48182h4.84364c-.20864 1.125-.84273 2.07818-1.77727 2.71136v2.25818h2.90864c1.70182-1.56682 2.68409-3.87409 2.68409-6.61045z"/><path fill="#34A853" d="M9 18c2.43 0 4.47182-.80591 5.96273-2.18045l-2.90864-2.25818c-.80591.54364-1.83682.86591-2.94.86591-2.27318 0-4.20727-1.53318-4.9-3.58227H1.07182v2.33318C2.56636 16.3 5.56 18 9 18z"/><path fill="#FBBC05" d="M4.1 10.71c-.22-.64-.35-1.32-.35-2.03s.13-.139.35-2.03V4.31H1.07C.38 5.67 0 7.29 0 9.03s.38 3.36 1.07 4.72l3.03-2.33v.03z"/><path fill="#EA4335" d="M9 3.57955c1.32136 0 2.50773.45455 3.44091 1.34591l2.58136-2.58136C13.46318.891364 11.4259 0 9 0 5.56 0 2.56636 1.70182 1.07182 4.31l3.02818 2.33318C4.79273 5.11273 6.72682 3.57955 9 3.57955z"/></svg>
                       </button>
             </div>
@@ -97,6 +217,28 @@
     </footer>
 
     <script>
+        // Gestión del Splash Screen y Welcome Banner
+        window.addEventListener('load', () => {
+            // Ocultar splash después de 1.5s
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if (splash) {
+                    splash.classList.add('hidden');
+                }
+                
+                // Mostrar welcome banner si es primera vez
+                const welcomeShown = localStorage.getItem('ephem_welcome_shown');
+                if (!welcomeShown) {
+                    setTimeout(() => {
+                        const banner = document.getElementById('welcome-banner');
+                        if (banner) {
+                            banner.classList.add('visible');
+                        }
+                    }, 500);
+                }
+            }, 1500);
+        });
+        
         // Registrar Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -104,7 +246,6 @@
                     .then(registration => {
                         console.log('[PWA] Service Worker registrado:', registration.scope);
                         
-                        // Detectar actualizaciones del SW
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
@@ -121,6 +262,6 @@
         }
     </script>
 
-    <script type="module" src="main.js?v=2.93"></script> 
+    <script type="module" src="main.js?v=5.0"></script> 
 </body>
 </html>
