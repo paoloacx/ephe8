@@ -1,5 +1,5 @@
 /*
- * settings.js (v2.1 - Limpieza de texto)
+ * settings.js (v2.2 - Importar/Exportar)
  * Gestiona la lógica de la pantalla/modal de Ajustes.
  */
 
@@ -71,7 +71,21 @@ function _createSettingsModal() {
                     </div>
                 </div>
                 
+                <p class="settings-list-group-footer">Datos</p>
+                <div class="settings-list-group">
+                    <div class="settings-list-item settings-list-item-button" id="export-data-btn">
+                        <span class="material-icons-outlined">download</span>
+                        <label class="settings-list-item-label">Exportar Memorias</label>
+                        <div class="list-view-chevron"></div>
+                    </div>
+                    <div class="settings-list-item settings-list-item-button" id="import-data-btn">
+                        <span class="material-icons-outlined">upload</span>
+                        <label class="settings-list-item-label">Importar Memorias</label>
+                        <div class="list-view-chevron"></div>
+                    </div>
                 </div>
+                <p class="settings-list-group-footer">Exporta tus memorias a CSV o importa desde un archivo CSV</p>
+            </div>
             
             <div class="modal-main-buttons">
                 <button id="close-settings-btn">Cerrar</button>
@@ -84,6 +98,8 @@ function _createSettingsModal() {
     // Binds de eventos
     document.getElementById('close-settings-btn')?.addEventListener('click', _closeSettingsModal);
     document.getElementById('view-mode-toggle')?.addEventListener('change', _handleToggleChange);
+    document.getElementById('export-data-btn')?.addEventListener('click', _handleExportClick);
+    document.getElementById('import-data-btn')?.addEventListener('click', _handleImportClick);
 }
 
 /**
@@ -113,4 +129,30 @@ function _handleToggleChange(e) {
     if (_callbacks.onViewModeChange) {
         _callbacks.onViewModeChange(newViewMode);
     }
+}
+
+/**
+ * Maneja el click en "Exportar Memorias"
+ */
+function _handleExportClick() {
+    if (_callbacks.onExportData) {
+        _callbacks.onExportData();
+    }
+}
+
+/**
+ * Maneja el click en "Importar Memorias"
+ */
+function _handleImportClick() {
+    // Crear input file temporal
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file && _callbacks.onImportData) {
+            _callbacks.onImportData(file);
+        }
+    };
+    input.click();
 }

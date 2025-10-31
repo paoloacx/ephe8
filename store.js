@@ -1,5 +1,5 @@
 /*
- * store.js (v4.13 - Timeline Paginado)
+ * store.js (v4.14 - Importar/Exportar CSV)
  * Módulo de Lógica de Firestore y Storage.
  */
 
@@ -449,13 +449,6 @@ async function getNamedDays(userId, pageSize = 10, lastVisibleDoc = null) {
     return { items, lastVisible, hasMore };
 }
 
-/**
- * CAMBIO: v4.13 - Renombrada a loadMonthForTimeline y paginada por mes.
- * Obtiene todas las memorias de un usuario para un MES específico.
- * @param {string} userId - El ID del usuario.
- * @param {number} monthIndex - El índice del mes a cargar (0-11).
- * @returns {Promise<object|null>} Un objeto de mes o null si no hay datos.
- */
 async function loadMonthForTimeline(userId, monthIndex) {
     if (!userId) throw new Error("loadMonthForTimeline requiere un userId.");
     if (monthIndex < 0 || monthIndex > 11) {
@@ -465,30 +458,26 @@ async function loadMonthForTimeline(userId, monthIndex) {
     const monthName = MONTH_NAMES[monthIndex];
     console.log(`Store: Cargando datos de Timeline para ${userId} - Mes: ${monthName}`);
     
-    // 1. Calcular el rango de IDs de los días para este mes
     const monthStr = (monthIndex + 1).toString().padStart(2, '0');
     const startId = `${monthStr}-01`;
-    const endId = `${monthStr}-${DAYS_IN_MONTH[monthIndex]}`; // Ej: "10-31"
+    const endId = `${monthStr}-${DAYS_IN_MONTH[monthIndex]}`;
 
-    // 2. Obtener todos los días de ESE MES que tienen memorias
     const userDiasRef = getUserDaysRef(userId);
     const qDias = query(userDiasRef,
         where("tieneMemorias", "==", true),
         where(documentId(), ">=", startId),
         where(documentId(), "<=", endId),
-        orderBy(documentId()) // Ordenar por ID ("10-01", "10-02"...)
+        orderBy(documentId())
     );
     
     const diasSnapshot = await getDocs(qDias);
     
     const allDaysWithMemories = [];
 
-    // 3. Para cada día con memorias, obtener sus memorias
     for (const diaDoc of diasSnapshot.docs) {
         const diaData = diaDoc.data();
-        const diaId = diaDoc.id;
+        const diaId = diaDoc.id();
 
-        // Obtener las memorias de este día, ordenadas por año
         const memoriasRef = getUserMemoriesRef(userId, diaId);
         const qMems = query(memoriasRef, orderBy("Fecha_Original", "desc"));
         const memSnapshot = await getDocs(qMems);
@@ -498,7 +487,6 @@ async function loadMonthForTimeline(userId, monthIndex) {
             ...memDoc.data()
         }));
 
-        // Añadir solo si de verdad tiene memorias
         if (memories.length > 0) {
             allDaysWithMemories.push({
                 diaId: diaId,
@@ -509,7 +497,6 @@ async function loadMonthForTimeline(userId, monthIndex) {
         }
     }
 
-    // 4. Agrupar y devolver el objeto del mes
     if (allDaysWithMemories.length > 0) {
         const monthData = {
             monthName: monthName,
@@ -519,12 +506,284 @@ async function loadMonthForTimeline(userId, monthIndex) {
         return monthData;
     } else {
         console.log(`Store: Timeline procesado. Sin datos para ${monthName}.`);
-        return null; // No hay datos para este mes
+        return null;
     }
 }
 
+// --- 6. Importar/Exportar CSV ---
 
-// --- 5. Funciones de Ayuda (Helpers) ---
+/**
+ * Exporta todas las memorias y nombres de días a formato CSV
+ */
+async function exportToCSV(userId) {
+    if (!userId) throw new Error("exportToCSV requiere un userId.");
+    
+    console.log("Exportando datos a CSV...");
+    
+    const userDiasRef = getUserDaysRef(userId);
+    const diasSnapshot = await getDocs(query(userDiasRef, orderBy(documentId())));
+    
+    const rows = [];
+    rows.push(['AÑO', 'MES', 'DÍA', 'TIPO', 'CONTENIDO', 'DATOS_EXTRA']); // Header
+    
+    for (const diaDoc of diasSnapshot.docs) {
+        const diaId = diaDoc.id;
+        const diaData = diaDoc.data();
+        const [mes, dia] = diaId.split('-');
+        
+        // Exportar nombre del día si no es "Unnamed Day"
+        if (diaData.Nombre_Especial && diaData.Nombre_Especial !== 'Unnamed Day') {
+            rows.push([
+                '', // AÑO vacío
+                mes,
+                dia,
+                'Nombre',
+                diaData.Nombre_Especial,
+                ''
+            ]);
+        }
+        
+        // Exportar memorias del día
+        if (diaData.tieneMemorias) {
+            const memoriasRef = getUserMemoriesRef(userId, diaId);
+            const memSnapshot = await getDocs(query(memoriasRef, orderBy("Fecha_Original", "desc")));
+            
+            memSnapshot.forEach(memDoc => {
+                const mem = memDoc.data();
+                let year = '';
+                if (mem.Fecha_Original) {
+                    const date = mem.Fecha_Original.toDate();
+                    year = date.getFullYear();
+                }
+                
+                let contenido = '';
+                let datosExtra = {};
+                
+                switch (mem.Tipo) {
+                    case 'Texto':
+                        contenido = mem.Descripcion || '';
+                        break;
+                    case 'Lugar':
+                        contenido = mem.LugarNombre || '';
+                        datosExtra = {
+                            lat: mem.Latitud,
+                            lng: mem.Longitud
+                        };
+                        break;
+                    case 'Musica':
+                        contenido = mem.CancionInfo || '';
+                        datosExtra = {
+                            artist: mem.Artista,
+                            artwork_url: mem.ArtworkURL
+                        };
+                        break;
+                }
+                
+                rows.push([
+                    year,
+                    mes,
+                    dia,
+                    mem.Tipo,
+                    contenido,
+                    Object.keys(datosExtra).length > 0 ? JSON.stringify(datosExtra) : ''
+                ]);
+            });
+        }
+    }
+    
+    // Convertir a CSV string
+    const csvContent = rows.map(row => 
+        row.map(cell => {
+            // Escapar comillas y envolver en comillas si contiene comas o saltos de línea
+            const cellStr = String(cell);
+            if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
+                return '"' + cellStr.replace(/"/g, '""') + '"';
+            }
+            return cellStr;
+        }).join(',')
+    ).join('\n');
+    
+    console.log(`Exportación completa: ${rows.length - 1} filas`);
+    return csvContent;
+}
+
+/**
+ * Importa memorias y nombres de días desde un CSV
+ */
+async function importFromCSV(userId, csvContent, onProgress) {
+    if (!userId) throw new Error("importFromCSV requiere un userId.");
+    
+    console.log("Importando datos desde CSV...");
+    onProgress("Procesando archivo...");
+    
+    // Parsear CSV
+    const lines = csvContent.split('\n');
+    const rows = [];
+    
+    for (let i = 1; i < lines.length; i++) { // Saltar header
+        if (!lines[i].trim()) continue;
+        
+        const row = _parseCSVLine(lines[i]);
+        if (row.length >= 5) {
+            rows.push(row);
+        }
+    }
+    
+    console.log(`CSV parseado: ${rows.length} filas`);
+    onProgress(`Importando ${rows.length} elementos...`);
+    
+    let batch = writeBatch(db);
+    let batchOps = 0;
+    let imported = 0;
+    let errors = 0;
+    
+    for (const row of rows) {
+        try {
+            const [year, mes, dia, tipo, contenido, datosExtra] = row;
+            
+            if (!mes || !dia || !tipo || !contenido) {
+                console.warn("Fila incompleta, saltando:", row);
+                errors++;
+                continue;
+            }
+            
+            const mesNum = parseInt(mes);
+            const diaNum = parseInt(dia);
+            
+            if (mesNum < 1 || mesNum > 12 || diaNum < 1 || diaNum > 31) {
+                console.warn("Fecha inválida, saltando:", row);
+                errors++;
+                continue;
+            }
+            
+            const diaId = `${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+            
+            // Importar nombre de día
+            if (tipo === 'Nombre' && !year.trim()) {
+                const diaRef = getUserDayRef(userId, diaId);
+                batch.update(diaRef, {
+                    Nombre_Especial: contenido.trim()
+                });
+                batchOps++;
+                imported++;
+            }
+            // Importar memoria
+            else if (year.trim()) {
+                const yearNum = parseInt(year);
+                if (yearNum < 1900 || yearNum > 2100) {
+                    console.warn("Año inválido, saltando:", row);
+                    errors++;
+                    continue;
+                }
+                
+                const fullDate = new Date(Date.UTC(yearNum, mesNum - 1, diaNum));
+                
+                const memData = {
+                    Tipo: tipo,
+                    Fecha_Original: Timestamp.fromDate(fullDate),
+                    Creado_En: Timestamp.now()
+                };
+                
+                // Parsear contenido según tipo
+                switch (tipo) {
+                    case 'Texto':
+                        memData.Descripcion = contenido;
+                        break;
+                    case 'Lugar':
+                        memData.LugarNombre = contenido;
+                        if (datosExtra) {
+                            try {
+                                const extra = JSON.parse(datosExtra);
+                                memData.Latitud = extra.lat || 0;
+                                memData.Longitud = extra.lng || 0;
+                            } catch (e) {
+                                console.warn("Error parseando datos extra de lugar:", e);
+                            }
+                        }
+                        break;
+                    case 'Musica':
+                        memData.CancionInfo = contenido;
+                        if (datosExtra) {
+                            try {
+                                const extra = JSON.parse(datosExtra);
+                                memData.Artista = extra.artist || '';
+                                memData.ArtworkURL = extra.artwork_url || '';
+                            } catch (e) {
+                                console.warn("Error parseando datos extra de música:", e);
+                            }
+                        }
+                        break;
+                }
+                
+                const memRef = doc(getUserMemoriesRef(userId, diaId));
+                batch.set(memRef, memData);
+                batchOps++;
+                
+                // Marcar día como con memorias
+                const diaRef = getUserDayRef(userId, diaId);
+                batch.update(diaRef, { tieneMemorias: true });
+                batchOps++;
+                
+                imported++;
+            }
+            
+            // Commit batch cada 400 operaciones
+            if (batchOps >= 400) {
+                await batch.commit();
+                batch = writeBatch(db);
+                batchOps = 0;
+                onProgress(`Importados ${imported}/${rows.length}...`);
+            }
+            
+        } catch (e) {
+            console.error("Error procesando fila:", row, e);
+            errors++;
+        }
+    }
+    
+    // Commit final
+    if (batchOps > 0) {
+        await batch.commit();
+    }
+    
+    console.log(`Importación completa: ${imported} importados, ${errors} errores`);
+    onProgress(`Importación completa: ${imported} elementos`);
+    
+    return { imported, errors };
+}
+
+/**
+ * Helper para parsear una línea CSV respetando comillas
+ */
+function _parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const nextChar = line[i + 1];
+        
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                current += '"';
+                i++; // Skip next quote
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            result.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    
+    result.push(current);
+    return result;
+}
+
+// --- 7. Funciones de Ayuda (Helpers) ---
 
 function _formatStoreItem(docSnap, diaId, isDay = false) {
     const data = docSnap.data();
@@ -557,6 +816,7 @@ export {
     getTodaySpotlight,
     getMemoriesByType,
     getNamedDays,
-    // CAMBIO: Exportar la nueva función paginada
-    loadMonthForTimeline 
+    loadMonthForTimeline,
+    exportToCSV,
+    importFromCSV
 };
