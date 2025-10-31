@@ -14,21 +14,73 @@ const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
 // --- Datos de Ejemplo (Efemérides de Wikipedia) ---
+// Énfasis en Arte y Astronomía
 const SAMPLE_EPHEMERIDES = [
+    // Enero
     { month: 1, day: 1, year: 1959, type: 'Texto', content: 'Triunfo de la Revolución Cubana' },
+    { month: 1, day: 8, year: 1942, type: 'Texto', content: 'Nacimiento de Stephen Hawking, físico teórico' },
+    { month: 1, day: 25, year: 1627, type: 'Texto', content: 'Nacimiento de Robert Boyle, padre de la química moderna' },
+    
+    // Febrero
     { month: 2, day: 14, year: 1876, type: 'Texto', content: 'Alexander Graham Bell patenta el teléfono' },
-    { month: 3, day: 14, year: 1879, type: 'Texto', content: 'Nacimiento de Albert Einstein' },
-    { month: 3, day: 30, year: 1853, type: 'Texto', content: 'Nacimiento de Vincent van Gogh' },
+    { month: 2, day: 15, year: 1564, type: 'Texto', content: 'Nacimiento de Galileo Galilei, astrónomo' },
+    { month: 2, day: 19, year: 1473, type: 'Texto', content: 'Nacimiento de Nicolás Copérnico, astrónomo' },
+    { month: 2, day: 26, year: 1802, type: 'Texto', content: 'Nacimiento de Victor Hugo, escritor' },
+    
+    // Marzo
+    { month: 3, day: 6, year: 1475, type: 'Texto', content: 'Nacimiento de Miguel Ángel Buonarroti, artista del Renacimiento' },
+    { month: 3, day: 14, year: 1879, type: 'Texto', content: 'Nacimiento de Albert Einstein, físico teórico' },
+    { month: 3, day: 21, year: 1685, type: 'Texto', content: 'Nacimiento de Johann Sebastian Bach, compositor' },
+    { month: 3, day: 30, year: 1853, type: 'Texto', content: 'Nacimiento de Vincent van Gogh, pintor postimpresionista' },
+    
+    // Abril
     { month: 4, day: 12, year: 1961, type: 'Texto', content: 'Yuri Gagarin se convierte en el primer humano en el espacio' },
-    { month: 5, day: 4, year: 1929, type: 'Texto', content: 'Nacimiento de Audrey Hepburn' },
-    { month: 6, day: 28, year: 1712, type: 'Texto', content: 'Nacimiento de Jean-Jacques Rousseau' },
+    { month: 4, day: 15, year: 1452, type: 'Texto', content: 'Nacimiento de Leonardo da Vinci, genio renacentista' },
+    { month: 4, day: 24, year: 1990, type: 'Texto', content: 'Lanzamiento del Telescopio Espacial Hubble' },
+    
+    // Mayo
+    { month: 5, day: 4, year: 1929, type: 'Texto', content: 'Nacimiento de Audrey Hepburn, actriz y humanitaria' },
+    { month: 5, day: 7, year: 1840, type: 'Texto', content: 'Nacimiento de Piotr Ilich Tchaikovsky, compositor' },
+    { month: 5, day: 12, year: 1820, type: 'Texto', content: 'Nacimiento de Florence Nightingale, pionera de la enfermería' },
+    
+    // Junio
+    { month: 6, day: 5, year: 1723, type: 'Texto', content: 'Nacimiento de Adam Smith, economista y filósofo' },
+    { month: 6, day: 18, year: 1812, type: 'Texto', content: 'Nacimiento de Ivan Goncharov, escritor ruso' },
+    { month: 6, day: 28, year: 1712, type: 'Texto', content: 'Nacimiento de Jean-Jacques Rousseau, filósofo' },
+    
+    // Julio
+    { month: 7, day: 6, year: 1854, type: 'Texto', content: 'Nacimiento de Nikola Tesla, inventor e ingeniero' },
     { month: 7, day: 16, year: 1969, type: 'Texto', content: 'Lanzamiento del Apolo 11 hacia la Luna' },
-    { month: 7, day: 20, year: 1969, type: 'Texto', content: 'Neil Armstrong pisa la Luna' },
-    { month: 8, day: 15, year: 1769, type: 'Texto', content: 'Nacimiento de Napoleón Bonaparte' },
-    { month: 9, day: 15, year: 1890, type: 'Texto', content: 'Nacimiento de Agatha Christie' },
+    { month: 7, day: 20, year: 1969, type: 'Texto', content: 'Neil Armstrong pisa la Luna por primera vez' },
+    { month: 7, day: 30, year: 1863, type: 'Texto', content: 'Nacimiento de Henry Ford, industrial' },
+    
+    // Agosto
+    { month: 8, day: 6, year: 1881, type: 'Texto', content: 'Nacimiento de Alexander Fleming, descubridor de la penicilina' },
+    { month: 8, day: 15, year: 1769, type: 'Texto', content: 'Nacimiento de Napoleón Bonaparte, emperador' },
+    { month: 8, day: 25, year: 1930, type: 'Texto', content: 'Nacimiento de Sean Connery, actor' },
+    
+    // Septiembre
+    { month: 9, day: 8, year: 1841, type: 'Texto', content: 'Nacimiento de Antonín Dvořák, compositor checo' },
+    { month: 9, day: 15, year: 1890, type: 'Texto', content: 'Nacimiento de Agatha Christie, escritora de misterio' },
+    { month: 9, day: 23, year: 1846, type: 'Texto', content: 'Descubrimiento del planeta Neptuno' },
+    
+    // Octubre
+    { month: 10, day: 4, year: 1957, type: 'Texto', content: 'Lanzamiento del Sputnik 1, primer satélite artificial' },
+    { month: 10, day: 22, year: 1811, type: 'Texto', content: 'Nacimiento de Franz Liszt, compositor y pianista virtuoso' },
+    { month: 10, day: 25, year: 1881, type: 'Texto', content: 'Nacimiento de Pablo Picasso, pintor y escultor' },
     { month: 10, day: 31, year: 1517, type: 'Texto', content: 'Martín Lutero publica sus 95 tesis' },
+    
+    // Noviembre
+    { month: 11, day: 7, year: 1867, type: 'Texto', content: 'Nacimiento de Marie Curie, física y química, Premio Nobel' },
     { month: 11, day: 9, year: 1989, type: 'Texto', content: 'Caída del Muro de Berlín' },
-    { month: 12, day: 25, year: 1642, type: 'Texto', content: 'Nacimiento de Isaac Newton' }
+    { month: 11, day: 14, year: 1840, type: 'Texto', content: 'Nacimiento de Claude Monet, pintor impresionista' },
+    { month: 11, day: 26, year: 1922, type: 'Texto', content: 'Descubrimiento de la tumba de Tutankamón' },
+    
+    // Diciembre
+    { month: 12, day: 5, year: 1901, type: 'Texto', content: 'Nacimiento de Walt Disney, animador y empresario' },
+    { month: 12, day: 16, year: 1770, type: 'Texto', content: 'Nacimiento de Ludwig van Beethoven, compositor' },
+    { month: 12, day: 21, year: 1879, type: 'Texto', content: 'Nacimiento de Iósif Stalin, líder soviético' },
+    { month: 12, day: 25, year: 1642, type: 'Texto', content: 'Nacimiento de Isaac Newton, físico y matemático' }
 ];
 
 // --- Helper: Storage Local ---
