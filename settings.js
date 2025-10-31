@@ -1,43 +1,38 @@
 /*
- * settings.js (v2.2 - Importar/Exportar)
+ * settings.js (v5.0 - Local First con opción de borrar ejemplos)
  * Gestiona la lógica de la pantalla/modal de Ajustes.
  */
 
-// Importar los utils de localStorage
 import { saveSetting, loadSetting } from './utils.js';
 
 // --- Variables del Módulo ---
 let _settingsModal = null;
-let _callbacks = {}; // Para callbacks de main.js
+let _callbacks = {};
 
 /**
- * Inicializa el módulo de Ajustes (lo llama main.js).
- * @param {object} mainCallbacks - Objeto con los callbacks de main.js
+ * Inicializa el módulo de Ajustes
  */
 export function initSettings(mainCallbacks) {
     _callbacks = mainCallbacks;
 }
 
 /**
- * Función principal para mostrar los ajustes.
- * Reemplaza la simple alerta por un modal real.
+ * Muestra el modal de ajustes
  */
 export function showSettings() {
     console.log("Mostrando Modal de Ajustes...");
 
-    // Crear el modal si no existe
     if (!_settingsModal) {
         _createSettingsModal();
     }
 
-    // Cargar el estado actual de la vista
-    const currentViewMode = loadSetting('viewMode', 'calendar'); // 'calendar' es el default
+    // Cargar estado actual
+    const currentViewMode = loadSetting('viewMode', 'calendar');
     const toggle = document.getElementById('view-mode-toggle');
     if (toggle) {
         toggle.checked = (currentViewMode === 'timeline');
     }
 
-    // Mostrar el modal
     _settingsModal.style.display = 'flex';
     setTimeout(() => {
         _settingsModal.classList.add('visible');
@@ -45,14 +40,14 @@ export function showSettings() {
 }
 
 /**
- * Crea el HTML del modal de Ajustes y lo añade al DOM.
+ * Crea el HTML del modal de Ajustes
  */
 function _createSettingsModal() {
     if (_settingsModal) return;
 
     _settingsModal = document.createElement('div');
     _settingsModal.id = 'settings-modal';
-    _settingsModal.className = 'modal-settings'; // Usa el estilo 'Deep Blue'
+    _settingsModal.className = 'modal-settings';
 
     _settingsModal.innerHTML = `
         <div class="modal-content">
@@ -83,8 +78,22 @@ function _createSettingsModal() {
                         <label class="settings-list-item-label">Importar Memorias</label>
                         <div class="list-view-chevron"></div>
                     </div>
+                    <div class="settings-list-item settings-list-item-button" id="clear-examples-btn">
+                        <span class="material-icons-outlined">delete_sweep</span>
+                        <label class="settings-list-item-label">Borrar Ejemplos</label>
+                        <div class="list-view-chevron"></div>
+                    </div>
                 </div>
-                <p class="settings-list-group-footer">Exporta tus memorias a CSV o importa desde un archivo CSV</p>
+                <p class="settings-list-group-footer">Exporta tus memorias a CSV, importa desde un archivo CSV o borra las efemérides de ejemplo</p>
+                
+                <p class="settings-list-group-footer">Acerca de</p>
+                <div class="settings-list-group">
+                    <div class="settings-list-item">
+                        <label class="settings-list-item-label">Versión</label>
+                        <span class="settings-list-item-value">5.0 (Local First)</span>
+                    </div>
+                </div>
+                <p class="settings-list-group-footer">Ephemerides funciona completamente offline. Tus datos se guardan en tu dispositivo.</p>
             </div>
             
             <div class="modal-main-buttons">
@@ -100,10 +109,11 @@ function _createSettingsModal() {
     document.getElementById('view-mode-toggle')?.addEventListener('change', _handleToggleChange);
     document.getElementById('export-data-btn')?.addEventListener('click', _handleExportClick);
     document.getElementById('import-data-btn')?.addEventListener('click', _handleImportClick);
+    document.getElementById('clear-examples-btn')?.addEventListener('click', _handleClearExamplesClick);
 }
 
 /**
- * Cierra el modal de Ajustes.
+ * Cierra el modal de Ajustes
  */
 function _closeSettingsModal() {
     if (!_settingsModal) return;
@@ -114,7 +124,7 @@ function _closeSettingsModal() {
 }
 
 /**
- * Se activa cuando el usuario pulsa el conmutador.
+ * Maneja el cambio del toggle de vista
  */
 function _handleToggleChange(e) {
     const isTimelineView = e.target.checked;
@@ -122,10 +132,8 @@ function _handleToggleChange(e) {
 
     console.log("Cambiando vista a:", newViewMode);
 
-    // 1. Guardar la preferencia
     saveSetting('viewMode', newViewMode);
 
-    // 2. Notificar a main.js para que cambie la vista AHORA
     if (_callbacks.onViewModeChange) {
         _callbacks.onViewModeChange(newViewMode);
     }
@@ -144,7 +152,6 @@ function _handleExportClick() {
  * Maneja el click en "Importar Memorias"
  */
 function _handleImportClick() {
-    // Crear input file temporal
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.csv';
@@ -155,4 +162,13 @@ function _handleImportClick() {
         }
     };
     input.click();
+}
+
+/**
+ * Maneja el click en "Borrar Ejemplos"
+ */
+function _handleClearExamplesClick() {
+    if (_callbacks.onClearExamples) {
+        _callbacks.onClearExamples();
+    }
 }
