@@ -1,5 +1,5 @@
 /*
- * ui.js (v2.79 - Toast Notifications)
+ * ui.js (v2.80 - Exportar ProgressModal)
  * Módulo "CORE" de UI. Orquestador.
  */
 
@@ -35,7 +35,7 @@ let searchResultsModal = null;
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.79 - Toast Notifications)");
+    console.log("UI Module init (v2.80 - Exportar ProgressModal)");
     callbacks = mainCallbacks;
 
     // Objeto de estado y setters para inyectar en los módulos
@@ -283,7 +283,7 @@ export const ui = {
     setTimelineButtonLoading: render.setTimelineButtonLoading,
     updateTimelineButtonVisibility: render.updateTimelineButtonVisibility,
     
-    // --- Modal Functions (from ui-modals.js) ---
+    // --- Modal Functions (from ui-models.js) ---
     openPreviewModal: modals.openPreviewModal,
     closePreviewModal: modals.closePreviewModal,
     showPreviewLoading: modals.showPreviewLoading,
@@ -303,6 +303,11 @@ export const ui = {
     showErrorAlert: modals.showErrorAlert,
     showPrompt: modals.showPrompt,
     showConfirm: modals.showConfirm,
+    
+    // --- INICIO DE LA CORRECCIÓN ---
+    showProgressModal: modals.showProgressModal,
+    closeProgressModal: modals.closeProgressModal,
+    // --- FIN DE LA CORRECCIÓN ---
     
     // --- Form Functions (from ui-forms.js) ---
     resetMemoryForm: forms.resetMemoryForm,
