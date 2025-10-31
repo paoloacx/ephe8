@@ -1,5 +1,5 @@
 /*
- * main.js (v2.9.2 - Toast y Bugfix Timeline)
+ * main.js (v2.9.3 - Fix Importar/Exportar)
  * Controlador principal de Ephemerides.
  */
 
@@ -18,7 +18,9 @@ import {
     getMemoriesByType,
     getNamedDays,
     uploadImage,
-    loadMonthForTimeline 
+    loadMonthForTimeline, 
+    exportToCSV,  // <-- Importado (ya estaba en tu store.js)
+    importFromCSV  // <-- Importado (ya estaba en tu store.js)
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
@@ -70,7 +72,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.9.2 (Toast y Bugfix Timeline)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v2.9.3 (Fix Importar/Exportar)..."); // Versión actualizada
 
     try {
         ui.setLoading("Iniciando...", true); 
@@ -260,6 +262,10 @@ function getUICallbacks() {
         onCrumbieClick: handleCrumbieClick,
         onViewModeChange: handleViewModeChange, 
         onTimelineLoadMore: handleTimelineLoadMore, 
+        // --- INICIO DE LA CORRECCIÓN ---
+        onExportData: _handleExportData, // <-- AÑADIDO
+        onImportData: _handleImportData  // <-- AÑADIDO
+        // --- FIN DE LA CORRECCIÓN ---
     };
 }
 
@@ -794,7 +800,7 @@ async function handleStoreLoadMore() {
         result.items.forEach(item => {
              if (!item.Nombre_Dia && item.diaId) {
                  item.Nombre_Dia = state.allDaysData.find(d => d.id === item.diaId)?.Nombre_Dia || "Día";
-            }
+             }
         });
 
         state.store.lastVisible = result.lastVisible; 
