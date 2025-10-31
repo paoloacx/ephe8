@@ -45,7 +45,7 @@ export async function searchMusic(term) {
  * @returns {Promise<Array|null>} Un array de resultados o null si hay error.
  */
 export async function searchNominatim(term) {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&limit=5`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&limit=10`;
     console.log("[DEBUG API] Buscando lugar:", url); // Log añadido
     
     try {
