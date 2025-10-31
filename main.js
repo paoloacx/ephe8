@@ -1,5 +1,5 @@
 /*
- * main.js (v2.9.3 - Fix Importar/Exportar)
+ * main.js (v3.0 - Pulido Final)
  * Controlador principal de Ephemerides.
  */
 
@@ -19,8 +19,8 @@ import {
     getNamedDays,
     uploadImage,
     loadMonthForTimeline, 
-    exportToCSV,  // <-- Importado (ya estaba en tu store.js)
-    importFromCSV  // <-- Importado (ya estaba en tu store.js)
+    exportToCSV,
+    importFromCSV
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
@@ -72,7 +72,7 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v2.9.3 (Fix Importar/Exportar)..."); // Versión actualizada
+    console.log("Iniciando Ephemerides v3.0 (Pulido Final)...");
 
     try {
         ui.setLoading("Iniciando...", true); 
@@ -131,8 +131,6 @@ async function initializeUserSession() {
         state.todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
 
         state.currentViewMode = loadSetting('viewMode', 'calendar');
-        console.log("Modo de vista cargado:", state.currentViewMode);
-
         ui.updateAllDaysData(state.allDaysData); 
 
         drawMainView();
@@ -186,7 +184,6 @@ function drawCalendarView() {
 }
 
 async function drawTimelineView() {
-    console.log("Dibujando la vista de Timeline...");
     if (!state.currentUser || !state.currentUser.uid) return;
     const userId = state.currentUser.uid;
 
@@ -217,7 +214,7 @@ async function drawTimelineView() {
 function drawMainView() {
     const monthNav = document.querySelector('.month-nav');
     const spotlight = document.getElementById('spotlight-section');
-    const appContent = document.getElementById('app-content'); // *** AÑADIDO ***
+    const appContent = document.getElementById('app-content'); 
 
     if (state.currentViewMode === 'timeline') {
         if (monthNav) monthNav.style.display = 'none';
@@ -228,12 +225,10 @@ function drawMainView() {
         if (monthNav) monthNav.style.display = 'flex';
         if (spotlight) spotlight.style.display = 'block';
         
-        // *** FIX: Quitar la clase timeline-view y restaurar el grid ***
         if (appContent) {
             appContent.className = ''; // Limpia la clase 'timeline-view'
             appContent.style.display = 'grid'; // Restaura el display de grid
         }
-        // *** FIN FIX ***
 
         drawCalendarView(); 
         loadTodaySpotlight();
@@ -259,13 +254,11 @@ function getUICallbacks() {
         onStoreCategoryClick: handleStoreCategoryClick,
         onStoreLoadMore: handleStoreLoadMore,
         onStoreItemClick: handleStoreItemClick,
-        onCrumbieClick: handleCrumbieClick,
         onViewModeChange: handleViewModeChange, 
         onTimelineLoadMore: handleTimelineLoadMore, 
-        // --- INICIO DE LA CORRECCIÓN ---
-        onExportData: _handleExportData, // <-- AÑADIDO
-        onImportData: _handleImportData  // <-- AÑADIDO
-        // --- FIN DE LA CORRECCIÓN ---
+        onExportData: _handleExportData,
+        onImportData: _handleImportData
+        // onCrumbieClick: handleCrumbieClick, // Eliminado (botón oculto)
     };
 }
 
@@ -280,7 +273,6 @@ async function handleTimelineLoadMore() {
         return;
     }
 
-    console.log(`Timeline: Cargando mes ${monthToLoad}`);
     state.timeline.isLoading = true;
     ui.setTimelineButtonLoading(true); 
 
@@ -302,6 +294,7 @@ async function handleTimelineLoadMore() {
         console.error("Error cargando más meses del timeline:", err);
         ui.showErrorAlert(`Error al cargar el mes: ${err.message}`, "Error de Timeline");
     } finally {
+        // Solo actualiza si este es el callback que esperábamos
         if (state.timeline.nextMonthToLoad === monthToLoad - 1) {
             state.timeline.isLoading = false;
             ui.setTimelineButtonLoading(false);
@@ -310,7 +303,7 @@ async function handleTimelineLoadMore() {
 }
 
 
-// --- Manejadores de Autenticación (Sin cambios) ---
+// --- Manejadores de Autenticación ---
 
 async function handleLoginClick() {
     try {
@@ -340,7 +333,6 @@ function handleAuthStateChange(user) {
         if (!previousUser || state.allDaysData.length === 0) {
             initializeUserSession(); 
         } else {
-             console.log("Sesión ya inicializada, mostrando app.");
              ui.showApp(true); 
         }
     } else {
@@ -352,7 +344,7 @@ function handleAuthStateChange(user) {
     }
 }
 
-// --- Manejadores de UI (Sin cambios) ---
+// --- Manejadores de UI ---
 
 function handleMonthChange(direction) {
     if (!state.currentUser) return; 
@@ -505,7 +497,6 @@ function handleShuffleClick() {
 function handleViewModeChange(newViewMode) {
     if (state.currentViewMode === newViewMode) return; 
 
-    console.log("Cambiando modo de vista a:", newViewMode);
     state.currentViewMode = newViewMode;
 
     if (newViewMode === 'calendar') {
@@ -523,7 +514,6 @@ function handleViewModeChange(newViewMode) {
 
 async function handleSaveDayName(diaId, newName, statusElementId = 'save-status') {
     if (!state.currentUser || !state.currentUser.uid) {
-        // *** CAMBIO: Usar Toast para el error si es desde el modal de edición ***
         if (statusElementId === 'save-status') {
             ui.showToast('Debes estar logueado', true);
         } else {
@@ -543,9 +533,8 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
             state.allDaysData[dayIndex].Nombre_Especial = finalName;
         }
 
-        // *** CAMBIO: Usar Toast en lugar de Modal Status ***
         if (statusElementId === 'save-status') {
-            ui.showToast('Nombre guardado'); // Nueva llamada al toast
+            ui.showToast('Nombre guardado');
         } else {
             ui.showModalStatus(statusElementId, 'Nombre guardado', false);
         }
@@ -570,9 +559,8 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
 
     } catch (err) {
         console.error("Error guardando nombre:", err);
-        // *** CAMBIO: Usar Toast para el error ***
         if (statusElementId === 'save-status') {
-            ui.showToast(`Error: ${err.message}`, true); // Toast de error
+            ui.showToast(`Error: ${err.message}`, true);
         } else {
             ui.showModalStatus(statusElementId, `Error: ${err.message}`, true);
         }
@@ -610,7 +598,6 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
         const memoryId = isEditing ? memoryData.id : null;
         await saveMemory(userId, diaId, memoryData, memoryId); 
 
-        // *** CAMBIO: Usar Toast para el éxito ***
         ui.showToast(isEditing ? 'Memoria actualizada' : 'Memoria guardada');
         
         ui.resetMemoryForm(); 
@@ -626,7 +613,6 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 
     } catch (err) {
         console.error("Error guardando memoria:", err);
-        // *** CAMBIO: Usar Toast para el error ***
         ui.showToast(`Error: ${err.message}`, true); 
         if (saveBtn) {
             saveBtn.disabled = false;
@@ -680,7 +666,7 @@ async function handleDeleteMemory(diaId, mem) {
     }
 }
 
-// --- 4. Lógica de API Externa (Controlador - Sin cambios) ---
+// --- 4. Lógica de API Externa (Controlador) ---
 
 async function handleMusicSearch(term, resultsCallback) {
     if (!term || term.trim() === '') return;
@@ -728,8 +714,12 @@ async function handlePlaceSearch(term, resultsCallback) {
     }
 }
 
-// --- 5. Lógica del "Almacén" (Controlador - Sin cambios) ---
+// --- 5. Lógica del "Almacén" (Controlador) ---
 async function handleStoreCategoryClick(type) {
+    if (!state.currentUser) {
+         ui.showErrorAlert("Error", "No hay usuario autenticado para cargar el almacén.");
+         return;
+    }
     const userId = state.currentUser.uid;
     console.log(`Cargando Almacén para ${type} - Usuario: ${userId}`);
 
@@ -809,7 +799,7 @@ async function handleStoreLoadMore() {
         ui.updateStoreList(result.items, true, result.hasMore); 
 
     } catch (err) {
-        console.error(`Error cargando más ${type} para ${userId}:`, err);
+        console.error(`Error cargando más ${state.store.currentType} para ${userId}:`, err);
         state.store.isLoading = false;
         if(loadMoreBtn) {
              loadMoreBtn.textContent = "Error al cargar";
@@ -849,26 +839,7 @@ function handleStoreItemClick(diaId) {
     window.scrollTo(0, 0);
 }
 
-// --- 6. Lógica de Crumbie (IA - Sin cambios) ---
-
-function handleCrumbieClick() {
-     if (!state.currentUser) {
-         ui.showAlert("Debes iniciar sesión para usar Crumbie."); 
-         return;
-    }
-    const messages = [
-        "¡Hola! ¿Qué buscamos?",
-        "Pregúntame sobre tus recuerdos...",
-        "¿Cuál es tu canción favorita?",
-        "Buscando un día especial..."
-    ];
-    const msg = messages[Math.floor(Math.random() * messages.length)];
-    
-    ui.showCrumbieAnimation(msg); 
-    
-    console.log("Crumbie clickeado. Listo para IA.");
-}
-// --- NUEVO: 7. Lógica de Importar/Exportar ---
+// --- 7. Lógica de Importar/Exportar ---
 
 /**
  * Maneja la solicitud de exportar datos desde settings.js
