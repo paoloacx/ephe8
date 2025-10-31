@@ -486,7 +486,7 @@
 /* --- Secciones y Formularios del Modal --- */
 .modal-section {
     padding: 10px 15px 15px 15px;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 2px solid #ccc;
     background: transparent;
     color: #333;
     text-shadow: none;
@@ -757,18 +757,18 @@
     font-size: 0.9em;
 }
 #edit-memorias-list .memoria-actions {
-    display: grid;
+    display: block;
     flex-shrink: 0;
     position: absolute;
     bottom: 8px;
-    right: 8px;
+    right: 1px;
 }
 #edit-memorias-list .edit-btn,
 #edit-memorias-list .delete-btn {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 5px;
+    padding: 0px;
     line-height: 0;
     transition: transform 0.2s ease;
 }
