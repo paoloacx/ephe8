@@ -194,3 +194,8 @@ main {
     font-size: 13px;
     text-shadow: 0 1px 1px rgba(255,255,255,0.6);
 }
+
+/* --- Ocultar Crumbie (Temporalmente) --- */
+#crumbie-btn {
+    display: none !important;
+}
