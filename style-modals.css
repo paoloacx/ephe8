@@ -1,7 +1,10 @@
 @charset "UTF-8";
 
 /* --- Modales (Base) --- */
-.modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-search-results, .modal-alert-prompt, .modal-confirm, .modal-settings {
+.modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-search-results, .modal-settings,
+/* --- INICIO DEL CAMBIO 1: .modal-alert-prompt y .modal-confirm quitados de esta regla --- */
+.modal-alert-prompt, .modal-confirm {
+/* --- FIN DEL CAMBIO 1 --- */
     position: fixed;
     top: 0;
     left: 0;
@@ -15,8 +18,15 @@
     box-sizing: border-box;
     opacity: 0;
     transition: opacity 0.3s ease, background-color 0.3s ease;
+}
+
+/* --- INICIO DEL CAMBIO 2: Regla de z-index base (sin pop-ups) --- */
+.modal-preview, .modal-edit, .modal-store, .modal-store-list, .modal-search-results, .modal-settings {
     z-index: 1000;
 }
+/* --- FIN DEL CAMBIO 2 --- */
+
+
 .modal-preview.visible,
 .modal-edit.visible,
 .modal-store.visible,
@@ -45,13 +55,27 @@
     box-sizing: border-box;
     opacity: 0;
     transition: opacity 0.2s ease, background-color 0.2s ease;
-    z-index: 1010; 
+    z-index: 1010; /* Este es para Alertas y Progreso (está bien) */
 }
 .modal-simple-alert.visible {
     display: flex;
     opacity: 1;
     background-color: rgba(0,0,0,0.4);
 }
+
+/* --- INICIO DEL CAMBIO 3: Nuevos Z-Index para Pop-ups --- */
+/* Estos deben aparecer ENCIMA de otros modales (como .modal-settings z-index: 1000) */
+
+.modal-alert-prompt {
+    z-index: 1020; /* Más alto que simple-alert (1010) */
+}
+
+.modal-confirm {
+    z-index: 1030; /* El más alto, debe bloquear todo lo demás */
+}
+/* --- FIN DEL CAMIO 3 --- */
+
+
 .simple-alert-content {
     background: rgba(240, 240, 240, 0.95); 
     border-radius: 14px;
