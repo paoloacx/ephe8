@@ -1,5 +1,5 @@
 /*
- * ui-modals.js (v1.4 - Loading Skeletons)
+ * ui-modals.js (v1.5 - Progress Modal)
  * Módulo para gestionar todos los modales, diálogos, prompts y alertas.
  */
 
@@ -24,6 +24,7 @@ let confirmModal = null;
 let _confirmResolve = null;
 let genericAlertModal = null;
 let _genericAlertResolve = null;
+let progressModal = null; // <-- NUEVO
 
 /**
  * Inicializa el módulo de modales.
@@ -43,8 +44,9 @@ export function initModalsModule(callbacks, uiState, uiMaps, forms, render) {
     createAlertPromptModal();
     createConfirmModal();
     createGenericAlertModal();
+    createProgressModal(); // <-- NUEVO
 
-    console.log("UI Modals Module init (v1.4)");
+    console.log("UI Modals Module init (v1.5)");
 }
 
 // --- Modal: Vista Previa (Preview) ---
@@ -513,7 +515,7 @@ function createStoreModal() {
                  <h3 id="store-modal-title">Almacén</h3>
             </div>
             <div class="modal-content-scrollable store-category-list striped-background">
-                </div>
+            </div>
             <div class="modal-main-buttons">
                 <button id="close-store-btn" class="aqua-button">Cerrar</button>
             </div>
@@ -838,4 +840,47 @@ export function showErrorAlert(message, title = 'Error') {
     return new Promise((resolve) => {
         _genericAlertResolve = resolve;
     });
+}
+
+
+// --- NUEVO: Modal de Progreso ---
+
+function createProgressModal() {
+    if (progressModal) return;
+    progressModal = document.createElement('div');
+    progressModal.id = 'progress-modal';
+    progressModal.className = 'modal-simple-alert'; // Reutiliza el estilo de alerta
+    progressModal.innerHTML = `
+        <div class="simple-alert-content">
+            <h3 class="simple-alert-title">Procesando...</h3>
+            <div class="progress-spinner"></div>
+            <p id="progress-message" class="simple-alert-message" style="text-align: center; margin-top: 10px;">Cargando...</p>
+        </div>
+    `;
+    document.body.appendChild(progressModal);
+}
+
+/**
+ * Muestra el modal de progreso.
+ * @param {string} message - El mensaje a mostrar.
+ */
+export function showProgressModal(message) {
+    if (!progressModal) createProgressModal();
+    
+    const msgEl = document.getElementById('progress-message');
+    if (msgEl) msgEl.textContent = message;
+
+    progressModal.style.display = 'flex';
+    setTimeout(() => progressModal.classList.add('visible'), 10);
+}
+
+/**
+ * Cierra el modal de progreso.
+ */
+export function closeProgressModal() {
+    if (!progressModal) return;
+    progressModal.classList.remove('visible');
+    setTimeout(() => {
+        progressModal.style.display = 'none';
+    }, 200);
 }
