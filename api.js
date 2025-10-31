@@ -9,7 +9,7 @@
  */
 export async function searchMusic(term) {
     // Llamada directa SIN el parámetro '&media=music'.
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=5`;
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=10`;
     console.log("[DEBUG API] Buscando música:", url); // Log añadido
 
     try {
