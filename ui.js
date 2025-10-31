@@ -1,5 +1,5 @@
 /*
- * ui.js (v2.81 - Fix SVG ViewBox)
+ * ui.js (v3.0 - Pulido Final)
  * Módulo "CORE" de UI. Orquestador.
  */
 
@@ -16,26 +16,10 @@ let _currentMemories = [];
 let _allDaysData = []; 
 let _isEditingMemory = false; 
 
-// Variables para modales de diálogo
-let alertPromptModal = null;
-let _promptResolve = null;
-let confirmModal = null;
-let _confirmResolve = null;
-let genericAlertModal = null;
-let _genericAlertResolve = null;
-
-// Referencias a los modales principales
-let previewModal = null;
-let editModal = null;
-let storeModal = null;
-let storeListModal = null;
-let searchResultsModal = null;
-
-
 // --- Funciones de Inicialización ---
 
 function init(mainCallbacks) {
-    console.log("UI Module init (v2.81 - Fix SVG ViewBox)");
+    console.log("UI Module init (v3.0 - Pulido Final)");
     callbacks = mainCallbacks;
 
     // Objeto de estado y setters para inyectar en los módulos
@@ -67,7 +51,7 @@ function init(mainCallbacks) {
     _bindFooterEvents();
     _bindLoginEvents();
     _bindGlobalListeners();
-    _bindCrumbieEvents();
+    // _bindCrumbieEvents(); // Eliminado
 }
 
 // --- Bindings ---
@@ -92,9 +76,9 @@ function _bindFooterEvents() {
     document.getElementById('btn-shuffle')?.addEventListener('click', () => { if (callbacks.onFooterAction) callbacks.onFooterAction('shuffle'); });
     document.getElementById('btn-settings')?.addEventListener('click', () => { if (callbacks.onFooterAction) callbacks.onFooterAction('settings'); });
 }
-function _bindCrumbieEvents() {
-    document.getElementById('crumbie-btn')?.addEventListener('click', () => { if (callbacks.onCrumbieClick) callbacks.onCrumbieClick(); });
-}
+
+// Eliminada la función _bindCrumbieEvents()
+
 function _bindLoginEvents() {
     const header = document.querySelector('header');
     header?.addEventListener('click', (e) => {
@@ -146,7 +130,6 @@ function showApp(show) {
 function updateAllDaysData(allDays) {
     if (allDays && allDays.length > 0) {
         _allDaysData = allDays;
-        console.log("UI: allDaysData actualizado en UI:", _allDaysData.length);
     } else {
         console.warn("UI: updateAllDaysData recibió datos vacíos.");
         _allDaysData = [];
@@ -214,31 +197,14 @@ function _createLoginButton(isLoggedOut, container) {
     btn.className = 'header-login-btn';
     btn.title = 'Login with Google';
     btn.dataset.action = 'login';
-    // --- INICIO DE LA CORRECCIÓN (viewBox="0 0 18 18") ---
     btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.20455c0-.63864-.05727-1.25182-.16909-1.84091H9v3.48182h4.84364c-.20864 1.125-.84273 2.07818-1.77727 2.71136v2.25818h2.90864c1.70182-1.56682 2.68409-3.87409 2.68409-6.61045z"/><path fill="#34A853" d="M9 18c2.43 0 4.47182-.80591 5.96273-2.18045l-2.90864-2.25818c-.80591.54364-1.83682.86591-2.94.86591-2.27318 0-4.20727-1.53318-4.9-3.58227H1.07182v2.33318C2.56636 16.3 5.56 18 9 18z"/><path fill="#FBBC05" d="M4.1 10.71c-.22-.64-.35-1.32-.35-2.03s.13-.139.35-2.03V4.31H1.07C.38 5.67 0 7.29 0 9.03s.38 3.36 1.07 4.72l3.03-2.33v.03z"/><path fill="#EA4335" d="M9 3.57955c1.32136 0 2.50773.45455 3.44091 1.34591l2.58136-2.58136C13.46318.891364 11.4259 0 9 0 5.56 0 2.56636 1.70182 1.07182 4.31l3.02818 2.33318C4.79273 5.11273 6.72682 3.57955 9 3.57955z"/></svg>`;
-    // --- FIN DE LA CORRECCIÓN ---
     container.appendChild(btn);
 }
 
-// --- Crumbie ---
-function showCrumbieAnimation(message) {
-    let animEl = document.querySelector('.crumbie-float-text');
-    if (animEl) {
-        animEl.remove();
-    }
-    animEl = document.createElement('div');
-    animEl.className = 'crumbie-float-text';
-    animEl.textContent = message;
-    document.body.appendChild(animEl);
-    
-    animEl.addEventListener('animationend', () => {
-        animEl.remove();
-    });
-}
+// Eliminada la función showCrumbieAnimation()
 
-// *** NUEVA FUNCIÓN: Toast Notification ***
+// --- Toast Notification ---
 function showToast(message, isError = false) {
-    // 1. Crear el elemento toast
     let toast = document.createElement('div');
     toast.className = 'toast-notification';
     if (isError) {
@@ -248,19 +214,16 @@ function showToast(message, isError = false) {
     
     document.body.appendChild(toast);
 
-    // 2. Animación de entrada
     setTimeout(() => {
         toast.classList.add('visible');
-    }, 10); // Pequeño delay para que la transición CSS funcione
+    }, 10); 
 
-    // 3. Animación de salida y eliminación
     setTimeout(() => {
         toast.classList.remove('visible');
-        // Esperar a que la transición de salida termine para eliminar
         toast.addEventListener('transitionend', () => {
             if (toast) toast.remove();
         });
-    }, 3000); // El toast dura 3 segundos
+    }, 3000); 
 }
 
 
@@ -273,9 +236,8 @@ export const ui = {
     updateAllDaysData,
     updateLoginUI,
     updateMemoryList,
-    showCrumbieAnimation,
     initSpotlightMaps, 
-    showToast, // *** AÑADIDO: Exportar showToast ***
+    showToast,
 
     // --- Render Functions (from ui-render.js) ---
     drawCalendar: render.drawCalendar,
@@ -285,7 +247,7 @@ export const ui = {
     setTimelineButtonLoading: render.setTimelineButtonLoading,
     updateTimelineButtonVisibility: render.updateTimelineButtonVisibility,
     
-    // --- Modal Functions (from ui-models.js) ---
+    // --- Modal Functions (from ui-modals.js) ---
     openPreviewModal: modals.openPreviewModal,
     closePreviewModal: modals.closePreviewModal,
     showPreviewLoading: modals.showPreviewLoading,
@@ -305,11 +267,8 @@ export const ui = {
     showErrorAlert: modals.showErrorAlert,
     showPrompt: modals.showPrompt,
     showConfirm: modals.showConfirm,
-    
-    // --- INICIO DE LA CORRECCIÓN ---
     showProgressModal: modals.showProgressModal,
     closeProgressModal: modals.closeProgressModal,
-    // --- FIN DE LA CORRECCIÓN ---
     
     // --- Form Functions (from ui-forms.js) ---
     resetMemoryForm: forms.resetMemoryForm,
