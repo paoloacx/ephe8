@@ -26,13 +26,6 @@
     font-size: 13px !important;
     border-radius: 10px !important;
 }
-#btn-cancel-mem-edit {
-    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e0e0e0 100%) !important;
-    color: #333 !important;
-    border: 1px solid #999 !important;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.6) !important;
-    margin-left: 10px;
-}
 #btn-cancel-mem-edit:hover {
      background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 50%, #d8d8d8 51%, #e8e8e8 100%) !important;
 }
