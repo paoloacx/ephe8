@@ -5,6 +5,7 @@
 
 // --- Importaciones de Módulos ---
 import { initAuthListener, handleLogin, handleLogout, checkAuthState } from './auth.js';
+import { backupToDrive, restoreFromDrive, getLastBackupTimestamp } from './gdrive.js';
 import {
     checkAndRunApp as storeCheckAndRun,
     loadAllDaysData,
@@ -24,8 +25,8 @@ import {
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
-import { initSettings, showSettings } from './settings.js'; 
-import { loadSetting } from './utils.js';
+import { initSettings, showSettings, updateBackupStatus } from './settings.js'; 
+import { loadSetting, saveSetting } from './utils.js';
 
 // --- Detección de Conexión Offline ---
 let isOnline = navigator.onLine;
@@ -240,7 +241,10 @@ function getUICallbacks() {
         onTimelineLoadMore: handleTimelineLoadMore, 
         onExportData: _handleExportData,
         onImportData: _handleImportData,
-        onClearExamples: _handleClearExamples
+        onClearExamples: _handleClearExamples,
+        onDriveBackup: _handleDriveBackup,
+        onDriveRestore: _handleDriveRestore,
+        onAutoBackupToggle: _handleAutoBackupToggle
     };
 }
 
@@ -306,9 +310,19 @@ async function handleLogoutClick() {
 function handleAuthStateChange(user) {
     state.currentUser = user;
     ui.updateLoginUI(user); 
-    console.log("Estado de autenticación cambiado:", user ? user.uid : "Sin usuario Firebase");
+    console.log("Estado de autenticación cambiado:", user ? "Google Drive conectado" : "Sin conexión Drive");
     
-    // Ya NO reinicializamos la sesión - la app sigue funcionando en modo local
+    // Actualizar estado de backup en settings
+    if (user && user.isDrive) {
+        const lastBackup = getLastBackupTimestamp();
+        if (lastBackup) {
+            updateBackupStatus(`Último backup: ${lastBackup.toLocaleString()}`);
+        } else {
+            updateBackupStatus('Conectado. Haz tu primer backup.');
+        }
+    } else {
+        updateBackupStatus('Conecta con Google Drive para hacer backups');
+    }
 }
 
 // --- Manejadores de UI ---
@@ -470,6 +484,8 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
             ui.showModalStatus(statusElementId, 'Nombre guardado', false);
         }
         
+        _markDataChanged(); // Marcar cambio para auto-backup
+        
         drawMainView(); 
 
         if (statusElementId === 'save-status' && state.dayInPreview && state.dayInPreview.id === diaId) { 
@@ -524,6 +540,8 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 
         ui.showToast(isEditing ? 'Memoria actualizada' : 'Memoria guardada');
         
+        _markDataChanged(); // Marcar cambio para auto-backup
+        
         ui.resetMemoryForm(); 
 
         const updatedMemories = await loadMemoriesForDay(diaId); 
@@ -566,6 +584,8 @@ async function handleDeleteMemory(diaId, mem) {
         const imagenURL = (mem.Tipo === 'Imagen') ? mem.ImagenURL : null;
         await deleteMemory(diaId, mem.id, imagenURL); 
         ui.showToast('Memoria borrada'); 
+
+        _markDataChanged(); // Marcar cambio para auto-backup
 
         const updatedMemories = await loadMemoriesForDay(diaId); 
         ui.updateMemoryList(updatedMemories); 
@@ -870,5 +890,156 @@ async function _handleClearExamples() {
     }
 }
 
-// --- 7. Ejecución Inicial ---
+// --- 8. Funciones de Google Drive Backup ---
+
+/**
+ * Hace backup manual a Google Drive
+ */
+async function _handleDriveBackup() {
+    try {
+        ui.showProgressModal("Conectando con Google Drive...");
+        
+        await backupToDrive((message) => {
+            ui.showProgressModal(message);
+        });
+        
+        ui.closeProgressModal();
+        ui.showToast('Backup completado en Google Drive');
+        
+        // Actualizar estado
+        const lastBackup = getLastBackupTimestamp();
+        if (lastBackup) {
+            updateBackupStatus(`Último backup: ${lastBackup.toLocaleString()}`);
+        }
+        
+    } catch (err) {
+        console.error("Error en backup a Drive:", err);
+        ui.closeProgressModal();
+        
+        if (err.message && err.message.includes('not authorized')) {
+            // Necesita autorización
+            ui.showErrorAlert(
+                'Autorización Requerida',
+                'Por favor, haz login con el botón del header para conectar Google Drive.'
+            );
+        } else {
+            ui.showErrorAlert('Error de Backup', `No se pudo completar el backup: ${err.message}`);
+        }
+    }
+}
+
+/**
+ * Restaura datos desde Google Drive
+ */
+async function _handleDriveRestore() {
+    const confirmed = await ui.showConfirm(
+        '¿Restaurar desde Google Drive? Esto reemplazará tus datos locales actuales.'
+    );
+    if (!confirmed) return;
+
+    try {
+        ui.showProgressModal("Conectando con Google Drive...");
+        
+        const result = await restoreFromDrive((message) => {
+            ui.showProgressModal(message);
+        });
+        
+        ui.closeProgressModal();
+        
+        await ui.showErrorAlert(
+            'Restore Completado',
+            `Datos restaurados desde backup del ${new Date(result.timestamp).toLocaleString()}. La página se recargará.`
+        );
+        
+        // Recargar la página para aplicar cambios
+        window.location.reload();
+        
+    } catch (err) {
+        console.error("Error en restore desde Drive:", err);
+        ui.closeProgressModal();
+        
+        if (err.message && err.message.includes('not authorized')) {
+            ui.showErrorAlert(
+                'Autorización Requerida',
+                'Por favor, haz login con el botón del header para conectar Google Drive.'
+            );
+        } else if (err.message && err.message.includes('No se encontró')) {
+            ui.showErrorAlert(
+                'Sin Backup',
+                'No se encontró ningún backup en Google Drive. Haz un backup primero.'
+            );
+        } else {
+            ui.showErrorAlert('Error de Restore', `No se pudo restaurar: ${err.message}`);
+        }
+    }
+}
+
+/**
+ * Activa/desactiva backup automático
+ */
+function _handleAutoBackupToggle(enabled) {
+    if (enabled) {
+        console.log('Backup automático activado');
+        ui.showToast('Backup automático activado');
+        
+        // Iniciar sistema de auto-backup
+        _startAutoBackup();
+    } else {
+        console.log('Backup automático desactivado');
+        ui.showToast('Backup automático desactivado');
+        
+        // Detener sistema de auto-backup
+        _stopAutoBackup();
+    }
+}
+
+// Variables para auto-backup
+let autoBackupInterval = null;
+let changeCounter = 0;
+
+/**
+ * Inicia el sistema de backup automático
+ */
+function _startAutoBackup() {
+    if (autoBackupInterval) return;
+    
+    // Backup cada 30 minutos si hay cambios
+    autoBackupInterval = setInterval(async () => {
+        if (changeCounter > 0 && state.currentUser && state.currentUser.isDrive) {
+            console.log(`Auto-backup: ${changeCounter} cambios detectados`);
+            try {
+                await backupToDrive();
+                changeCounter = 0;
+                console.log('Auto-backup completado');
+            } catch (err) {
+                console.error('Error en auto-backup:', err);
+            }
+        }
+    }, 30 * 60 * 1000); // 30 minutos
+}
+
+/**
+ * Detiene el sistema de backup automático
+ */
+function _stopAutoBackup() {
+    if (autoBackupInterval) {
+        clearInterval(autoBackupInterval);
+        autoBackupInterval = null;
+    }
+    changeCounter = 0;
+}
+
+/**
+ * Incrementa el contador de cambios (llamar después de cada save/delete)
+ */
+function _markDataChanged() {
+    changeCounter++;
+}
+
+// Iniciar auto-backup si está activado
+if (loadSetting('autoBackup', false)) {
+    _startAutoBackup();
+}
+
+// --- 9. Ejecución Inicial ---
 checkAndRunApp();
