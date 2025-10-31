@@ -762,7 +762,7 @@
     flex-shrink: 0;
     position: absolute;
     bottom: 8px;
-    right: 1px;
+    right: 5px;
 }
 #edit-memorias-list .edit-btn,
 #edit-memorias-list .delete-btn {
