@@ -156,7 +156,7 @@ a:hover {
 #edit-memorias-list .year-tag {
     font-size: 10px;
     padding: 1px 5px;
-    margin-right: 6px; /* Espacio extra antes del icono */
+    margin-right: 0px; /* Espacio extra antes del icono */
     vertical-align: middle; /* Alinear con el icono */
 }
 /* En el spotlight, mantenerla */
