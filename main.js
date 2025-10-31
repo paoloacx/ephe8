@@ -992,5 +992,5 @@ async function _reloadDataAfterImport() {
     }
 }
 
-// --- 7. Ejecución Inicial ---
+// --- 8. Ejecución Inicial ---
 checkAndRunApp();
