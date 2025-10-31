@@ -750,14 +750,14 @@
     flex-grow: 1;
     color: #333;
     line-height: 1.3;
-    padding-right: 60px;
+    padding-right: 30px;
 }
 #edit-memorias-list .memoria-item .artist-name {
     color: #555;
     font-size: 0.9em;
 }
 #edit-memorias-list .memoria-actions {
-    display: flex;
+    display: grid;
     flex-shrink: 0;
     position: absolute;
     bottom: 8px;
