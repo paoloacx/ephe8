@@ -27,6 +27,7 @@ import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
 import { initSettings, showSettings, updateBackupStatus } from './settings.js'; 
 import { loadSetting, saveSetting } from './utils.js';
+import * as GDrive from './gdrive.js';
 
 // --- Detección de Conexión Offline ---
 let isOnline = navigator.onLine;
@@ -241,6 +242,11 @@ function getUICallbacks() {
         onTimelineLoadMore: handleTimelineLoadMore, 
         onExportData: _handleExportData,
         onImportData: _handleImportData,
+        onGDriveLogin: handleGDriveLogin,
+        onGDriveBackup: handleGDriveBackup,
+        onGDriveRestore: handleGDriveRestore,
+        onGDriveLogout: handleGDriveLogout,
+        onGDriveCheckAuth: () => GDrive.isAuthorized(),
         onClearExamples: _handleClearExamples,
         onDriveBackup: _handleDriveBackup,
         onDriveRestore: _handleDriveRestore,
@@ -1039,6 +1045,67 @@ function _markDataChanged() {
 // Iniciar auto-backup si está activado
 if (loadSetting('autoBackup', false)) {
     _startAutoBackup();
+}
+// --- Google Drive Handlers ---
+async function handleGDriveLogin() {
+    try {
+        ui.showProgressModal("Conectando con Google Drive...");
+        await GDrive.initGoogleDrive();
+        await GDrive.authorize();
+        ui.closeProgressModal();
+        ui.showToast('Conectado a Google Drive');
+    } catch (err) {
+        console.error("Error en Google Drive login:", err);
+        ui.closeProgressModal();
+        ui.showErrorAlert(`No se pudo conectar: ${err.message}`, 'Error de Google Drive');
+    }
+}
+
+async function handleGDriveBackup() {
+    try {
+        await GDrive.initGoogleDrive();
+        const onProgress = (message) => ui.showProgressModal(message);
+        await GDrive.backupToDrive(onProgress);
+        ui.closeProgressModal();
+        ui.showToast('Backup completado');
+    } catch (err) {
+        console.error("Error en Google Drive backup:", err);
+        ui.closeProgressModal();
+        ui.showErrorAlert(`No se pudo completar el backup: ${err.message}`, 'Error de Backup');
+    }
+}
+
+async function handleGDriveRestore() {
+    try {
+        const confirmed = await ui.showConfirm(
+            '¿Restaurar desde Google Drive? Esto sobrescribirá tus datos locales.'
+        );
+        if (!confirmed) return;
+
+        await GDrive.initGoogleDrive();
+        const onProgress = (message) => ui.showProgressModal(message);
+        await GDrive.restoreFromDrive(onProgress);
+        ui.closeProgressModal();
+        ui.showToast('Restore completado');
+        
+        // Recargar la app
+        await _reloadDataAfterImport();
+    } catch (err) {
+        console.error("Error en Google Drive restore:", err);
+        ui.closeProgressModal();
+        ui.showErrorAlert(`No se pudo restaurar: ${err.message}`, 'Error de Restore');
+    }
+}
+
+async function handleGDriveLogout() {
+    try {
+        await GDrive.initGoogleDrive();
+        GDrive.signOut();
+        ui.showToast('Desconectado de Google Drive');
+    } catch (err) {
+        console.error("Error en Google Drive logout:", err);
+        ui.showErrorAlert(`Error al desconectar: ${err.message}`, 'Error');
+    }
 }
 
 // --- 9. Ejecución Inicial ---
