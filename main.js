@@ -1,11 +1,11 @@
 /*
- * main.js (v5.0 - Local First)
- * Controlador principal de Ephemerides - Sin Firebase obligatorio
+ * main.js (v5.0 - Con Google Drive Backup)
+ * Controlador principal de Ephemerides.
  */
 
 // --- Importaciones de Módulos ---
+import { initFirebase, db, auth } from './firebase.js';
 import { initAuthListener, handleLogin, handleLogout, checkAuthState } from './auth.js';
-import { backupToDrive, restoreFromDrive, getLastBackupTimestamp } from './gdrive.js';
 import {
     checkAndRunApp as storeCheckAndRun,
     loadAllDaysData,
@@ -20,13 +20,12 @@ import {
     uploadImage,
     loadMonthForTimeline, 
     exportToCSV,
-    importFromCSV,
-    clearSampleData
+    importFromCSV
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
 import { initSettings, showSettings } from './settings.js'; 
-import { loadSetting, saveSetting } from './utils.js';
+import { loadSetting } from './utils.js';
 import * as GDrive from './gdrive.js';
 
 // --- Detección de Conexión Offline ---
@@ -74,49 +73,60 @@ let state = {
 // --- 1. Inicialización de la App ---
 
 async function checkAndRunApp() {
-    console.log("Iniciando Ephemerides v5.0 (Local First)...");
+    console.log("Iniciando Ephemerides v5.0 (Con Google Drive Backup)...");
 
     try {
         ui.setLoading("Iniciando...", true); 
+        initFirebase(); 
         
         ui.init(getUICallbacks()); 
         initSettings(getUICallbacks()); 
         
         initAuthListener(handleAuthStateChange); 
 
-        ui.setLoading("Verificando datos...", true); 
+        ui.setLoading("Autenticando...", true); 
         
-        // Ya NO esperamos auth - arrancamos directo con datos locales
-        await initializeLocalSession();
+        await checkAuthState(); 
         
-        // Verificar auth en segundo plano (opcional)
-        checkAuthState().then(user => {
-            if (user) {
-                console.log("Usuario Firebase detectado:", user.uid);
-            }
-        });
-        
-        console.log("Arranque completado.");
+        console.log("Arranque de autenticación completado.");
 
     } catch (err) {
         console.error("Error crítico durante el arranque:", err);
-        ui.showErrorAlert(
-            `Error crítico: ${err.message}. Por favor, recarga la aplicación.`,
-            'Error Crítico'
-        );
+        if (err.code === 'permission-denied') {
+            ui.showErrorAlert(
+                `Error: Permiso denegado por Firestore. Revisa tus reglas de seguridad.`,
+                'Error Crítico'
+            );
+        } else {
+            ui.showErrorAlert(
+                `Error crítico: ${err.message}. Por favor, recarga la aplicación.`,
+                'Error Crítico'
+            );
+        }
     }
 }
 
-/**
- * Inicializa la sesión LOCAL (sin esperar Firebase)
- */
-async function initializeLocalSession() {
+async function initializeUserSession() {
+    if (!state.currentUser || !state.currentUser.uid) {
+        console.error("initializeUserSession llamado sin usuario válido.");
+        ui.showApp(false); 
+        return;
+    }
+    const userId = state.currentUser.uid;
+    
+    if (state.allDaysData.length > 0) return; 
+
     try {
-        ui.setLoading("Verificando base de datos local...", true); 
-        await storeCheckAndRun((message) => ui.setLoading(message, true)); 
+        ui.setLoading("Verificando base de datos...", true); 
+        await storeCheckAndRun(userId, (message) => ui.setLoading(message, true)); 
         
         ui.setLoading("Cargando calendario...", true); 
-        state.allDaysData = await loadAllDaysData(); 
+        state.allDaysData = await loadAllDaysData(userId); 
+
+        if (state.allDaysData.length === 0 && state.currentUser) {
+            console.error(`Error: No se cargaron días para ${userId} incluso después de checkAndRunApp.`);
+            ui.showErrorAlert("No se pudieron cargar los datos del calendario. Intenta recargar la página.");
+        }
 
         const today = new Date();
         state.todayId = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
@@ -129,7 +139,7 @@ async function initializeLocalSession() {
         ui.showApp(true); 
 
     } catch (err) {
-        console.error("Error crítico durante la inicialización:", err);
+        console.error("Error crítico durante la inicialización de sesión:", err);
         ui.showErrorAlert(
             `Error al cargar datos: ${err.message}. Por favor, recarga la página.`,
             'Error de Carga'
@@ -139,10 +149,13 @@ async function initializeLocalSession() {
 }
 
 async function loadTodaySpotlight() {
+    if (!state.currentUser || !state.currentUser.uid) return;
+    const userId = state.currentUser.uid;
+
     const today = new Date();
     const dateString = `Hoy, ${today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`;
 
-    const spotlightData = await getTodaySpotlight(state.todayId); 
+    const spotlightData = await getTodaySpotlight(userId, state.todayId); 
 
     if (spotlightData) {
         spotlightData.memories.forEach(mem => {
@@ -172,6 +185,9 @@ function drawCalendarView() {
 }
 
 async function drawTimelineView() {
+    if (!state.currentUser || !state.currentUser.uid) return;
+    const userId = state.currentUser.uid;
+
     const appContent = document.getElementById('app-content');
     if (!appContent) return;
     
@@ -183,7 +199,7 @@ async function drawTimelineView() {
         state.timeline.nextMonthToLoad = currentMonthIndex - 1; 
         state.timeline.isLoading = true;
 
-        const monthData = await loadMonthForTimeline(currentMonthIndex);
+        const monthData = await loadMonthForTimeline(userId, currentMonthIndex);
         
         state.timeline.isLoading = false;
 
@@ -206,12 +222,13 @@ function drawMainView() {
         if (spotlight) spotlight.style.display = 'none';
         drawTimelineView();
     } else {
+        // MODO CALENDARIO
         if (monthNav) monthNav.style.display = 'flex';
         if (spotlight) spotlight.style.display = 'block';
         
         if (appContent) {
-            appContent.className = '';
-            appContent.style.display = 'grid';
+            appContent.className = ''; // Limpia la clase 'timeline-view'
+            appContent.style.display = 'grid'; // Restaura el display de grid
         }
 
         drawCalendarView(); 
@@ -247,16 +264,13 @@ function getUICallbacks() {
         onGDriveRestore: handleGDriveRestore,
         onGDriveLogout: handleGDriveLogout,
         onGDriveCheckAuth: () => GDrive.isAuthorized(),
-        onClearExamples: _handleClearExamples,
-        onDriveBackup: _handleDriveBackup,
-        onDriveRestore: _handleDriveRestore,
-        onAutoBackupToggle: _handleAutoBackupToggle
     };
 }
 
 async function handleTimelineLoadMore() {
-    if (state.timeline.isLoading) return;
+    if (state.timeline.isLoading || !state.currentUser) return;
     
+    const userId = state.currentUser.uid;
     const monthToLoad = state.timeline.nextMonthToLoad; 
 
     if (monthToLoad < 0) {
@@ -269,7 +283,7 @@ async function handleTimelineLoadMore() {
     ui.setTimelineButtonLoading(true); 
 
     try {
-        const monthData = await loadMonthForTimeline(monthToLoad);
+        const monthData = await loadMonthForTimeline(userId, monthToLoad);
 
         if (monthData) {
             ui.appendTimelineMonth(monthData); 
@@ -277,9 +291,9 @@ async function handleTimelineLoadMore() {
         } else {
             state.timeline.nextMonthToLoad = monthToLoad - 1;
             if (state.timeline.nextMonthToLoad >= 0) {
-                handleTimelineLoadMore();
+                handleTimelineLoadMore(); // Llama recursivamente al siguiente
             } else {
-                ui.updateTimelineButtonVisibility(false);
+                ui.updateTimelineButtonVisibility(false); // Se acabaron los meses
             }
         }
     } catch (err) {
@@ -292,6 +306,7 @@ async function handleTimelineLoadMore() {
         }
     }
 }
+
 
 // --- Manejadores de Autenticación ---
 
@@ -314,26 +329,31 @@ async function handleLogoutClick() {
 }
 
 function handleAuthStateChange(user) {
+    const previousUser = state.currentUser; 
     state.currentUser = user;
     ui.updateLoginUI(user); 
-    console.log("Estado de autenticación cambiado:", user ? "Google Drive conectado" : "Sin conexión Drive");
-    
-    // Actualizar estado de backup en settings
-    if (user && user.isDrive) {
-        const lastBackup = getLastBackupTimestamp();
-        if (lastBackup) {
-            updateBackupStatus(`Último backup: ${lastBackup.toLocaleString()}`);
+    console.log("Estado de autenticación cambiado:", user ? user.uid : "Logged out");
+
+    if (user) {
+        if (!previousUser || state.allDaysData.length === 0) {
+            initializeUserSession(); 
         } else {
-            updateBackupStatus('Conectado. Haz tu primer backup.');
+             ui.showApp(true); 
         }
     } else {
-        updateBackupStatus('Conecta con Google Drive para hacer backups');
+        ui.showApp(false); 
+        state.allDaysData = []; 
+        ui.updateAllDaysData([]); 
+        ui.closeEditModal(); 
+        ui.closePreviewModal(); 
     }
 }
 
 // --- Manejadores de UI ---
 
 function handleMonthChange(direction) {
+    if (!state.currentUser) return; 
+    
     if (state.currentViewMode !== 'calendar') return; 
 
     if (direction === 'prev') {
@@ -345,11 +365,14 @@ function handleMonthChange(direction) {
 }
 
 async function handleDayClick(dia) {
+    if (!state.currentUser || !state.currentUser.uid) return;
+    const userId = state.currentUser.uid;
+    
     state.dayInPreview = dia;
     let memories = [];
     try {
         ui.showPreviewLoading(true); 
-        memories = await loadMemoriesForDay(dia.id); 
+        memories = await loadMemoriesForDay(userId, dia.id); 
         ui.showPreviewLoading(false); 
     } catch (e) {
         ui.showPreviewLoading(false); 
@@ -368,12 +391,18 @@ async function handleEditFromPreview() {
         return;
     }
 
+    if (!state.currentUser || !state.currentUser.uid) {
+        ui.showAlert("Debes iniciar sesión para poder editar."); 
+        return;
+    }
+    const userId = state.currentUser.uid;
+
     ui.closePreviewModal(); 
     setTimeout(async () => {
         let memories = [];
         try {
              ui.showEditLoading(true); 
-             memories = await loadMemoriesForDay(dia.id); 
+             memories = await loadMemoriesForDay(userId, dia.id); 
              ui.showEditLoading(false); 
         } catch (e) {
              ui.showEditLoading(false); 
@@ -386,6 +415,13 @@ async function handleEditFromPreview() {
 }
 
 async function handleHeaderAction(action) {
+    if (!state.currentUser) {
+        ui.showAlert("Debes iniciar sesión para usar esta función."); 
+        return;
+    }
+
+    const userId = state.currentUser.uid;
+
     if (action === 'search') {
         const searchTerm = await ui.showPrompt("Buscar en todas las memorias:", '', 'search'); 
         if (!searchTerm || searchTerm.trim() === '') return;
@@ -394,7 +430,7 @@ async function handleHeaderAction(action) {
         ui.setLoading(`Buscando "${term}"...`, true); 
 
         try {
-            const results = await searchMemories(term); 
+            const results = await searchMemories(userId, term); 
             ui.setLoading(null, false); 
             
             drawMainView(); 
@@ -416,10 +452,18 @@ async function handleHeaderAction(action) {
 }
 
 async function handleFooterAction(action) {
+    const protectedActions = ['add', 'store', 'shuffle'];
+    if (protectedActions.includes(action) && !state.currentUser) {
+         ui.showAlert("Debes iniciar sesión para usar esta función."); 
+         return;
+    }
+
     if (action === 'settings') {
          showSettings(); 
          return;
     }
+    
+    const userId = state.currentUser?.uid; 
 
     switch (action) {
         case 'add':
@@ -471,13 +515,24 @@ function handleViewModeChange(newViewMode) {
     drawMainView();
 }
 
+
 // --- 3. Lógica de Modales (Controlador) ---
 
 async function handleSaveDayName(diaId, newName, statusElementId = 'save-status') {
+    if (!state.currentUser || !state.currentUser.uid) {
+        if (statusElementId === 'save-status') {
+            ui.showToast('Debes estar logueado', true);
+        } else {
+            ui.showModalStatus(statusElementId, `Debes estar logueado`, true); 
+        }
+        return;
+    }
+    const userId = state.currentUser.uid;
+    
     const finalName = newName && newName.trim() !== '' ? newName.trim() : "Unnamed Day";
 
     try {
-        await saveDayName(diaId, finalName); 
+        await saveDayName(userId, diaId, finalName); 
 
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
         if (dayIndex !== -1) {
@@ -489,8 +544,6 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
         } else {
             ui.showModalStatus(statusElementId, 'Nombre guardado', false);
         }
-        
-        _markDataChanged(); // Marcar cambio para auto-backup
         
         drawMainView(); 
 
@@ -520,7 +573,14 @@ async function handleSaveDayName(diaId, newName, statusElementId = 'save-status'
     }
 }
 
+
 async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
+    if (!state.currentUser || !state.currentUser.uid) {
+        ui.showModalStatus('memoria-status', `Debes estar logueado`, true); 
+        return;
+    }
+    const userId = state.currentUser.uid;
+
     const saveBtn = document.getElementById('save-memoria-btn'); 
 
     try {
@@ -537,20 +597,18 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 
         if (memoryData.Tipo === 'Imagen' && memoryData.file) { 
             ui.showModalStatus('image-upload-status', 'Subiendo imagen...', false); 
-            memoryData.ImagenURL = await uploadImage(memoryData.file, diaId); 
+            memoryData.ImagenURL = await uploadImage(memoryData.file, userId, diaId); 
             ui.showModalStatus('image-upload-status', 'Imagen subida.', false); 
         }
 
         const memoryId = isEditing ? memoryData.id : null;
-        await saveMemory(diaId, memoryData, memoryId); 
+        await saveMemory(userId, diaId, memoryData, memoryId); 
 
         ui.showToast(isEditing ? 'Memoria actualizada' : 'Memoria guardada');
         
-        _markDataChanged(); // Marcar cambio para auto-backup
-        
         ui.resetMemoryForm(); 
 
-        const updatedMemories = await loadMemoriesForDay(diaId); 
+        const updatedMemories = await loadMemoriesForDay(userId, diaId); 
         ui.updateMemoryList(updatedMemories); 
 
         const dayIndex = state.allDaysData.findIndex(d => d.id === diaId);
@@ -575,6 +633,12 @@ async function handleSaveMemorySubmit(diaId, memoryData, isEditing) {
 }
 
 async function handleDeleteMemory(diaId, mem) {
+    if (!state.currentUser || !state.currentUser.uid) {
+        ui.showToast(`Debes estar logueado`, true); 
+        return;
+    }
+    const userId = state.currentUser.uid;
+    
     if (!mem || !mem.id) {
          ui.showToast(`Error: Información de memoria inválida.`, true); 
          return;
@@ -588,12 +652,10 @@ async function handleDeleteMemory(diaId, mem) {
 
     try {
         const imagenURL = (mem.Tipo === 'Imagen') ? mem.ImagenURL : null;
-        await deleteMemory(diaId, mem.id, imagenURL); 
+        await deleteMemory(userId, diaId, mem.id, imagenURL); 
         ui.showToast('Memoria borrada'); 
 
-        _markDataChanged(); // Marcar cambio para auto-backup
-
-        const updatedMemories = await loadMemoriesForDay(diaId); 
+        const updatedMemories = await loadMemoriesForDay(userId, diaId); 
         ui.updateMemoryList(updatedMemories); 
 
         if (updatedMemories.length === 0) {
@@ -660,6 +722,11 @@ async function handlePlaceSearch(term, resultsCallback) {
 
 // --- 5. Lógica del "Almacén" (Controlador) ---
 async function handleStoreCategoryClick(type) {
+    if (!state.currentUser) {
+         ui.showErrorAlert("Error", "No hay usuario autenticado para cargar el almacén.");
+         return;
+    }
+    const userId = state.currentUser.uid;
     console.log(`Cargando Almacén para ${type}`);
 
     state.store.currentType = type;
@@ -672,9 +739,9 @@ async function handleStoreCategoryClick(type) {
     try {
         let result;
         if (type === 'Nombres') {
-            result = await getNamedDays(10); 
+            result = await getNamedDays(userId, 10); 
         } else {
-            result = await getMemoriesByType(type, 10); 
+            result = await getMemoriesByType(userId, type, 10); 
         }
 
         result.items.forEach(item => {
@@ -689,17 +756,26 @@ async function handleStoreCategoryClick(type) {
         ui.updateStoreList(result.items, false, result.hasMore); 
 
     } catch (err) {
-        console.error(`Error cargando categoría ${type}:`, err);
+        console.error(`Error cargando categoría ${type} para ${userId}:`, err);
         ui.updateStoreList([], false, false); 
-        ui.showErrorAlert(`Error al cargar ${type}: ${err.message}`, 'Error de Almacén');
+        if (err.code === 'failed-precondition' || err.message.includes("index")) { 
+            console.error("¡ÍNDICE DE FIREBASE REQUERIDO!", err.message);
+            ui.showErrorAlert(
+                "Error de Firebase: Se requiere un índice. Revisa la consola (F12) para ver el enlace de creación.",
+                "Error de Base de Datos"
+            );
+        } else {
+            ui.showErrorAlert(`Error al cargar ${type}: ${err.message}`, 'Error de Almacén');
+        }
         ui.closeStoreListModal(); 
     }
 }
 
 async function handleStoreLoadMore() {
     const { currentType, lastVisible, isLoading } = state.store;
-    if (isLoading || !currentType) return; 
+    if (isLoading || !currentType || !state.currentUser) return; 
 
+    const userId = state.currentUser.uid;
     console.log(`Cargando más ${currentType}...`);
     state.store.isLoading = true;
 
@@ -712,9 +788,9 @@ async function handleStoreLoadMore() {
     try {
         let result;
         if (currentType === 'Nombres') {
-            result = await getNamedDays(10, lastVisible); 
+            result = await getNamedDays(userId, 10, lastVisible); 
         } else {
-            result = await getMemoriesByType(currentType, 10, lastVisible); 
+            result = await getMemoriesByType(userId, currentType, 10, lastVisible); 
         }
 
         result.items.forEach(item => {
@@ -729,7 +805,7 @@ async function handleStoreLoadMore() {
         ui.updateStoreList(result.items, true, result.hasMore); 
 
     } catch (err) {
-        console.error(`Error cargando más ${state.store.currentType}:`, err);
+        console.error(`Error cargando más ${state.store.currentType} para ${userId}:`, err);
         state.store.isLoading = false;
         if(loadMoreBtn) {
              loadMoreBtn.textContent = "Error al cargar";
@@ -745,6 +821,8 @@ async function handleStoreLoadMore() {
 }
 
 function handleStoreItemClick(diaId) {
+    if (!state.currentUser) return;
+
     const dia = state.allDaysData.find(d => d.id === diaId);
     if (!dia) {
         console.error("No se encontró el día:", diaId);
@@ -767,286 +845,7 @@ function handleStoreItemClick(diaId) {
     window.scrollTo(0, 0);
 }
 
-// --- 6. Lógica de Importar/Exportar ---
-
-async function _handleExportData() {
-    ui.showProgressModal("Exportando memorias...");
-
-    try {
-        const csvContent = await exportToCSV();
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        const timestamp = new Date().toISOString().slice(0, 10);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `ephemerides_export_${timestamp}.csv`);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        ui.closeProgressModal();
-        ui.showToast('Exportación completada');
-
-    } catch (err) {
-        console.error("Error al exportar datos:", err);
-        ui.closeProgressModal();
-        ui.showErrorAlert('Error de Exportación', `No se pudo generar el archivo: ${err.message}`);
-    }
-}
-
-async function _handleImportData(file) {
-    if (!file) {
-        ui.showToast('No se seleccionó ningún archivo', true);
-        return;
-    }
-    if (!file.name.endsWith('.csv')) {
-        ui.showErrorAlert('Archivo no válido', 'Por favor, selecciona un archivo .csv');
-        return;
-    }
-
-    const confirmed = await ui.showConfirm(
-        `¿Importar desde "${file.name}"? Esto añadirá las memorias y nombres de días del archivo. Los datos existentes no se borrarán.`
-    );
-    if (!confirmed) return;
-
-    ui.showProgressModal("Procesando archivo...");
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const csvContent = e.target.result;
-
-        try {
-            const onProgress = (message) => {
-                ui.showProgressModal(message);
-            };
-
-            const { imported, errors } = await importFromCSV(csvContent, onProgress);
-            
-            ui.closeProgressModal();
-            
-            await ui.showErrorAlert(
-                'Importación Completada',
-                `Se importaron ${imported} elementos. Hubo ${errors} filas con errores.`
-            );
-            
-            await _reloadDataAfterImport();
-
-        } catch (err) {
-            console.error("Error durante la importación:", err);
-            ui.closeProgressModal();
-            ui.showErrorAlert('Error de Importación', `Ocurrió un error: ${err.message}`);
-        }
-    };
-
-    reader.onerror = () => {
-        console.error("Error al leer el archivo:", reader.error);
-        ui.closeProgressModal();
-        ui.showErrorAlert('Error de Lectura', 'No se pudo leer el archivo seleccionado.');
-    };
-
-    reader.readAsText(file);
-}
-
-async function _reloadDataAfterImport() {
-    ui.setLoading("Actualizando datos...", true);
-    
-    try {
-        state.allDaysData = await loadAllDaysData();
-        ui.updateAllDaysData(state.allDaysData);
-        
-        drawMainView();
-        
-        ui.setLoading(null, false);
-        ui.showToast("Datos actualizados");
-
-    } catch (err) {
-        console.error("Error recargando datos post-importación:", err);
-        ui.setLoading(null, false);
-        ui.showErrorAlert('Error de Actualización', 'No se pudieron recargar los datos. Por favor, refresca la página.');
-    }
-}
-
-/**
- * Borra todos los datos de ejemplo
- */
-async function _handleClearExamples() {
-    const confirmed = await ui.showConfirm(
-        '¿Borrar todas las efemérides de ejemplo? Esta acción no se puede deshacer.'
-    );
-    if (!confirmed) return;
-
-    ui.showProgressModal("Borrando ejemplos...");
-
-    try {
-        const cleared = await clearSampleData();
-        
-        ui.closeProgressModal();
-        ui.showToast(`${cleared} ejemplos borrados`);
-        
-        await _reloadDataAfterImport();
-
-    } catch (err) {
-        console.error("Error borrando ejemplos:", err);
-        ui.closeProgressModal();
-        ui.showErrorAlert('Error', `No se pudieron borrar los ejemplos: ${err.message}`);
-    }
-}
-
-// --- 8. Funciones de Google Drive Backup ---
-
-/**
- * Hace backup manual a Google Drive
- */
-async function _handleDriveBackup() {
-    try {
-        ui.showProgressModal("Conectando con Google Drive...");
-        
-        await backupToDrive((message) => {
-            ui.showProgressModal(message);
-        });
-        
-        ui.closeProgressModal();
-        ui.showToast('Backup completado en Google Drive');
-        
-        // Actualizar estado
-        const lastBackup = getLastBackupTimestamp();
-        if (lastBackup) {
-            updateBackupStatus(`Último backup: ${lastBackup.toLocaleString()}`);
-        }
-        
-    } catch (err) {
-        console.error("Error en backup a Drive:", err);
-        ui.closeProgressModal();
-        
-        if (err.message && err.message.includes('not authorized')) {
-            // Necesita autorización
-            ui.showErrorAlert(
-                'Autorización Requerida',
-                'Por favor, haz login con el botón del header para conectar Google Drive.'
-            );
-        } else {
-            ui.showErrorAlert('Error de Backup', `No se pudo completar el backup: ${err.message}`);
-        }
-    }
-}
-
-/**
- * Restaura datos desde Google Drive
- */
-async function _handleDriveRestore() {
-    const confirmed = await ui.showConfirm(
-        '¿Restaurar desde Google Drive? Esto reemplazará tus datos locales actuales.'
-    );
-    if (!confirmed) return;
-
-    try {
-        ui.showProgressModal("Conectando con Google Drive...");
-        
-        const result = await restoreFromDrive((message) => {
-            ui.showProgressModal(message);
-        });
-        
-        ui.closeProgressModal();
-        
-        await ui.showErrorAlert(
-            'Restore Completado',
-            `Datos restaurados desde backup del ${new Date(result.timestamp).toLocaleString()}. La página se recargará.`
-        );
-        
-        // Recargar la página para aplicar cambios
-        window.location.reload();
-        
-    } catch (err) {
-        console.error("Error en restore desde Drive:", err);
-        ui.closeProgressModal();
-        
-        if (err.message && err.message.includes('not authorized')) {
-            ui.showErrorAlert(
-                'Autorización Requerida',
-                'Por favor, haz login con el botón del header para conectar Google Drive.'
-            );
-        } else if (err.message && err.message.includes('No se encontró')) {
-            ui.showErrorAlert(
-                'Sin Backup',
-                'No se encontró ningún backup en Google Drive. Haz un backup primero.'
-            );
-        } else {
-            ui.showErrorAlert('Error de Restore', `No se pudo restaurar: ${err.message}`);
-        }
-    }
-}
-
-/**
- * Activa/desactiva backup automático
- */
-function _handleAutoBackupToggle(enabled) {
-    if (enabled) {
-        console.log('Backup automático activado');
-        ui.showToast('Backup automático activado');
-        
-        // Iniciar sistema de auto-backup
-        _startAutoBackup();
-    } else {
-        console.log('Backup automático desactivado');
-        ui.showToast('Backup automático desactivado');
-        
-        // Detener sistema de auto-backup
-        _stopAutoBackup();
-    }
-}
-
-// Variables para auto-backup
-let autoBackupInterval = null;
-let changeCounter = 0;
-
-/**
- * Inicia el sistema de backup automático
- */
-function _startAutoBackup() {
-    if (autoBackupInterval) return;
-    
-    // Backup cada 30 minutos si hay cambios
-    autoBackupInterval = setInterval(async () => {
-        if (changeCounter > 0 && state.currentUser && state.currentUser.isDrive) {
-            console.log(`Auto-backup: ${changeCounter} cambios detectados`);
-            try {
-                await backupToDrive();
-                changeCounter = 0;
-                console.log('Auto-backup completado');
-            } catch (err) {
-                console.error('Error en auto-backup:', err);
-            }
-        }
-    }, 30 * 60 * 1000); // 30 minutos
-}
-
-/**
- * Detiene el sistema de backup automático
- */
-function _stopAutoBackup() {
-    if (autoBackupInterval) {
-        clearInterval(autoBackupInterval);
-        autoBackupInterval = null;
-    }
-    changeCounter = 0;
-}
-
-/**
- * Incrementa el contador de cambios (llamar después de cada save/delete)
- */
-function _markDataChanged() {
-    changeCounter++;
-}
-
-// Iniciar auto-backup si está activado
-if (loadSetting('autoBackup', false)) {
-    _startAutoBackup();
-}
-// --- Google Drive Handlers ---
+// --- 6. Google Drive Handlers ---
 async function handleGDriveLogin() {
     try {
         ui.showProgressModal("Conectando con Google Drive...");
@@ -1108,5 +907,135 @@ async function handleGDriveLogout() {
     }
 }
 
-// --- 9. Ejecución Inicial ---
+// --- 7. Lógica de Importar/Exportar ---
+
+/**
+ * Maneja la solicitud de exportar datos desde settings.js
+ */
+async function _handleExportData() {
+    if (!state.currentUser || !state.currentUser.uid) {
+        ui.showToast('Debes estar logueado para exportar', true);
+        return;
+    }
+    const userId = state.currentUser.uid;
+
+    ui.showProgressModal("Exportando memorias...");
+
+    try {
+        const csvContent = await exportToCSV(userId);
+        
+        // Crear y descargar el archivo
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        link.setAttribute('href', url);
+        link.setAttribute('download', `ephemerides_export_${timestamp}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        ui.closeProgressModal();
+        ui.showToast('Exportación completada');
+
+    } catch (err) {
+        console.error("Error al exportar datos:", err);
+        ui.closeProgressModal();
+        ui.showErrorAlert('Error de Exportación', `No se pudo generar el archivo: ${err.message}`);
+    }
+}
+
+/**
+ * Maneja la solicitud de importar datos desde settings.js
+ * @param {File} file - El archivo CSV seleccionado por el usuario.
+ */
+async function _handleImportData(file) {
+    if (!state.currentUser || !state.currentUser.uid) {
+        ui.showToast('Debes estar logueado para importar', true);
+        return;
+    }
+    if (!file) {
+        ui.showToast('No se seleccionó ningún archivo', true);
+        return;
+    }
+    if (!file.name.endsWith('.csv')) {
+        ui.showErrorAlert('Archivo no válido', 'Por favor, selecciona un archivo .csv');
+        return;
+    }
+
+    const confirmed = await ui.showConfirm(
+        `¿Importar desde "${file.name}"? Esto añadirá las memorias y nombres de días del archivo. Los datos existentes no se borrarán.`
+    );
+    if (!confirmed) return;
+
+    ui.showProgressModal("Procesando archivo...");
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const csvContent = e.target.result;
+        const userId = state.currentUser.uid;
+
+        try {
+            const onProgress = (message) => {
+                ui.showProgressModal(message);
+            };
+
+            const { imported, errors } = await importFromCSV(userId, csvContent, onProgress);
+            
+            ui.closeProgressModal();
+            
+            await ui.showErrorAlert( // Usamos "showErrorAlert" porque tiene un botón "OK"
+                'Importación Completada',
+                `Se importaron ${imported} elementos. Hubo ${errors} filas con errores.`
+            );
+            
+            // Recargar datos de la app
+            await _reloadDataAfterImport();
+
+        } catch (err) {
+            console.error("Error durante la importación:", err);
+            ui.closeProgressModal();
+            ui.showErrorAlert('Error de Importación', `Ocurrió un error: ${err.message}`);
+        }
+    };
+
+    reader.onerror = () => {
+        console.error("Error al leer el archivo:", reader.error);
+        ui.closeProgressModal();
+        ui.showErrorAlert('Error de Lectura', 'No se pudo leer el archivo seleccionado.');
+    };
+
+    reader.readAsText(file);
+}
+
+/**
+ * Recarga los datos principales de la app después de una importación.
+ */
+async function _reloadDataAfterImport() {
+    if (!state.currentUser || !state.currentUser.uid) return;
+
+    ui.setLoading("Actualizando datos...", true);
+    
+    try {
+        // Recargar allDaysData
+        state.allDaysData = await loadAllDaysData(state.currentUser.uid);
+        ui.updateAllDaysData(state.allDaysData);
+        
+        // Redibujar la vista principal (calendario y spotlight)
+        drawMainView();
+        
+        ui.setLoading(null, false);
+        ui.showToast("Datos actualizados");
+
+    } catch (err) {
+        console.error("Error recargando datos post-importación:", err);
+        ui.setLoading(null, false);
+        ui.showErrorAlert('Error de Actualización', 'No se pudieron recargar los datos. Por favor, refresca la página.');
+    }
+}
+
+// --- 8. Ejecución Inicial ---
 checkAndRunApp();
