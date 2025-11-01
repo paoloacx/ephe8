@@ -25,7 +25,7 @@ import {
 } from './store.js';
 import { searchMusic, searchNominatim } from './api.js';
 import { ui } from './ui.js';
-import { initSettings, showSettings, updateBackupStatus } from './settings.js'; 
+import { initSettings, showSettings } from './settings.js'; 
 import { loadSetting, saveSetting } from './utils.js';
 import * as GDrive from './gdrive.js';
 
