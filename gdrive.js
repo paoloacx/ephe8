@@ -1,5 +1,5 @@
 /*
- * gdrive.js (v5.0)
+ * gdrive.js (v5.1 - Con persistencia de token)
  * Módulo para backup y restore en Google Drive
  */
 
@@ -25,6 +25,20 @@ let accessToken = null;
 export async function initGoogleDrive() {
     if (isGapiLoaded && isGisLoaded) {
         console.log('Google Drive API ya inicializada');
+        
+        // Intentar restaurar token guardado
+        const savedToken = localStorage.getItem('gdrive_access_token');
+        if (savedToken && gapi?.client) {
+            try {
+                gapi.client.setToken({ access_token: savedToken });
+                accessToken = savedToken;
+                console.log('Token de Google Drive restaurado');
+            } catch (e) {
+                console.warn('No se pudo restaurar el token:', e);
+                localStorage.removeItem('gdrive_access_token');
+            }
+        }
+        
         return true;
     }
 
@@ -54,10 +68,23 @@ export async function initGoogleDrive() {
         isGisLoaded = true;
         console.log('GIS cargado');
         
+        // Intentar restaurar token guardado
+        const savedToken = localStorage.getItem('gdrive_access_token');
+        if (savedToken) {
+            try {
+                gapi.client.setToken({ access_token: savedToken });
+                accessToken = savedToken;
+                console.log('Token de Google Drive restaurado');
+            } catch (e) {
+                console.warn('No se pudo restaurar el token:', e);
+                localStorage.removeItem('gdrive_access_token');
+            }
+        }
+        
         return true;
     } catch (error) {
         console.error('Error inicializando Google Drive API:', error);
-        return false;
+        throw new Error('No se pudo inicializar Google Drive API: ' + error.message);
     }
 }
 
@@ -95,12 +122,17 @@ export async function authorize() {
     return new Promise((resolve, reject) => {
         tokenClient.callback = async (response) => {
             if (response.error !== undefined) {
-                reject(response);
+                console.error('Error en autorización:', response);
+                reject(new Error(response.error || 'Error de autorización'));
                 return;
             }
             
             accessToken = response.access_token;
             gapi.client.setToken({ access_token: accessToken });
+            
+            // Guardar token en localStorage
+            localStorage.setItem('gdrive_access_token', accessToken);
+            
             console.log('Google Drive autorizado');
             resolve(accessToken);
         };
@@ -123,6 +155,7 @@ export function signOut() {
         google.accounts.oauth2.revoke(token.access_token);
         gapi.client.setToken(null);
         accessToken = null;
+        localStorage.removeItem('gdrive_access_token');
         console.log('Google Drive sesión cerrada');
     }
 }
@@ -131,7 +164,7 @@ export function signOut() {
  * Verifica si hay token de acceso válido
  */
 export function isAuthorized() {
-    return gapi.client && gapi.client.getToken() !== null;
+    return gapi?.client && gapi.client.getToken() !== null;
 }
 
 // --- Backup ---
@@ -141,6 +174,10 @@ export function isAuthorized() {
  */
 async function getOrCreateFolder() {
     try {
+        if (!gapi?.client?.drive) {
+            throw new Error('Google Drive API no está inicializada correctamente');
+        }
+
         // Buscar carpeta existente
         const response = await gapi.client.drive.files.list({
             q: `name='${BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
@@ -149,6 +186,7 @@ async function getOrCreateFolder() {
         });
 
         if (response.result.files && response.result.files.length > 0) {
+            console.log('Carpeta Ephemerides encontrada:', response.result.files[0].id);
             return response.result.files[0].id;
         }
 
@@ -161,11 +199,11 @@ async function getOrCreateFolder() {
             fields: 'id'
         });
 
-        console.log('Carpeta Ephemerides creada en Drive');
+        console.log('Carpeta Ephemerides creada en Drive:', createResponse.result.id);
         return createResponse.result.id;
     } catch (error) {
         console.error('Error obteniendo/creando carpeta:', error);
-        throw error;
+        throw new Error('Error al crear carpeta en Drive: ' + (error.message || 'Error desconocido'));
     }
 }
 
@@ -174,6 +212,7 @@ async function getOrCreateFolder() {
  */
 export async function backupToDrive(onProgress) {
     if (!isAuthorized()) {
+        console.log('No autorizado, solicitando autorización...');
         await authorize();
     }
 
@@ -215,6 +254,10 @@ export async function backupToDrive(onProgress) {
         };
 
         let response;
+        const token = gapi.client.getToken();
+        if (!token || !token.access_token) {
+            throw new Error('No hay token de acceso válido');
+        }
 
         if (searchResponse.result.files && searchResponse.result.files.length > 0) {
             // Actualizar archivo existente
@@ -225,7 +268,7 @@ export async function backupToDrive(onProgress) {
 
             response = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`, {
                 method: 'PATCH',
-                headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
+                headers: new Headers({ 'Authorization': 'Bearer ' + token.access_token }),
                 body: form
             });
         } else {
@@ -236,13 +279,15 @@ export async function backupToDrive(onProgress) {
 
             response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
                 method: 'POST',
-                headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
+                headers: new Headers({ 'Authorization': 'Bearer ' + token.access_token }),
                 body: form
             });
         }
 
         if (!response.ok) {
-            throw new Error('Error subiendo backup a Drive');
+            const errorText = await response.text();
+            console.error('Error subiendo backup:', errorText);
+            throw new Error('Error subiendo backup a Drive: ' + response.statusText);
         }
 
         onProgress?.('Backup completado');
@@ -254,7 +299,7 @@ export async function backupToDrive(onProgress) {
         return true;
     } catch (error) {
         console.error('Error en backup:', error);
-        throw error;
+        throw new Error('Error al hacer backup: ' + (error.message || 'Error desconocido'));
     }
 }
 
@@ -263,6 +308,7 @@ export async function backupToDrive(onProgress) {
  */
 export async function restoreFromDrive(onProgress) {
     if (!isAuthorized()) {
+        console.log('No autorizado, solicitando autorización...');
         await authorize();
     }
 
@@ -329,7 +375,7 @@ export async function restoreFromDrive(onProgress) {
         };
     } catch (error) {
         console.error('Error en restore:', error);
-        throw error;
+        throw new Error('Error al restaurar: ' + (error.message || 'Error desconocido'));
     }
 }
 
